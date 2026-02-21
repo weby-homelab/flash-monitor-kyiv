@@ -273,9 +273,9 @@
                     const currentStatus = data.light;
                     
                     if (currentStatus === 'on') {
-                        lightVal.innerHTML = '<span style="color: #4CAF50;">💡 Світло є</span>';
+                        lightVal.innerHTML = '<span style="color: #FFD700; text-transform: uppercase;">💡 Світло є</span>';
                     } else if (currentStatus === 'off') {
-                        lightVal.innerHTML = '<span style="color: #EF9A9A;">🔴 Світла немає</span>';
+                        lightVal.innerHTML = '<span style="color: #9E9E9E; text-transform: uppercase;">✖️ Світло зникло</span>';
                     }
                     document.getElementById('light-status').innerHTML = data.light_event;
 
