@@ -95,39 +95,70 @@ def format_duration(seconds):
     m = int((seconds % 3600) // 60)
     return f"{h} год {m} хв"
 
-def get_last_power_event():
+def get_power_events_data(limit=5):
+    recent_events = []
+    latest_event_text = "Немає даних про події"
+    
     try:
         if os.path.exists(EVENT_LOG_FILE):
             with open(EVENT_LOG_FILE, "r") as f:
                 logs = json.load(f)
-                if len(logs) >= 2:
-                    last = logs[-1]
-                    prev = logs[-2]
+                
+                if len(logs) >= 1:
+                    # Calculate durations
+                    for i in range(len(logs)):
+                        if i > 0:
+                            logs[i]['duration_prev'] = logs[i]['timestamp'] - logs[i-1]['timestamp']
+                        else:
+                            logs[i]['duration_prev'] = None
+                            
+                    last_logs = logs[-limit:][::-1]
                     
-                    ts = last['timestamp']
-                    dt_str = datetime.fromtimestamp(ts).strftime("%d.%m %H:%M")
-                    evt = last['event']
+                    for log in last_logs:
+                        ts = log.get('timestamp', 0)
+                        evt = log.get('event', 'unknown')
+                        dur_sec = log.get('duration_prev')
+                        
+                        dt_str = datetime.fromtimestamp(ts).strftime("%d.%m %H:%M")
+                        icon = "🟢" if evt == "up" else "🔴"
+                        text = "Світло з'явилося" if evt == "up" else "Світло зникло"
+                        pre_text = "не було" if evt == "up" else "було"
+                        
+                        dur_str = format_duration(dur_sec) if dur_sec else ""
+                        
+                        recent_events.append({
+                            "time": dt_str,
+                            "icon": icon,
+                            "text": text,
+                            "desc": f"({pre_text} {dur_str})" if dur_str else ""
+                        })
                     
-                    dur_sec = ts - prev['timestamp']
-                    dur_str = format_duration(dur_sec)
-                    
-                    icon = "🟢" if evt == "up" else "🔴"
-                    text = "Світло з'явилося" if evt == "up" else "Світло зникло"
-                    pre_text = "не було" if evt == "up" else "було"
-                    
-                    return f"{dt_str} {icon} {text}<br><span style='font-size: 0.9em; color: #aaa;'>({pre_text} {dur_str})</span>"
-    except:
+                    # For backward compatibility with light_event
+                    if len(logs) >= 2:
+                        last = logs[-1]
+                        prev = logs[-2]
+                        ts = last['timestamp']
+                        dt_str = datetime.fromtimestamp(ts).strftime("%d.%m %H:%M")
+                        evt = last['event']
+                        dur_sec = ts - prev['timestamp']
+                        dur_str = format_duration(dur_sec)
+                        icon = "🟢" if evt == "up" else "🔴"
+                        text = "Світло з'явилося" if evt == "up" else "Світло зникло"
+                        pre_text = "не було" if evt == "up" else "було"
+                        latest_event_text = f"{dt_str} {icon} {text}<br><span style='font-size: 0.9em; color: #aaa;'>({pre_text} {dur_str})</span>"
+    except Exception as e:
+        print(f"Error reading events: {e}")
         pass
-    return "Немає даних про події"
-
+        
+    return latest_event_text, recent_events
 
 def get_light_status_api():
     with state_lock:
         status = state.get("status", "unknown")
     
-    event_text = get_last_power_event()
+    event_text, recent_events = get_power_events_data()
     res = "on" if status == "up" else "off" if status == "down" else "unknown"
-    return {"status": res, "event": event_text}
+    return {"status": res, "event": event_text, "history": recent_events}
 
 def get_air_quality():
     try:
@@ -288,6 +319,7 @@ def api_status():
         "radiation": radiation,
         "light": light_info["status"],
         "light_event": light_info["event"],
+        "light_history": light_info.get("history", []),
         "aqi": aqi,
         "timestamp": datetime.now().strftime("%H:%M:%S")
     })
