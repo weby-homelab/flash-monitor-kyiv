@@ -1,5 +1,17 @@
+
+# Environments
+.env
 venv/
 __pycache__/
-*.pyc
-.env
-*.log
+
+# State files
+*.json
+!config.json
+!manifest.json
+
+# IDE / OS
+.idea/
+.vscode/
+*.swo
+*.swp
+.DS_Store
