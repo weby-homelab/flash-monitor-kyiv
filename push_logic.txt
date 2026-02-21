@@ -1,0 +1,61 @@
+# 2. Push API
+        if parsed.path == f"/api/push/{state['secret_key']}":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            
+            with state_lock:
+                current_time = get_current_time()
+                previous_status = state["status"]
+                
+                # Update heartbeat
+                state["last_seen"] = current_time
+                
+                # Logic: If we were DOWN, and now we get a request -> We are UP
+                if previous_status == "down" or previous_status == "unknown":
+                    state["status"] = "up"
+                    state["came_up_at"] = current_time
+                    log_event("up", current_time)
+                    
+                    # Calculate outage duration
+                    if state["went_down_at"] > 0:
+                        duration = format_duration(current_time - state["went_down_at"])
+                    else:
+                        duration = "невідомо"
+                    
+                    sched_light_now, current_end, next_range, next_duration = get_schedule_context()
+                    
+                    time_str = datetime.datetime.fromtimestamp(current_time, KYIV_TZ).strftime("%H:%M")
+                    dev_msg = get_deviation_info(current_time, True)
+                    
+                    # Header
+                    msg = f"🟢 <b>{time_str} Світло з'явилося</b>\n\n"
+                    
+                    # Stats Block
+                    msg += "📊 <b>Статистика відключення:</b>\n"
+                    msg += f"• Світла не було: <b>{duration}</b>\n"
+                    if dev_msg:
+                        msg += f"{dev_msg}\n"
+                    
+                    # Schedule Block
+                    msg += "\n🗓 <b>Аналіз:</b>\n"
+                    
+                    sched_on_time = get_nearest_schedule_switch(current_time, True)
+                    if sched_on_time:
+                        msg += f"• За графіком світло мало з'явитися о: <b>{sched_on_time}</b>\n"
+                    
+                    if sched_light_now is False: # It appeared while it should be dark
+                        next_off_time = next_range.split(' - ')[1] if ' - ' in next_range else "час очікується"
+                        msg += f"• Наступне вимкнення: <b>{next_off_time}</b>"
+                    else: # It appeared while it should be light
+                        msg += f"• Наступне вимкнення: <b>{current_end}</b>"
+                    
+                    threading.Thread(target=send_telegram, args=(msg,)).start()
+                    trigger_daily_report_update()
+                
+                save_state()
+            
+            self.wfile.write(b'{"status": "ok", "msg": "heartbeat_received"}')
+        else:
+            self.send_response(404)
+            self.end_headers()

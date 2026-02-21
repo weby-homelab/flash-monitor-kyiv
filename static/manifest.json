@@ -1,0 +1,17 @@
+{
+  "name": "Flash Monitor",
+  "short_name": "Flash",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1E122A",
+  "theme_color": "#1E122A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
