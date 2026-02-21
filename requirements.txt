@@ -1,0 +1,9 @@
+flask
+requests
+beautifulsoup4
+python-dotenv
+gunicorn
+matplotlib
+pandas
+numpy
+tzdata

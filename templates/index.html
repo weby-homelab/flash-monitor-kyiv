@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Flash Monitor (Київ) — Моніторинг світла та безпеки</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Моніторинг світла, повітряних тривог, радіаційного фону та якості повітря у Києві. Дані в реальному часі.">
+    
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1E122A">
+    <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+    <link rel="apple-touch-icon" href="/static/icon.svg">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #1E122A; color: white; text-align: center; padding: 20px; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        h1 { font-weight: 500; letter-spacing: 0.5px; color: #E0E0E0; margin-bottom: 30px; }
+
+        .card { 
+            background: #1E122A; 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: left;
+            border: 1px solid #3a2d4d;
+        }
+        
+        .title { color: #aaa; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
+        .value { font-size: 28px; font-weight: bold; }
+        .status-text { font-size: 16px; margin-top: 5px; color: #ccc; }
+        
+        /* Alerts */
+        .alert-card.active { background: #d32f2f; border-color: #ff5252; animation: pulse 2s infinite; }
+        .alert-card.clear { border-color: #4CAF50; }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(211, 47, 47, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
+        }
+
+        .chart { width: 100%; border-radius: 8px; margin-top: 10px; background: #1E122A; }
+
+        .footer { margin-top: 40px; font-size: 12px; color: #666; text-align: center; }
+        .footer a { color: #888; text-decoration: none; }
+        .footer a:hover { color: #fff; text-decoration: underline; }
+
+        /* Toast Styles */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            background: rgba(30, 18, 42, 0.95);
+            border: 1px solid #3a2d4d;
+            border-left: 5px solid #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            opacity: 0;
+            transform: translateX(50px);
+            transition: opacity 0.3s, transform 0.3s;
+            text-align: left;
+            max-width: 300px;
+        }
+        .toast.show { opacity: 1; transform: translateX(0); }
+        .toast.down { border-left-color: #EF9A9A; }
+        .toast.alert { border-left-color: #ff5252; }
+        .toast-title { font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+
+        /* Stats grid */
+        .stats-grid { color: #aaa; font-size: 14px; margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 10px; }
+        .stats-item { background: #2a2a2a; padding: 5px 10px; border-radius: 6px; }
+        .stats-item b { color: #fff; }
+
+    </style>
+</head>
+<body>
+    <div id="toast-container"></div>
+    <div class="container">
+        <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            🔆 Flash Monitor
+            <span id="audio-toggle" style="cursor:pointer; font-size:24px; opacity:0.5;" title="Увімкнути звукові сповіщення">🔕</span>
+        </h1>
+        
+        <!-- Light Status -->
+        <div class="card">
+            <div class="title">Електропостачання (Група 3)</div>
+            <div class="value" id="light-val">Завантаження...</div>
+            <div class="status-text" id="light-status">Отримання даних...</div>
+        </div>
+
+        <!-- Air Raid Alert -->
+        <div id="alert-card" class="card alert-card clear">
+            <div class="title">Повітряна тривога (Київ)</div>
+            <div class="value" id="alert-status">--</div>
+            <div class="status-text" id="alert-location">--</div>
+        </div>
+
+        <!-- Light Chart -->
+        <div class="card">
+            <div class="title">Графік за сьогодні</div>
+            <img src="/static/chart.png" id="daily-chart" class="chart" alt="Графік за сьогодні">
+        </div>
+
+        <!-- Weekly Chart -->
+        <div class="card">
+            <div class="title">Тижневий розріз</div>
+            <img src="/static/weekly.png" id="weekly-chart" class="chart" alt="Тижневий графік">
+        </div>
+
+        <!-- Air Quality -->
+        <div class="card">
+            <div class="title" id="aqi-title">Якість повітря</div>
+            <div class="value" id="aqi-val">--</div>
+            <div class="status-text" id="aqi-status">Завантаження...</div>
+            <div class="stats-grid">
+                <div class="stats-item">PM2.5: <b id="aqi-pm25">--</b></div>
+                <div class="stats-item">PM10: <b id="aqi-pm10">--</b></div>
+                <div class="stats-item">🌡️ <b id="aqi-temp">--</b> °C</div>
+                <div class="stats-item">💧 <b id="aqi-hum">--</b> %</div>
+                <div class="stats-item">💨 <b id="aqi-wind">--</b></div>
+            </div>
+        </div>
+
+        <!-- Radiation & Weekly -->
+        <div class="card">
+            <div class="title">Радіаційний фон</div>
+            <div class="value">
+                <span id="rad-val">--</span> <span style="font-size: 16px; color: #888;">мкЗв/год</span>
+            </div>
+            <div class="status-text" style="color: #4caf50;">В нормі</div>
+        </div>
+
+        <div class="footer">
+            Оновлено: <span id="last-updated">--:--:--</span><br>
+            © 2026 WEBy Home Lab
+        </div>
+    </div>
+
+    <script>
+        let lastLightStatus = null;
+        let wasAlertActive = false;
+        let audioCtx = null;
+        let audioEnabled = localStorage.getItem('audioEnabled_flash') === 'true';
+
+        const audioToggle = document.getElementById('audio-toggle');
+        if (audioEnabled) {
+            audioToggle.innerText = "🔔";
+            audioToggle.style.opacity = "1";
+        }
+
+        audioToggle.addEventListener('click', function() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            audioEnabled = !audioEnabled;
+            localStorage.setItem('audioEnabled_flash', audioEnabled);
+            this.innerText = audioEnabled ? "🔔" : "🔕";
+            this.style.opacity = audioEnabled ? "1" : "0.5";
+            
+            if (audioEnabled && "Notification" in window) {
+                if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                    Notification.requestPermission();
+                }
+            }
+            
+            if (audioEnabled) {
+                playDing(); 
+            }
+        });
+
+        function playDing() {
+            if (!audioCtx || !audioEnabled) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.5);
+            
+            gainNode.gain.setValueAtTime(0.02, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function showToast(title, body, type) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            
+            let icon = '💡';
+            if (type === 'down') icon = '🔴';
+            if (type === 'alert') icon = '🚨';
+            
+            toast.innerHTML = `
+                <div class="toast-title"><span>${icon}</span> ${title}</div>
+                <div>${body}</div>
+            `;
+            
+            container.appendChild(toast);
+            void toast.offsetWidth;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
+        }
+
+        function showNotification(title, body, iconUrl) {
+            if (audioEnabled && "Notification" in window && Notification.permission === "granted") {
+                new Notification(title, {
+                    body: body,
+                    icon: iconUrl || "/static/icon.svg"
+                });
+            }
+        }
+
+        function updateStatus() {
+            fetch('/api/status')
+                .then(r => r.json())
+                .then(data => {
+                    // 1. Light Status
+                    const lightVal = document.getElementById('light-val');
+                    const currentStatus = data.light;
+                    
+                    if (currentStatus === 'on') {
+                        lightVal.innerHTML = '<span style="color: #4CAF50;">💡 Світло є</span>';
+                    } else if (currentStatus === 'off') {
+                        lightVal.innerHTML = '<span style="color: #EF9A9A;">🔴 Світла немає</span>';
+                    }
+                    document.getElementById('light-status').innerHTML = data.light_event;
+
+                    if (lastLightStatus && currentStatus !== lastLightStatus) {
+                        playDing();
+                        if (currentStatus === 'on') {
+                            showToast("Світло з'явилося!", "Електропостачання відновлено.", "up");
+                            showNotification("💡 Світло з'явилося!", "Електропостачання відновлено.");
+                        } else {
+                            showToast("Світло зникло!", "Зафіксовано відключення.", "down");
+                            showNotification("🔴 Світло зникло!", "Зафіксовано відключення.");
+                        }
+                        // Refresh chart
+                        document.getElementById('daily-chart').src = "/static/chart.png?v=" + Date.now();
+                    }
+                    lastLightStatus = currentStatus;
+
+                    // 2. Air Raid Alert
+                    const isCityAlert = !!data.alert.city;
+                    if (isCityAlert && !wasAlertActive) {
+                        playDing(); setTimeout(playDing, 300);
+                        showToast("ПОВІТРЯНА ТРИВОГА!", "Пройдіть в укриття!", "alert");
+                        showNotification("🚨 ТРИВОГА (КИЇВ)!", "Пройдіть в укриття!");
+                    }
+                    wasAlertActive = isCityAlert;
+
+                    const alertCard = document.getElementById('alert-card');
+                    if (data.alert.city) {
+                        alertCard.className = 'card alert-card active';
+                        document.getElementById('alert-status').innerText = 'ТРИВОГА (КИЇВ)!';
+                        document.getElementById('alert-location').innerText = 'Пройдіть в укриття!';
+                    } else if (data.alert.region) {
+                        alertCard.className = 'card alert-card active';
+                        document.getElementById('alert-status').innerText = 'ТРИВОГА (ОБЛАСТЬ)';
+                        document.getElementById('alert-location').innerText = 'Київська область';
+                    } else {
+                        alertCard.className = 'card alert-card clear';
+                        document.getElementById('alert-status').innerText = 'СПОКІЙНО';
+                        document.getElementById('alert-location').innerText = 'Тривоги немає';
+                    }
+
+                    // 3. AQI
+                    if (data.aqi) {
+                        const val = data.aqi.aqi;
+                        const aqiVal = document.getElementById('aqi-val');
+                        aqiVal.innerText = val;
+                        document.getElementById('aqi-status').innerText = data.aqi.text;
+                        document.getElementById('aqi-title').innerText = "Повітря: " + data.aqi.location;
+                        document.getElementById('aqi-pm25').innerText = data.aqi.pm25;
+                        document.getElementById('aqi-pm10').innerText = data.aqi.pm10;
+                        document.getElementById('aqi-temp').innerText = data.aqi.temp;
+                        document.getElementById('aqi-hum').innerText = data.aqi.hum;
+                        document.getElementById('aqi-wind').innerText = data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
+
+                        if (val <= 50) aqiVal.style.color = '#4caf50';
+                        else if (val <= 100) aqiVal.style.color = '#ffeb3b';
+                        else aqiVal.style.color = '#f44336';
+                    }
+
+                    // 4. Radiation
+                    document.getElementById('rad-val').innerText = data.radiation.level;
+
+                    document.getElementById('last-updated').innerText = data.timestamp;
+                });
+        }
+
+        setInterval(updateStatus, 15000);
+        setTimeout(updateStatus, 200);
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').then(reg => console.log('SW ok'));
+            });
+        }
+    </script>
+</body>
+</html>
