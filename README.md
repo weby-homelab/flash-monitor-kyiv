@@ -37,7 +37,7 @@
 
 ```mermaid
 graph TD
-    subgraph Зовнішні сервіси
+    subgraph "Зовнішні сервіси"
         A[alerts.in.ua API]
         B[Open-Meteo API]
         C[SaveEcoBot Scraper]
@@ -45,7 +45,7 @@ graph TD
         E[Моніторинговий пристрій/сервіс]
     end
 
-    subgraph Backend (Flask + Gunicorn)
+    subgraph "Backend (Flask + Gunicorn)"
         F[app.py - Основний додаток]
         G[light_service.py - Фоновий монітор]
         H[API /api/status]
@@ -54,7 +54,7 @@ graph TD
         K[Звітні скрипти <br> generate_daily_report.py]
     end
 
-    subgraph Frontend
+    subgraph "Frontend"
         L[Веб-інтерфейс <br> index.html]
     end
 
