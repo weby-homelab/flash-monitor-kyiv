@@ -1,7 +1,8 @@
 {
   "name": "Flash Monitor",
-  "short_name": "Flash",
+  "short_name": "Flash Monitor",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#1E122A",
   "theme_color": "#1E122A",
