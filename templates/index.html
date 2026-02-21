@@ -88,13 +88,21 @@
         .stats-item { background: #2a2a2a; padding: 5px 10px; border-radius: 6px; }
         .stats-item b { color: #fff; }
 
+        /* Table Styles */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
+        td { padding: 10px 8px; border-bottom: 1px solid #3a2d4d; text-align: left; }
+        tr:last-child td { border-bottom: none; }
+        .td-time { white-space: nowrap; width: 100px; color: #ccc; }
+        .td-event { font-weight: bold; }
+        .td-event span { display: block; font-weight: normal; font-size: 0.9em; color: #aaa; }
+
     </style>
 </head>
 <body>
     <div id="toast-container"></div>
     <div class="container">
         <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            🔆 Flash Monitor
+            ⚡️ Flash Monitor
             <span id="audio-toggle" style="cursor:pointer; font-size:24px; opacity:0.5;" title="Увімкнути звукові сповіщення">🔕</span>
         </h1>
         
@@ -122,6 +130,16 @@
         <div class="card">
             <div class="title">Тижневий розріз</div>
             <img src="/static/weekly.png" id="weekly-chart" class="chart" alt="Тижневий графік">
+        </div>
+
+        <!-- Recent Events -->
+        <div class="card">
+            <div class="title">Останні події</div>
+            <table>
+                <tbody id="events-table-body">
+                    <tr><td colspan="2" style="text-align: center;">Завантаження...</td></tr>
+                </tbody>
+            </table>
         </div>
 
         <!-- Air Quality -->
@@ -272,6 +290,22 @@
                         document.getElementById('daily-chart').src = "/static/chart.png?v=" + Date.now();
                     }
                     lastLightStatus = currentStatus;
+
+                    // 1.5 History Table
+                    const tbody = document.getElementById('events-table-body');
+                    if (data.light_history && data.light_history.length > 0) {
+                        let rowsHtml = '';
+                        data.light_history.forEach(ev => {
+                            const color = ev.icon === '🟢' ? '#4CAF50' : '#EF9A9A';
+                            rowsHtml += `<tr>
+                                <td class="td-time">${ev.time}</td>
+                                <td class="td-event" style="color: ${color};">${ev.icon} ${ev.text}<span>${ev.desc}</span></td>
+                            </tr>`;
+                        });
+                        tbody.innerHTML = rowsHtml;
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #aaa;">Немає даних про події</td></tr>';
+                    }
 
                     // 2. Air Raid Alert
                     const isCityAlert = !!data.alert.city;
