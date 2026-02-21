@@ -37,53 +37,66 @@
 
 ```mermaid
 graph TD
-    subgraph "Зовнішні сервіси"
-        A[alerts.in.ua API]
-        B[Open-Meteo API]
-        C[SaveEcoBot Scraper]
-        D[Telegram Bot API]
-        E[Моніторинговий пристрій/сервіс]
+    %% -- Стилі для блоків --
+    classDef user fill:#e6e6fa,stroke:#333,stroke-width:2px,color:#333
+    classDef frontend fill:#d1e7dd,stroke:#333,stroke-width:2px,color:#333
+    classDef backend fill:#cff,stroke:#084,stroke-width:3px,color:#333
+    classDef data fill:#f8d7da,stroke:#333,stroke-width:2px,color:#333
+    classDef storage fill:#fff3cd,stroke:#333,stroke-width:2px,color:#333
+    classDef notify fill:#cfe2ff,stroke:#333,stroke-width:2px,color:#333
+
+    %% -- Блоки системи --
+    subgraph "Зовнішній світ"
+        User("📱<br>Користувач")
+        MonitorClient("⚡<br>Моніторинг-клієнт<br>(Heartbeat)")
     end
 
-    subgraph "Backend (Flask + Gunicorn)"
-        F[app.py - Основний додаток]
-        G[light_service.py - Фоновий монітор]
-        H[API /api/status]
-        I[API /api/push/SECRET]
-        J[JSON-файли <br> event_log.json <br> power_state.json]
-        K[Звітні скрипти <br> generate_daily_report.py]
+    subgraph "Рівень представлення (Frontend)"
+        WebApp["🌐<br>Веб-додаток (PWA)<br>index.html"]
     end
 
-    subgraph "Frontend"
-        L[Веб-інтерфейс <br> index.html]
+    subgraph "Серверна частина (Backend)"
+        direction LR
+        APIServer["🖥️ API-Сервер<br>(Flask / Gunicorn)"]
+        BackgroundMonitor["⚙️ Фоновий монітор<br>(light_service.py)"]
     end
-
-    U[Користувач]
-
-    %% Data Flow
-    A --> F
-    B --> F
-    C --> F
-    E -- "Heartbeat" --> I
-
-    F -- "Рендеринг" --> L
-    F -- "Збір даних" --> H
     
-    G -- "Виявлення відключення" --> D
-    I -- "Виявлення включення" --> D
+    subgraph "Джерела даних"
+        direction TB
+        ExternalAPIs["📡<br>Зовнішні API<br>alerts.in.ua, Open-Meteo"]
+        Scraper["🕷️<br>Скрейпер<br>SaveEcoBot"]
+    end
+
+    subgraph "Зберігання даних"
+        JSON_DB["🗄️<br>Локальні JSON файли<br>(стан, історія, графіки)"]
+    end
     
-    I -- "Оновлення статусу" --> J
-    G -- "Оновлення статусу" --> J
+    subgraph "Сповіщення"
+        Telegram["💬<br>Канал в Telegram"]
+    end
 
-    F -- "Читання стану" --> J
-    K -- "Читання історії" --> J
+    %% -- Присвоєння стилів --
+    class User,MonitorClient user
+    class WebApp frontend
+    class APIServer,BackgroundMonitor backend
+    class ExternalAPIs,Scraper data
+    class JSON_DB storage
+    class Telegram notify
 
-    I -- "Запуск генерації звіту" --> K
-    G -- "Запуск генерації звіту" --> K
+    %% -- Потоки даних --
+    User      --> |Переглядає| WebApp
+    WebApp    --> |AJAX-запити| APIServer
+    
+    MonitorClient --> |POST /api/push| APIServer
 
-    L -- "AJAX-запити" --> H
-    U -- "Переглядає" --> L
-    U -- "Отримує сповіщення" --> D
+    APIServer --> |Запитує дані| ExternalAPIs
+    APIServer --> |Запитує дані| Scraper
+
+    APIServer           --> |Читає/Записує| JSON_DB
+    BackgroundMonitor   --> |Читає/Записує| JSON_DB
+
+    BackgroundMonitor   -- "🔴 Виявив відключення" --> Telegram
+    APIServer           -- "🟢 Виявив включення" --> Telegram
 ```
 
 ---
