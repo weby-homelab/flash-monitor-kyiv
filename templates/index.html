@@ -17,7 +17,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #1E122A; color: white; text-align: center; padding: 20px; margin: 0; }
         .container { max-width: 600px; margin: 0 auto; }
         
-        h1 { font-weight: 500; letter-spacing: 0.5px; color: #E0E0E0; margin-bottom: 30px; }
+        h1 { font-weight: 500; letter-spacing: 0.5px; color: #fff; margin-bottom: 30px; }
 
         .card { 
             background: #1E122A; 
@@ -151,7 +151,7 @@
         <!-- Radiation & Weekly -->
         <div class="card">
             <div class="title">Радіаційний фон</div>
-            <div class="value">
+            <div class="value" style="color: #4fc3f7;">
                 <span id="rad-val">--</span> <span style="font-size: 16px; color: #888;">мкЗв/год</span>
             </div>
             <div class="status-text" style="color: #4caf50;">В нормі</div>
@@ -346,9 +346,10 @@
                         document.getElementById('aqi-hum').innerText = data.aqi.hum;
                         document.getElementById('aqi-wind').innerText = data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
 
-                        if (val <= 50) aqiVal.style.color = '#4caf50';
-                        else if (val <= 100) aqiVal.style.color = '#ffeb3b';
-                        else aqiVal.style.color = '#f44336';
+                        if (val <= 50) aqiVal.style.color = '#4caf50'; // Green
+                        else if (val <= 100) aqiVal.style.color = '#ffeb3b'; // Yellow
+                        else if (val <= 150) aqiVal.style.color = '#ff9800'; // Orange
+                        else aqiVal.style.color = '#f44336'; // Red
                     }
 
                     // 4. Radiation
