@@ -35,7 +35,9 @@
         
         /* Alerts */
         .alert-card.active { background: #d32f2f; border-color: #ff5252; animation: pulse 2s infinite; }
+        .alert-card.active .value { color: #fff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
         .alert-card.clear { border-color: #4CAF50; }
+        .alert-card.clear .value { color: #4CAF50; }
         
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); }
@@ -108,7 +110,7 @@
         
         <!-- Light Status -->
         <div class="card">
-            <div class="title">Електропостачання (Група 3)</div>
+            <div class="title">Електропостачання (Група 36.1)</div>
             <div class="value" id="light-val">Завантаження...</div>
             <div class="status-text" id="light-status">Отримання даних...</div>
         </div>
@@ -130,16 +132,6 @@
         <div class="card">
             <div class="title">Тижневий розріз</div>
             <img src="/static/weekly.png" id="weekly-chart" class="chart" alt="Тижневий графік">
-        </div>
-
-        <!-- Recent Events -->
-        <div class="card">
-            <div class="title">Останні події</div>
-            <table>
-                <tbody id="events-table-body">
-                    <tr><td colspan="2" style="text-align: center;">Завантаження...</td></tr>
-                </tbody>
-            </table>
         </div>
 
         <!-- Air Quality -->
@@ -165,9 +157,19 @@
             <div class="status-text" style="color: #4caf50;">В нормі</div>
         </div>
 
+        <!-- Recent Events -->
+        <div class="card">
+            <div class="title">Останні події</div>
+            <table>
+                <tbody id="events-table-body">
+                    <tr><td colspan="2" style="text-align: center;">Завантаження...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
         <div class="footer">
             Оновлено: <span id="last-updated">--:--:--</span><br>
-            © 2026 WEBy Home Lab
+            © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv" target="_blank">Github:flash-monitor-kyiv</a>
         </div>
     </div>
 
