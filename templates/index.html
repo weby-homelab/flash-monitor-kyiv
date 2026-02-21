@@ -34,10 +34,10 @@
         .status-text { font-size: 16px; margin-top: 5px; color: #ccc; }
         
         /* Alerts */
-        .alert-card.active { background: #d32f2f; border-color: #ff5252; animation: pulse 2s infinite; }
-        .alert-card.active .value { color: #fff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
-        .alert-card.clear { border-color: #4CAF50; }
-        .alert-card.clear .value { color: #4CAF50; }
+        .alert-card.active { background: #d32f2f; border: none; animation: pulse 2s infinite; }
+        .alert-card.clear { background: #388e3c; border: none; }
+        .alert-card .title, .alert-card .status-text { color: rgba(255,255,255,0.8); }
+        .alert-card .value { color: #fff !important; text-shadow: none !important; }
         
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); }
