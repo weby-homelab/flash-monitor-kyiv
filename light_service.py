@@ -55,8 +55,27 @@ def trigger_daily_report_update():
             # Also trigger weekly report update
             trigger_weekly_report_update()
             
+            # Trigger text report update
+            trigger_text_report_update()
+            
         except Exception as e:
             print(f"Failed to trigger daily report: {e}")
+
+    threading.Thread(target=run_script).start()
+
+def trigger_text_report_update():
+    """
+    Triggers the generation and update of the text schedule report in Telegram.
+    """
+    def run_script():
+        try:
+            print("Triggering text report update...")
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            python_exec = os.path.join(base_dir, "venv/bin/python")
+            script_path = os.path.join(base_dir, "generate_text_report.py")
+            subprocess.run([python_exec, script_path], check=True, cwd=base_dir)
+        except Exception as e:
+            print(f"Failed to trigger text report: {e}")
 
     threading.Thread(target=run_script).start()
 
