@@ -6,6 +6,11 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import requests
 import sys
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 # Import necessary functions from the daily report script to reuse logic
 from generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ
 

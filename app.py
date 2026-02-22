@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import threading
 from light_service import (
     load_state, save_state, state, state_lock, 
-    monitor_loop, get_current_time, format_duration, 
+    monitor_loop, schedule_loop, get_current_time, format_duration, 
     log_event, get_schedule_context, send_telegram, 
     get_deviation_info, get_nearest_schedule_switch,
     trigger_daily_report_update, trigger_weekly_report_update,
@@ -242,7 +242,8 @@ def get_air_quality():
 
 @app.route('/')
 def index():
-    response = make_response(render_template('index.html'))
+    ts = int(time.time())
+    response = make_response(render_template('index.html', ts=ts))
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
@@ -255,6 +256,9 @@ def robots_txt():
 
 @app.route('/api/push/<secret_key>', methods=['GET'])
 def push_api(secret_key):
+    # Reload state to ensure we have the latest status from other workers/monitor
+    load_state()
+    
     with state_lock:
         if secret_key != state.get('secret_key'):
             return jsonify({"status": "error", "msg": "invalid_key"}), 403
@@ -296,7 +300,7 @@ def push_api(secret_key):
             
             sched_on_time = get_nearest_schedule_switch(current_time, True)
             if sched_on_time:
-                msg += f"• За графіком світло мало з'явитися о: <b>{sched_on_time}</b>\n"
+                msg += f"• За графіком світло мала з'явитися о: <b>{sched_on_time}</b>\n"
             
             if sched_light_now is False: # It appeared while it should be dark
                 next_off_time = next_range.split(' - ')[1] if ' - ' in next_range else "час очікується"
@@ -332,10 +336,12 @@ def api_status():
 load_state()
 print(f"Push URL configured for key: {state.get('secret_key')}")
 
-# Start Monitor Thread if not already running
+# Start Monitor Threads
 def start_monitor():
-    thread = threading.Thread(target=monitor_loop, daemon=True)
-    thread.start()
+    # Start the monitor loop (checks for timeouts)
+    threading.Thread(target=monitor_loop, daemon=True).start()
+    # Start the schedule loop (periodically updates reports)
+    threading.Thread(target=schedule_loop, daemon=True).start()
 
 start_monitor()
 
