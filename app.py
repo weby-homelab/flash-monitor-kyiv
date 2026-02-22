@@ -309,7 +309,7 @@ def push_api(secret_key):
                 msg += f"• Наступне вимкнення: <b>{current_end}</b>"
             
             threading.Thread(target=send_telegram, args=(msg,)).start()
-            trigger_daily_report_update()
+            # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
         
         save_state()
     

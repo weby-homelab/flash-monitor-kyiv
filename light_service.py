@@ -437,17 +437,21 @@ def monitor_loop():
                     msg += f"• Очікуємо увімкнення: <b>{current_end}</b>"
 
                 threading.Thread(target=send_telegram, args=(msg,)).start()
-                trigger_daily_report_update()
+                # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
                 save_state()
 
 def schedule_loop():
     """
-    Periodically triggers report updates (every 30 mins) to keep charts fresh.
+    Periodically triggers report updates (every 10 mins) to keep charts fresh.
     """
-    print("Schedule loop started...")
+    print("Schedule loop started (10 min interval)...")
     while True:
-        time.sleep(1800) # 30 minutes
-        trigger_daily_report_update()
+        # Trigger update first, then sleep
+        try:
+            trigger_daily_report_update()
+        except:
+            pass
+        time.sleep(600) # 10 minutes
 
 # Start background threads
 threading.Thread(target=schedule_loop, daemon=True).start()
