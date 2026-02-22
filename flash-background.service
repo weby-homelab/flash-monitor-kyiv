@@ -1,0 +1,14 @@
+[Unit]
+Description=Flash Monitor Kyiv Background Services
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/geminicli/flash-monitor-kyiv
+ExecStart=/root/geminicli/flash-monitor-kyiv/venv/bin/python run_background.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

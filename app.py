@@ -332,18 +332,9 @@ def api_status():
         "timestamp": datetime.now().strftime("%H:%M:%S")
     })
 
-# Initialize State and Monitor
+# Initialize State
 load_state()
 print(f"Push URL configured for key: {state.get('secret_key')}")
-
-# Start Monitor Threads
-def start_monitor():
-    # Start the monitor loop (checks for timeouts)
-    threading.Thread(target=monitor_loop, daemon=True).start()
-    # Start the schedule loop (periodically updates reports)
-    threading.Thread(target=schedule_loop, daemon=True).start()
-
-start_monitor()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050)
