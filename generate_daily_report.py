@@ -7,6 +7,10 @@ import matplotlib.dates as mdates
 import requests
 import sys
 import shutil
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # --- Configuration ---
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")

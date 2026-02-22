@@ -10,6 +10,10 @@ from zoneinfo import ZoneInfo
 import requests
 import subprocess
 from urllib.parse import urlparse, parse_qs
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # --- Configuration ---
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -40,12 +44,13 @@ def trigger_daily_report_update():
     def run_script():
         try:
             print("Triggering daily report update...")
-            # Use local venv and scripts
-            python_exec = os.path.join(os.getcwd(), "venv/bin/python")
-            script_path = os.path.join(os.getcwd(), "generate_daily_report.py")
+            # Use absolute paths
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            python_exec = os.path.join(base_dir, "venv/bin/python")
+            script_path = os.path.join(base_dir, "generate_daily_report.py")
             
             # Run without --no-send so it updates Telegram
-            subprocess.run([python_exec, script_path], check=True)
+            subprocess.run([python_exec, script_path], check=True, cwd=base_dir)
             
             # Also trigger weekly report update
             trigger_weekly_report_update()
@@ -62,11 +67,12 @@ def trigger_weekly_report_update():
     def run_script():
         try:
             print("Triggering weekly report update...")
-            python_exec = os.path.join(os.getcwd(), "venv/bin/python")
-            script_path = os.path.join(os.getcwd(), "generate_weekly_report.py")
-            output_path = os.path.join(os.getcwd(), "static/weekly.png")
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            python_exec = os.path.join(base_dir, "venv/bin/python")
+            script_path = os.path.join(base_dir, "generate_weekly_report.py")
+            output_path = os.path.join(base_dir, "static/weekly.png")
             
-            subprocess.run([python_exec, script_path, "--output", output_path], check=True)
+            subprocess.run([python_exec, script_path, "--output", output_path], check=True, cwd=base_dir)
         except Exception as e:
             print(f"Failed to trigger weekly report: {e}")
 
@@ -379,6 +385,9 @@ def monitor_loop():
     while True:
         time.sleep(60) # Check every minute
         
+        # Reload state to sync with other workers/processes
+        load_state()
+        
         with state_lock:
             current_time = get_current_time()
             last_seen = state["last_seen"]
@@ -430,4 +439,16 @@ def monitor_loop():
                 threading.Thread(target=send_telegram, args=(msg,)).start()
                 trigger_daily_report_update()
                 save_state()
+
+def schedule_loop():
+    """
+    Periodically triggers report updates (every 30 mins) to keep charts fresh.
+    """
+    print("Schedule loop started...")
+    while True:
+        time.sleep(1800) # 30 minutes
+        trigger_daily_report_update()
+
+# Start background threads
+threading.Thread(target=schedule_loop, daemon=True).start()
 
