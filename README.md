@@ -76,33 +76,33 @@ flowchart TD
     end
 
     %% -- Network Gateway --
-    CF{{ "☁️ <b>Cloudflare Tunnel</b><br/>(Secure Entry Point)" }}
+    CF{{☁️ Cloudflare Tunnel<br/>Secure Entry Point}}
 
     %% -- Core Server --
     subgraph Server ["🚀 СЕРВЕРНИЙ КЛАСТЕР (Docker Container)"]
         direction TB
-        subgraph WebLayer ["🌐 <b>Web Service</b> (Port 5050)"]
-            Gunicorn["🦄 <b>Gunicorn</b><br/>(4 Process Workers)"]
-            Flask["🧪 <b>Flask App</b><br/>(REST API / Dashboard)"]
-            Cache["💾 <b>Thread Cache</b><br/>(TTL 60s / Locking)"]
+        subgraph WebLayer ["🌐 Web Service (Port 5050)"]
+            Gunicorn[🦄 Gunicorn<br/>4 Process Workers]
+            Flask[🧪 Flask App<br/>REST API / Dashboard]
+            Cache[💾 Thread Cache<br/>TTL 60s / Locking]
         end
 
-        subgraph EngineLayer ["⚙️ <b>Background Engine</b>"]
-            Monitor["📡 <b>Outage Detector</b><br/>(Pulse Monitor)"]
-            Scheduler["📅 <b>Task Scheduler</b><br/>(Analytics Engine)"]
+        subgraph EngineLayer ["⚙️ Background Engine"]
+            Monitor[📡 Outage Detector<br/>Pulse Monitor]
+            Scheduler[📅 Task Scheduler<br/>Analytics Engine]
         end
     end
 
     %% -- External Integrations --
     subgraph Integrations ["📡 ЗОВНІШНІ ІНТЕГРАЦІЇ"]
-        YasnoAPI("⚡ <b>Yasno/DTEK</b><br/>(Schedules)")
-        MeteoAPI("🌡️ <b>Open-Meteo</b><br/>(AQI / Weather)")
-        AlertAPI("📢 <b>alerts.in.ua</b><br/>(War Alerts)")
+        YasnoAPI(⚡ Yasno/DTEK API)
+        MeteoAPI(🌡️ Open-Meteo API)
+        AlertAPI(📢 alerts.in.ua API)
     end
 
     %% -- Infrastructure --
-    JSON[("🗄️ <b>JSON Storage</b><br/>(Shared Persistence)")]
-    Telegram(("💬 <b>Telegram API</b><br/>(Bot Gateway)"))
+    JSON[(🗄️ JSON Storage<br/>Shared Persistence)]
+    Telegram((💬 Telegram API<br/>Bot Gateway))
 
     %% -- Connections --
     User <-->|HTTPS| CF
