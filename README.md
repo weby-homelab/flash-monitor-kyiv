@@ -75,8 +75,9 @@ flowchart LR
         IoT("⚡ <b>IoT Sensors</b><br/>(Heartbeat Pulse)")
     end
 
-    %% -- 2. NETWORK --
-    Tunnel{{"☁️ <b>Cloudflare<br/>Tunnel</b>"}}
+    %% -- 2. NETWORK & ROUTING --
+    Tunnel{{"☁️ <b>Cloudflare Tunnel</b><br/>(flash.srvrs.top)"}}
+    DirectConnect{{"🌐 <b>Direct Access</b><br/>(Server IP:5050)"}}
 
     %% -- 3. COMPUTE LAYER (Docker) --
     subgraph Compute ["🚀 COMPUTE CLUSTER"]
@@ -110,10 +111,12 @@ flowchart LR
     Telegram(("💬 <b>Telegram<br/>Bot API</b>"))
 
     %% -- FLOWS --
-    User <==>|HTTPS/WSS| Tunnel
-    IoT -.->|POST /api/push| Tunnel
-    
+    User <==>|HTTPS| Tunnel
     Tunnel <==> Gunicorn
+    
+    IoT -.->|HTTP Push| DirectConnect
+    DirectConnect -.-> Gunicorn
+    
     Gunicorn <==> Flask
     
     Flask <-->|Read/Write| JSON
@@ -124,8 +127,9 @@ flowchart LR
     Scheduler --o|Report| Telegram
 
     %% -- STYLING --
-    class User,IoT client
-    class Tunnel gateway
+    class User client
+    class IoT client
+    class Tunnel,DirectConnect gateway
     class Gunicorn,Flask,Monitor,Scheduler core
     class JSON,APIs,Yasno,Meteo,Alerts infra
     class Telegram external
