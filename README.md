@@ -1,55 +1,46 @@
 # СВІТЛО⚡БЕЗПЕКА
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡БЕЗПЕКА Dashboard Preview" width="100%">
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.2.1-blue?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/Release-v1.0.0-blue?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/Python-3.10+-yellow?style=for-the-badge&logo=python" alt="Python">
   <img src="https://img.shields.io/badge/Flask-Framework-white?style=for-the-badge&logo=flask" alt="Flask">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
   <img src="https://img.shields.io/badge/Status-Stable-success?style=for-the-badge" alt="Status">
 </p>
 
 ---
 
-**Flash Monitor Kyiv** — це інтелектуальна система моніторингу енергосистеми та безпекової ситуації в Києві. Проєкт автоматизує збір даних про відключення світла, повітряні тривоги та екологічний стан, об'єднуючи їх у єдиний PWA-додаток та розумний Telegram-канал.
+**СВІТЛО⚡БЕЗПЕКА** — це уніфікована інтелектуальна екосистема для моніторингу енергопостачання та безпекової ситуації в Києві. Проєкт поєднує в собі heartbeat-моніторинг електромережі, аналітику відповідності графікам відключень, систему раннього сповіщення про тривоги та екологічний моніторинг.
 
-🔗 **Живий моніторинг:** [flash.srvrs.top](https://flash.srvrs.top/)
+🔗 **Живий дашборд:** [flash.srvrs.top](https://flash.srvrs.top/)
 
 ---
 
 ## 🚀 Ключові Особливості
 
-### 💡 Енергомоніторинг 2.0
-- **Heartbeat-технологія:** Відстеження наявності світла в реальному часі через систему пінгування.
-- **Розумні звіти:** Автоматичне порівняння фактичних відключень з офіційними графіками (Yasno/DTEK).
-- **Аналіз точності:** Розрахунок відхилень у хвилинах («Світло зникло на 5 хв раніше графіка»).
+### 💡 Розумний Енергомоніторинг
+- **Reliable Heartbeat:** Обробка сигналів від IoT-пристроїв на порту `5050` з підтримкою високого навантаження.
+- **Accuracy Tracking:** Автоматичний розрахунок точності відключень/включень відносно офіційних графіків у хвилинах.
+- **Event Timeline:** Детальна історія подій з підрахунком тривалості кожного періоду.
 
-### 🛡️ Безпека та Екологія
-- **Air Alert:** Миттєвий статус тривог для Києва та області з інтегрованою картою.
-- **AQI Monitor:** Моніторинг якості повітря (PM2.5, PM10) та радіаційного фону.
-- **Weather Insights:** Актуальна температура, вологість та напрямок вітру.
+### 🛡️ Безпека та AQI (Борщагівка)
+- **Air Alerts:** Моніторинг статусу повітряних тривог (Київ/Область) з інтегрованою живою картою.
+- **Ecological Monitor:** Дані в реальному часі про AQI, PM2.5, PM10, температуру та вологість (локація: Симиренка).
+- **Radiation Background:** Постійний контроль радіаційного фону (мкЗв/год).
 
-### 🔔 Smart Notifications
-- **Live Reports:** Telegram-повідомлення, що оновлюються динамічно протягом дня (одне повідомлення — повна історія доби).
-- **Visual Analytics:** Генерація денних та тижневих графіків «План vs Факт».
-
----
-
-## 🛠 Технологічний Стек
-
-*   **Backend:** Python 3, Flask, Gunicorn.
-*   **Data Processing:** Pandas, Matplotlib, BeautifulSoup4.
-*   **Frontend:** HTML5, CSS3 (Vanilla CSS), JavaScript.
-*   **DevOps:** Systemd, Nftables (Port Redirection), Cloudflare Tunnels.
+### 🔔 Інтелектуальні Telegram-звіти
+- **Live Graphic Report:** Денний графік «План vs Факт», що оновлюється кожні 10 хвилин у тому самому повідомленні.
+- **Smart Text Schedules:** Текстові розклади (Yasno/DTEK) оновлюються кожні 30 хвилин у період з 06:00 до 22:30. Повідомлення редагується лише за наявності реальних змін у даних.
+- **Instant Alerts:** Миттєві текстові сповіщення про зміну статусу мережі з аналізом наступних подій за графіком.
 
 ---
 
 ## 🏗 Архітектура Системи
 
-Система побудована на мікросервісній ідеології, де кожен компонент виконує свою задачу. Взаємодія між ними показана на діаграмі нижче:
+Система базується на принципі розділення обов'язків (Separation of Concerns) для забезпечення максимальної стабільності:
 
 ```mermaid
 flowchart TD
@@ -62,74 +53,70 @@ flowchart TD
     classDef notify fill:#ede7f6,stroke:#5e35b1,stroke-width:2px,color:#5e35b1
 
     %% -- Nodes --
-    subgraph Clients ["🌐 Рівень Клієнтів"]
-        User("📱 PWA Веб-додаток<br/>(Dashboard)")
-        IoT("⚡ IoT Пристрій<br/>(Heartbeat)")
+    subgraph Clients ["🌐 User Interface"]
+        User("📱 PWA Dashboard<br/>(Auto-refresh 60s)")
+        IoT("⚡ IoT Device<br/>(Push every 30s)")
     end
 
-    subgraph Backend ["🚀 Центральний Backend (Port 5050)"]
-        direction TB
-        API("🖥️ Flask API Gateway<br/>(Request Handling)")
-        Monitor("⚙️ Power Monitor Loop<br/>(Health Checks)")
-        Scheduler("📅 Task Scheduler<br/>(Periodic Reports)")
+    subgraph WebService ["🚀 Flask Web App (Port 5050)"]
+        API["🖥️ API Gateway<br/>(4 Workers / High-Load Ready)"]
+        Cache["💾 Thread-Safe Cache<br/>(TTL 60s)"]
     end
 
-    subgraph DataSources ["📡 Зовнішні Джерела Даних"]
-        Yasno("⚡ Yasno/DTEK API<br/>(Schedules)")
-        OpenMeteo("🌡️ Open-Meteo API<br/>(Weather & AQI)")
-        Alerts("📢 alerts.in.ua API<br/>(Air Alerts)")
+    subgraph BackendService ["⚙️ Background Engine"]
+        Monitor["📡 Monitor Loop<br/>(Outage Detection)"]
+        Scheduler["📅 Task Scheduler<br/>(10m Graphic / 30m Text)"]
     end
 
-    subgraph Infrastructure ["📦 Інфраструктура"]
-        JSON[("🗄️ JSON Storage<br/>(State & History)")]
-        Telegram("💬 Telegram API<br/>(Smart Updates)")
+    subgraph Infrastructure ["📦 Data & Notify"]
+        JSON[("🗄️ Storage<br/>(State/History/IDs)")]
+        Telegram("💬 Telegram API")
     end
 
     %% -- Connections --
-    User <-->|AJAX Requests| API
-    IoT -->|Port 8889 -> NAT -> 5050| API
-    
-    API <-->|Sync Data| Yasno
-    API <-->|Fetch AQI| OpenMeteo
-    API <-->|Alert Status| Alerts
-
-    API <-->|Persistence| JSON
-    Monitor <-->|Sync State| JSON
+    User <-->|GET| API
+    IoT -->|Push| API
+    API --- Cache
+    API <-->|Read/Write| JSON
+    Monitor <-->|State Sync| JSON
     Scheduler -->|Read History| JSON
-
-    Monitor -->|Smart Notify| Telegram
-    Scheduler -->|Update Charts| Telegram
-
-    %% -- Applying Classes --
+    Monitor & Scheduler -->|Notify| Telegram
+    
     class User,IoT client
-    class API core
+    class API,Cache core
     class Monitor,Scheduler logic
-    class Yasno,OpenMeteo,Alerts external
     class JSON storage
     class Telegram notify
 ```
 
 ---
 
-## ⚙️ Швидкий Старт
+## 🛠 Технологічний Стек
 
-1. **Клонування та налаштування:**
-   ```bash
-   git clone https://github.com/weby-homelab/flash-monitor-kyiv.git
-   cd flash-monitor-kyiv
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+*   **Runtime:** Python 3.10+
+*   **Web Server:** Flask, Gunicorn (Multi-worker configuration)
+*   **Graphics:** Matplotlib (Custom dark-theme renders)
+*   **PWA:** Service Worker v4 (Aggressive caching with force-update)
+*   **Security:** Systemd isolation, Cloudflare Tunneling
+
+---
+
+## ⚙️ Розгортання (Deployment)
+
+1. **Системні сервіси:**
+   Проєкт потребує запуску двох незалежних сервісів:
+   - `flash-monitor.service`: Обробка HTTP-запитів та Dashboard.
+   - `flash-background.service`: Моніторинг та оновлення звітів.
 
 2. **Налаштування `.env`:**
    ```env
-   TELEGRAM_BOT_TOKEN="your_bot_token"
-   TELEGRAM_CHANNEL_ID="your_test_channel_id"
+   TELEGRAM_BOT_TOKEN="bot_token"
+   TELEGRAM_CHANNEL_ID="channel_id"
    ```
 
 3. **Запуск:**
    ```bash
+   chmod +x start.sh
    ./start.sh
    ```
 
@@ -137,7 +124,7 @@ flowchart TD
 
 ## 📜 Ліцензія
 
-Цей проєкт розповсюджується під ліцензією **MIT**. Ви можете вільно використовувати, копіювати та модифікувати код.
+Розповсюджується під ліцензією **MIT**. 
 
 <p align="center">
   ✦ 2026 WEBy Home Lab ✦
