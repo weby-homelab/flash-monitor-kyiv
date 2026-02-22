@@ -60,72 +60,75 @@
 Система базується на принципі розділення обов'язків (Separation of Concerns) та оптимізована для роботи в контейнеризованому середовищі:
 
 ```mermaid
-flowchart TD
-    %% -- Style Definitions --
-    classDef client fill:#0ea5e9,stroke:#0284c7,stroke-width:2px,color:#fff
-    classDef webserver fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:#fff
-    classDef engine fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
-    classDef data fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
-    classDef notify fill:#f43f5e,stroke:#e11d48,stroke-width:2px,color:#fff
-    classDef storage fill:#64748b,stroke:#475569,stroke-width:2px,color:#fff
+flowchart LR
+    %% -- Global Styles --
+    classDef client fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0284c7,rx:10,ry:10
+    classDef gateway fill:#f3e8ff,stroke:#7c3aed,stroke-width:2px,color:#7c3aed,rx:5,ry:5
+    classDef core fill:#dcfce7,stroke:#059669,stroke-width:2px,color:#059669,rx:5,ry:5
+    classDef infra fill:#f1f5f9,stroke:#475569,stroke-width:2px,color:#475569,rx:5,ry:5
+    classDef external fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#db2777,rx:5,ry:5
 
-    %% -- Clients Layer --
-    subgraph Clients ["🌐 РІВЕНЬ КЛІЄНТІВ"]
-        User("📱 <b>PWA Dashboard</b><br/>(React-like UI / JS)")
-        IoT("⚡ <b>IoT Device</b><br/>(ESP32 / Router / Script)")
-    end
-
-    %% -- Network Gateway --
-    CF{{☁️ Cloudflare Tunnel<br/>Secure Entry Point}}
-
-    %% -- Core Server --
-    subgraph Server ["🚀 СЕРВЕРНИЙ КЛАСТЕР (Docker Container)"]
+    %% -- 1. ACCESS LAYER --
+    subgraph Access ["📡 ACCESS LAYER"]
         direction TB
-        subgraph WebLayer ["🌐 Web Service (Port 5050)"]
-            Gunicorn[🦄 Gunicorn<br/>4 Process Workers]
-            Flask[🧪 Flask App<br/>REST API / Dashboard]
-            Cache[💾 Thread Cache<br/>TTL 60s / Locking]
+        User("📱 <b>PWA Dashboard</b><br/>(React-like UI)")
+        IoT("⚡ <b>IoT Sensors</b><br/>(Heartbeat Pulse)")
+    end
+
+    %% -- 2. NETWORK --
+    Tunnel{{"☁️ <b>Cloudflare<br/>Tunnel</b>"}}
+
+    %% -- 3. COMPUTE LAYER (Docker) --
+    subgraph Compute ["🚀 COMPUTE CLUSTER"]
+        direction TB
+        
+        subgraph WebNode ["🌐 Web Node (Port 5050)"]
+            Gunicorn["🦄 <b>Gunicorn</b><br/>(4x Workers)"]
+            Flask["🧪 <b>Flask API</b><br/>(REST / Cache)"]
         end
 
-        subgraph EngineLayer ["⚙️ Background Engine"]
-            Monitor[📡 Outage Detector<br/>Pulse Monitor]
-            Scheduler[📅 Task Scheduler<br/>Analytics Engine]
+        subgraph WorkerNode ["⚙️ Worker Node"]
+            Monitor["❤️ <b>Health Check</b><br/>(Real-time)"]
+            Scheduler["📅 <b>Analytics</b><br/>(Cron Jobs)"]
         end
     end
 
-    %% -- External Integrations --
-    subgraph Integrations ["📡 ЗОВНІШНІ ІНТЕГРАЦІЇ"]
-        YasnoAPI(⚡ Yasno/DTEK API)
-        MeteoAPI(🌡️ Open-Meteo API)
-        AlertAPI(📢 alerts.in.ua API)
+    %% -- 4. DATA & INTEGRATION --
+    subgraph DataMesh ["📦 DATA MESH"]
+        direction TB
+        JSON[("🗄️ <b>JSON Storage</b><br/>(Persistence)")]
+        
+        subgraph APIs ["🔗 External APIs"]
+            direction LR
+            Yasno(⚡ Yasno)
+            Meteo(🌡️ Meteo)
+            Alerts(📢 Alerts)
+        end
     end
 
-    %% -- Infrastructure --
-    JSON[(🗄️ JSON Storage<br/>Shared Persistence)]
-    Telegram((💬 Telegram API<br/>Bot Gateway))
+    %% -- 5. NOTIFICATION --
+    Telegram(("💬 <b>Telegram<br/>Bot API</b>"))
 
-    %% -- Connections --
-    User <-->|HTTPS| CF
-    IoT -->|Heartbeat| CF
-    CF <--> Gunicorn
-    Gunicorn <--> Flask
-    Flask <--> Cache
+    %% -- FLOWS --
+    User <==>|HTTPS/WSS| Tunnel
+    IoT -.->|POST /api/push| Tunnel
     
-    Flask <-->|Sync State| JSON
-    Monitor <-->|Health Sync| JSON
-    Scheduler <-->|Data Analytics| JSON
+    Tunnel <==> Gunicorn
+    Gunicorn <==> Flask
+    
+    Flask <-->|Read/Write| JSON
+    Monitor & Scheduler <-->|Sync| JSON
+    
+    Flask --o|Fetch Data| APIs
+    Monitor --o|Alert| Telegram
+    Scheduler --o|Report| Telegram
 
-    Flask -->|Fetch API| Integrations
-    Monitor -->|Instant Alert| Telegram
-    Scheduler -->|Update Reports| Telegram
-
-    %% -- Class Application --
+    %% -- STYLING --
     class User,IoT client
-    class CF,Gunicorn,Flask,Cache webserver
-    class Monitor,Scheduler engine
-    class YasnoAPI,MeteoAPI,AlertAPI data
-    class Telegram notify
-    class JSON storage
+    class Tunnel gateway
+    class Gunicorn,Flask,Monitor,Scheduler core
+    class JSON,APIs,Yasno,Meteo,Alerts infra
+    class Telegram external
 ```
 
 ---
