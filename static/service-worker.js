@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flash-monitor-v1';
+const CACHE_NAME = 'flash-monitor-v2';
 const ASSETS = [
   '/',
   '/static/icon.svg',
