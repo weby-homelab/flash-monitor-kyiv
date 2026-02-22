@@ -24,16 +24,23 @@ LIGHT_MONITOR_URL = "http://127.0.0.1:8889/"
 
 # --- Caching ---
 CACHE = {}
-CACHE_TTL = 30
+CACHE_TTL = 60
+cache_lock = threading.Lock()
 
 def cached_fetch(key, func):
-    now = time.time()
-    if key in CACHE and now - CACHE[key]['time'] < CACHE_TTL:
-        return CACHE[key]['data']
-    
-    data = func()
-    CACHE[key] = {'time': now, 'data': data}
-    return data
+    with cache_lock:
+        now = time.time()
+        if key in CACHE and now - CACHE[key]['time'] < CACHE_TTL:
+            return CACHE[key]['data']
+        
+        # If we are here, we need to update
+        try:
+            data = func()
+            CACHE[key] = {'time': now, 'data': data}
+            return data
+        except Exception as e:
+            print(f"Cache update error for {key}: {e}")
+            return CACHE.get(key, {}).get('data') # Return stale data on error
 
 # --- PWA Routes ---
 @app.route('/manifest.json')
