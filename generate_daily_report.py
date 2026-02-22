@@ -442,13 +442,13 @@ if __name__ == "__main__":
     if "--no-send" not in sys.argv:
         # Check if we can update an existing message
         last_id = get_last_report_id(target_date)
-        sent = False
         if last_id:
             print(f"Updating existing report (ID: {last_id})...")
             sent = update_telegram_photo(last_id, filename, caption)
-        
-        if not sent:
-            print("Sending new report...")
+            if not sent:
+                print("Update failed, but NOT sending a new message to avoid spam.")
+        else:
+            print("No report ID for today. Sending new report...")
             send_telegram_photo(filename, caption, target_date)
     else:
         print("Telegram sending skipped (--no-send).")
