@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>СВІТЛО ⚡БЕЗПЕКА (Київ) — Моніторинг світла та безпеки</title>
+    <title>СВІТЛО⚡БЕЗПЕКА (Київ) — Моніторинг світла та безпеки</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Моніторинг світла, повітряних тривог, радіаційного фону та якості повітря у Києві. Дані в реальному часі.">
     
@@ -103,7 +103,7 @@
     <div id="toast-container"></div>
     <div class="container">
         <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            СВІТЛО ⚡БЕЗПЕКА
+            СВІТЛО⚡БЕЗПЕКА
             <span id="audio-toggle" style="cursor:pointer; font-size:24px; opacity:0.5;" title="Увімкнути звукові сповіщення">🔕</span>
         </h1>
 
@@ -117,6 +117,29 @@
         <!-- Alerts Map Iframe -->
         <div class="card" style="padding: 0; overflow: hidden; height: 400px;">
             <iframe src="https://alerts.in.ua/?minimal=true" width="100%" height="100%" frameborder="0" style="border:0;"></iframe>
+        </div>
+
+        <!-- Air Quality (Moved up) -->
+        <div class="card">
+            <div class="title" id="aqi-title">Якість повітря</div>
+            <div class="value" id="aqi-val">--</div>
+            <div class="status-text" id="aqi-status">Завантаження...</div>
+            <div class="stats-grid">
+                <div class="stats-item">PM2.5: <b id="aqi-pm25">--</b></div>
+                <div class="stats-item">PM10: <b id="aqi-pm10">--</b></div>
+                <div class="stats-item">🌡️ <b id="aqi-temp">--</b> °C</div>
+                <div class="stats-item">💧 <b id="aqi-hum">--</b> %</div>
+                <div class="stats-item">💨 <b id="aqi-wind">--</b></div>
+            </div>
+        </div>
+
+        <!-- Radiation background (Moved up) -->
+        <div class="card">
+            <div class="title">Радіаційний фон</div>
+            <div class="value" style="color: #4fc3f7;">
+                <span id="rad-val">--</span> <span style="font-size: 16px; color: #888;">мкЗв/год</span>
+            </div>
+            <div class="status-text" style="color: #4caf50;">В нормі</div>
         </div>
 
         <!-- Light Status -->
@@ -138,30 +161,6 @@
             <img src="/static/weekly.png?v={{ ts }}" id="weekly-chart" class="chart" alt="Тижневий графік">
         </div>
 
-        <!-- Air Quality -->
-        <div class="card">
-            <div class="title" id="aqi-title">Якість повітря</div>
-            <div class="value" id="aqi-val">--</div>
-            <div class="status-text" id="aqi-status">Завантаження...</div>
-            <div class="stats-grid">
-                <div class="stats-item">PM2.5: <b id="aqi-pm25">--</b></div>
-                <div class="stats-item">PM10: <b id="aqi-pm10">--</b></div>
-                <div class="stats-item">🌡️ <b id="aqi-temp">--</b> °C</div>
-                <div class="stats-item">💧 <b id="aqi-hum">--</b> %</div>
-                <div class="stats-item">💨 <b id="aqi-wind">--</b></div>
-            </div>
-        </div>
-
-
-        <!-- Radiation & Weekly -->
-        <div class="card">
-            <div class="title">Радіаційний фон</div>
-            <div class="value" style="color: #4fc3f7;">
-                <span id="rad-val">--</span> <span style="font-size: 16px; color: #888;">мкЗв/год</span>
-            </div>
-            <div class="status-text" style="color: #4caf50;">В нормі</div>
-        </div>
-
         <!-- Recent Events -->
         <div class="card">
             <div class="title">Останні події</div>
@@ -174,7 +173,7 @@
 
         <div class="footer">
             Оновлено: <span id="last-updated">--:--:--</span><br>
-            © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv" target="_blank">СВІТЛО ⚡БЕЗПЕКА</a>
+            © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv" target="_blank">СВІТЛО⚡БЕЗПЕКА</a>
         </div>
     </div>
 
@@ -280,7 +279,7 @@
                     if (currentStatus === 'on') {
                         lightVal.innerHTML = '<span style="color: #FFD700; text-transform: uppercase;">💡 Світло є</span>';
                     } else if (currentStatus === 'off') {
-                        lightVal.innerHTML = '<span style="color: #9E9E9E; text-transform: uppercase;">✖️ Світло зникло</span>';
+                        lightVal.innerHTML = '<span style="color: #FFFFFF; text-transform: uppercase;">✖️ Світло зникло</span>';
                     }
                     document.getElementById('light-status').innerHTML = data.light_event;
 
@@ -344,7 +343,7 @@
                         const aqiVal = document.getElementById('aqi-val');
                         aqiVal.innerText = val;
                         document.getElementById('aqi-status').innerText = data.aqi.text;
-                        document.getElementById('aqi-title').innerText = "Повітря: " + data.aqi.location;
+                        document.getElementById('aqi-title').innerHTML = "Якість повітря:<br><span style='font-size: 0.8em; font-weight: normal; color: #888;'>" + data.aqi.location + "</span>";
                         document.getElementById('aqi-pm25').innerText = data.aqi.pm25;
                         document.getElementById('aqi-pm10').innerText = data.aqi.pm10;
                         document.getElementById('aqi-temp').innerText = data.aqi.temp;
