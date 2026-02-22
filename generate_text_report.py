@@ -3,7 +3,7 @@ import os
 import datetime
 from zoneinfo import ZoneInfo
 import requests
-import sys
+import hashlib
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -33,24 +33,12 @@ def get_intervals(slots):
     intervals = []
     current_state = slots[0]
     start_idx = 0
-    
     for i in range(1, 48):
         if slots[i] != current_state:
-            intervals.append({
-                "state": current_state,
-                "start": format_slot_time(start_idx),
-                "end": format_slot_time(i),
-                "duration": (i - start_idx) * 0.5
-            })
+            intervals.append({"state": current_state, "start": format_slot_time(start_idx), "end": format_slot_time(i), "duration": (i - start_idx) * 0.5})
             start_idx = i
             current_state = slots[i]
-            
-    intervals.append({
-        "state": current_state,
-        "start": format_slot_time(start_idx),
-        "end": "24:00",
-        "duration": (48 - start_idx) * 0.5
-    })
+    intervals.append({"state": current_state, "start": format_slot_time(start_idx), "end": "24:00", "duration": (48 - start_idx) * 0.5})
     return intervals
 
 def format_duration(hours):
@@ -61,99 +49,102 @@ def generate_text_for_day(date_str, source_data, cfg):
     day_data = source_data.get(date_str)
     if not day_data or not day_data.get('slots'):
         return f"{cfg['ui']['icons']['pending']} {cfg['ui']['text']['pending']}"
-    
     intervals = get_intervals(day_data['slots'])
     lines = []
-    total_on = 0
-    total_off = 0
-    
+    total_on, total_off = 0, 0
     for inv in intervals:
         icon = cfg['ui']['icons']['on'] if inv['state'] else cfg['ui']['icons']['off']
-        duration_str = f"({format_duration(inv['duration'])} год.)"
-        lines.append(f"{icon} {inv['start']} - {inv['end']} … {duration_str}")
+        lines.append(f"{icon} {inv['start']} - {inv['end']} … ({format_duration(inv['duration'])} год.)")
         if inv['state']: total_on += inv['duration']
         else: total_off += inv['duration']
-        
-    lines.append("---")
-    lines.append(f"{cfg['ui']['icons']['on']} Світло є: {format_duration(total_on)} год.")
-    lines.append(f"{cfg['ui']['icons']['off']} Світла нема: {format_duration(total_off)} год.")
-    lines.append("---")
-    
+    lines.append("---\n" + f"{cfg['ui']['icons']['on']} Світло є: {format_duration(total_on)} год.\n" + f"{cfg['ui']['icons']['off']} Світла нема: {format_duration(total_off)} год.\n---")
     return "\n".join(lines)
 
-def generate_full_report():
-    cfg = load_config()
-    if not os.path.exists(SCHEDULE_FILE): return "Скедуль-файл не знайдено."
+def get_report_state():
+    if os.path.exists(TEXT_REPORT_ID_FILE):
+        try:
+            with open(TEXT_REPORT_ID_FILE, "r") as f:
+                return json.load(f)
+        except: pass
+    return {}
+
+def save_report_state(msg_id, date_str, content_hash):
+    with open(TEXT_REPORT_ID_FILE, "w") as f:
+        json.dump({"message_id": msg_id, "date": date_str, "hash": content_hash}, f)
+
+def main():
+    now = datetime.datetime.now(KYIV_TZ)
     
+    # 1. Time Restriction (06:00 - 22:30)
+    current_time = now.time()
+    if not (datetime.time(6, 0) <= current_time <= datetime.time(22, 30)):
+        print(f"Skipping text report: current time {now.strftime('%H:%M')} is outside 06:00-22:30")
+        return
+
+    cfg = load_config()
+    if not os.path.exists(SCHEDULE_FILE): return
     with open(SCHEDULE_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
         
     group = cfg['settings']['groups'][0]
-    header = cfg['ui']['format']['header_template'].format(group=group.replace("GPV36.1", "36.1"))
-    
-    now = datetime.datetime.now(KYIV_TZ)
+    header = cfg['ui']['format']['header_template'].format(group=group.replace("GPV", ""))
     today_str = now.strftime("%Y-%m-%d")
     tomorrow_str = (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
     
     report_sections = []
-    
+    # Build core content for hash comparison (without footer time)
     for d_str in [today_str, tomorrow_str]:
         dt = datetime.datetime.strptime(d_str, "%Y-%m-%d")
         day_title = f"{cfg['ui']['icons']['calendar']}  {dt.strftime('%d.%m')} ({DAYS_UA[dt.weekday()]})"
-        
-        sources_present = []
-        source_texts = {}
-        
+        source_texts = []
         for s_key in ['github', 'yasno']:
             s_data = data.get(s_key, {}).get(group, {})
             if d_str in s_data and s_data[d_str].get('slots'):
-                txt = generate_text_for_day(d_str, s_data, cfg)
-                source_texts[s_key] = txt
-                sources_present.append(s_key)
+                source_texts.append((cfg['sources'][s_key]['name'], generate_text_for_day(d_str, s_data, cfg)))
         
-        if not sources_present:
+        if not source_texts:
             report_sections.append(f"{day_title}:\n\n{cfg['ui']['icons']['pending']} {cfg['ui']['text']['pending']}")
-            continue
-
-        if len(sources_present) == 2 and source_texts['github'] == source_texts['yasno']:
-            combined_names = f"[{cfg['sources']['github']['name']}, {cfg['sources']['yasno']['name']}]"
-            report_sections.append(f"{day_title} {combined_names}:\n\n{source_texts['github']}")
+        elif len(source_texts) == 2 and source_texts[0][1] == source_texts[1][1]:
+            report_sections.append(f"{day_title} [{source_texts[0][0]}, {source_texts[1][0]}]:\n\n{source_texts[0][1]}")
         else:
-            for i, s_key in enumerate(sources_present):
-                s_name = f"[{cfg['sources'][s_key]['name']}]"
+            for i, (name, txt) in enumerate(source_texts):
                 sep = f"\n{cfg['ui']['format']['separator_source']}\n" if i > 0 else ""
-                report_sections.append(f"{sep}{day_title} {s_name}:\n\n{source_texts[s_key]}")
+                report_sections.append(f"{sep}{day_title} [{name}]:\n\n{txt}")
 
-    footer = f"{cfg['ui']['icons']['clock']} {cfg['ui']['text']['updated']}: {now.strftime('%d.%m.%Y %H:%M')} (Київ)"
-    day_sep = f"\n{cfg['ui']['format']['separator_day']}\n"
-    return f"{header}\n\n" + day_sep.join(report_sections) + f"\n{footer}"
+    core_content = "\n".join(report_sections)
+    content_hash = hashlib.md5(core_content.encode()).hexdigest()
+    
+    footer = f"\n{cfg['ui']['icons']['clock']} {cfg['ui']['text']['updated']}: {now.strftime('%d.%m.%Y %H:%M')} (Київ)"
+    full_text = f"{header}\n\n{core_content}\n{footer}"
+    
+    state = get_report_state()
+    last_id = state.get("message_id")
+    last_date = state.get("date")
+    last_hash = state.get("hash")
 
-def get_last_msg_id():
-    if os.path.exists(TEXT_REPORT_ID_FILE):
-        try:
-            with open(TEXT_REPORT_ID_FILE, "r") as f:
-                return json.load(f).get("message_id")
-        except: return None
-    return None
-
-def save_msg_id(msg_id):
-    with open(TEXT_REPORT_ID_FILE, "w") as f:
-        json.dump({"message_id": msg_id}, f)
-
-def send_to_telegram(text):
-    last_id = get_last_msg_id()
-    if last_id:
+    # 2. Logic: One day one graph, edit only on change
+    if last_id and last_date == today_str:
+        if last_hash == content_hash:
+            print("No changes in schedule data. Skipping edit.")
+            return
+        
+        # Data changed, try to edit
         url = f"https://api.telegram.org/bot{TOKEN}/editMessageText"
-        payload = {"chat_id": CHAT_ID, "message_id": last_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
+        payload = {"chat_id": CHAT_ID, "message_id": last_id, "text": full_text, "parse_mode": "HTML", "disable_web_page_preview": True}
         r = requests.post(url, json=payload)
-        if r.status_code == 200: return
-            
+        if r.status_code == 200:
+            save_report_state(last_id, today_str, content_hash)
+            print("Text report updated (data changed).")
+            return
+
+    # 3. Send new message (new day or failed edit)
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
+    payload = {"chat_id": CHAT_ID, "text": full_text, "parse_mode": "HTML", "disable_web_page_preview": True}
     r = requests.post(url, json=payload)
     if r.status_code == 200:
-        save_msg_id(r.json()['result']['message_id'])
+        new_id = r.json()['result']['message_id']
+        save_report_state(new_id, today_str, content_hash)
+        print("New daily text report sent.")
 
 if __name__ == "__main__":
-    report_text = generate_full_report()
-    send_to_telegram(report_text)
+    main()
