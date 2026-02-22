@@ -1,7 +1,7 @@
 # ⚡️ Flash Monitor Kyiv
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docs/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
 </p>
 
 <p align="center">
