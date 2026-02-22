@@ -1,4 +1,4 @@
-# ⚡️ Flash Monitor Kyiv
+# СВІТЛО ⚡БЕЗПЕКА
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
