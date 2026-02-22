@@ -55,8 +55,7 @@ def trigger_daily_report_update():
             # Also trigger weekly report update
             trigger_weekly_report_update()
             
-            # Trigger text report update
-            trigger_text_report_update()
+            # Trigger text report update - REMOVED, now handled in schedule_loop
             
         except Exception as e:
             print(f"Failed to trigger daily report: {e}")
@@ -461,15 +460,25 @@ def monitor_loop():
 
 def schedule_loop():
     """
-    Periodically triggers report updates (every 10 mins) to keep charts fresh.
+    Periodically triggers report updates to keep charts and texts fresh.
+    - Daily Image: every 10 mins
+    - Text Report: every 30 mins (handled inside main or by counter)
     """
-    print("Schedule loop started (10 min interval)...")
+    print("Schedule loop started (10 min base interval)...")
+    counter = 0
     while True:
-        # Trigger update first, then sleep
+        # 1. Trigger Daily Image Update (every 10 mins)
         try:
             trigger_daily_report_update()
-        except:
-            pass
+        except: pass
+        
+        # 2. Trigger Text Report Update (every 30 mins)
+        if counter % 3 == 0:
+            try:
+                trigger_text_report_update()
+            except: pass
+            
+        counter += 1
         time.sleep(600) # 10 minutes
 
 # Start background threads
