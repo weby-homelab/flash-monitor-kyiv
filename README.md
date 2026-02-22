@@ -57,42 +57,75 @@
 
 ## 🏗 Архітектура Системи
 
+Система базується на принципі розділення обов'язків (Separation of Concerns) та оптимізована для роботи в контейнеризованому середовищі:
+
 ```mermaid
 flowchart TD
     %% -- Style Definitions --
-    classDef client fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b
-    classDef core fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,color:#616161
-    classDef logic fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#2e7d32
-    classDef external fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#c2185b
-    classDef storage fill:#efebe9,stroke:#4e342e,stroke-width:2px,color:#4e342e
-    classDef notify fill:#ede7f6,stroke:#5e35b1,stroke-width:2px,color:#5e35b1
+    classDef client fill:#0ea5e9,stroke:#0284c7,stroke-width:2px,color:#fff
+    classDef webserver fill:#8b5cf6,stroke:#7c3aed,stroke-width:2px,color:#fff
+    classDef engine fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    classDef data fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
+    classDef notify fill:#f43f5e,stroke:#e11d48,stroke-width:2px,color:#fff
+    classDef storage fill:#64748b,stroke:#475569,stroke-width:2px,color:#fff
 
-    subgraph Clients ["🌐 UI & IoT"]
-        User("📱 PWA Dashboard<br/>(Refresh 60s)")
-        IoT("⚡ IoT Device<br/>(Push 30s)")
+    %% -- Clients Layer --
+    subgraph Clients ["🌐 РІВЕНЬ КЛІЄНТІВ"]
+        User("📱 <b>PWA Dashboard</b><br/>(React-like UI / JS)")
+        IoT("⚡ <b>IoT Device</b><br/>(ESP32 / Router / Script)")
     end
 
-    subgraph Server ["🚀 Docker Container"]
-        API["🖥️ Flask API Gateway<br/>(High-Load Ready)"]
-        Monitor["⚙️ Background Engine<br/>(Monitor & Scheduler)"]
+    %% -- Network Gateway --
+    CF{{ "☁️ <b>Cloudflare Tunnel</b><br/>(Secure Entry Point)" }}
+
+    %% -- Core Server --
+    subgraph Server ["🚀 СЕРВЕРНИЙ КЛАСТЕР (Docker Container)"]
+        direction TB
+        subgraph WebLayer ["🌐 <b>Web Service</b> (Port 5050)"]
+            Gunicorn["🦄 <b>Gunicorn</b><br/>(4 Process Workers)"]
+            Flask["🧪 <b>Flask App</b><br/>(REST API / Dashboard)"]
+            Cache["💾 <b>Thread Cache</b><br/>(TTL 60s / Locking)"]
+        end
+
+        subgraph EngineLayer ["⚙️ <b>Background Engine</b>"]
+            Monitor["📡 <b>Outage Detector</b><br/>(Pulse Monitor)"]
+            Scheduler["📅 <b>Task Scheduler</b><br/>(Analytics Engine)"]
+        end
     end
 
-    subgraph Infrastructure ["📦 Data & Notify"]
-        JSON[("🗄️ JSON Storage<br/>(Persistence)")]
-        Telegram("💬 Telegram API")
+    %% -- External Integrations --
+    subgraph Integrations ["📡 ЗОВНІШНІ ІНТЕГРАЦІЇ"]
+        YasnoAPI("⚡ <b>Yasno/DTEK</b><br/>(Schedules)")
+        MeteoAPI("🌡️ <b>Open-Meteo</b><br/>(AQI / Weather)")
+        AlertAPI("📢 <b>alerts.in.ua</b><br/>(War Alerts)")
     end
 
-    User <--> API
-    IoT --> API
-    API <--> JSON
-    Monitor <--> JSON
-    Monitor --> Telegram
+    %% -- Infrastructure --
+    JSON[("🗄️ <b>JSON Storage</b><br/>(Shared Persistence)")]
+    Telegram(("💬 <b>Telegram API</b><br/>(Bot Gateway)"))
+
+    %% -- Connections --
+    User <-->|HTTPS| CF
+    IoT -->|Heartbeat| CF
+    CF <--> Gunicorn
+    Gunicorn <--> Flask
+    Flask <--> Cache
     
+    Flask <-->|Sync State| JSON
+    Monitor <-->|Health Sync| JSON
+    Scheduler <-->|Data Analytics| JSON
+
+    Flask -->|Fetch API| Integrations
+    Monitor -->|Instant Alert| Telegram
+    Scheduler -->|Update Reports| Telegram
+
+    %% -- Class Application --
     class User,IoT client
-    class API core
-    class Monitor logic
-    class JSON storage
+    class CF,Gunicorn,Flask,Cache webserver
+    class Monitor,Scheduler engine
+    class YasnoAPI,MeteoAPI,AlertAPI data
     class Telegram notify
+    class JSON storage
 ```
 
 ---
