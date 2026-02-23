@@ -127,6 +127,6 @@ DATA_DIR=.
 Розповсюджується під ліцензією **MIT**.
 
 <p align="center">
-  ✦ 2026 WEBy Home Lab ✦<br>
-  <i>Автоматизуй усе, що робиш двічі. Монітор усе, що має значення.</i>
+  © 2026 Weby Homelab — infrastructure that doesn’t give up.<br>
+  Made with ❤️ in Kyiv under air raid sirens and blackouts...
 </p>

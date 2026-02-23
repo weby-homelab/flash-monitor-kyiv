@@ -100,4 +100,5 @@ void loop() {
 | Оновлення | `docker compose pull` | `git pull && pip install -r ...` |
 
 ---
-**WEBy Home Lab** — *Ми робимо складне простим.*
+© 2026 Weby Homelab — infrastructure that doesn’t give up.  
+Made with ❤️ in Kyiv under air raid sirens and blackouts...
