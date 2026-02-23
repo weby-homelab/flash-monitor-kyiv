@@ -12,6 +12,9 @@ services:
       - .env
     environment:
       - DATA_DIR=/app/data
+      - SCHEDULE_API_URL=http://host.docker.internal:8889
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5050/api/status"]
       interval: 30s
@@ -30,3 +33,6 @@ services:
       - .env
     environment:
       - DATA_DIR=/app/data
+      - SCHEDULE_API_URL=http://host.docker.internal:8889
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
