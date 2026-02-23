@@ -13,12 +13,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- Configuration ---
+DATA_DIR = os.environ.get("DATA_DIR", ".")
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
-EVENT_LOG_FILE = "event_log.json"
-SCHEDULE_FILE = "last_schedules.json"
-HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schedule_history.json")
-REPORT_ID_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "daily_report_id.json")
+EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
+SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
+HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
+REPORT_ID_FILE = os.path.join(DATA_DIR, "daily_report_id.json")
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
 
 def load_events():
@@ -402,7 +403,7 @@ if __name__ == "__main__":
     filename, t_up, t_down = generate_chart(target_date, intervals, sched_intervals)
     
     # Save copy for Web Dashboard
-    web_dir = "static"
+    web_dir = os.path.join(DATA_DIR, "static")
     if not os.path.exists(web_dir): os.makedirs(web_dir)
     shutil.copy(filename, os.path.join(web_dir, "chart.png"))
     

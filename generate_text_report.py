@@ -10,11 +10,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- Configuration ---
+DATA_DIR = os.environ.get("DATA_DIR", ".")
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
-CONFIG_FILE = "config.json"
-SCHEDULE_FILE = "last_schedules.json"
-TEXT_REPORT_ID_FILE = "text_report_id.json"
+CONFIG_FILE = "config.json" # Config usually stays with code
+SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
+TEXT_REPORT_ID_FILE = os.path.join(DATA_DIR, "text_report_id.json")
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
 
 DAYS_UA = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
