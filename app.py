@@ -19,8 +19,13 @@ from light_service import (
 app = Flask(__name__)
 
 # --- Configuration ---
+DATA_DIR = os.environ.get("DATA_DIR", ".")
 ALERTS_API_URL = "https://ubilling.net.ua/aerialalerts/"
 LIGHT_MONITOR_URL = "http://127.0.0.1:8889/"
+
+# --- Paths ---
+LIGHT_STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
+EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 
 # --- Caching ---
 CACHE = {}
@@ -53,6 +58,10 @@ def service_worker():
 
 @app.route('/static/<path:filename>')
 def serve_static(filename):
+    # Try data dir first (for generated charts), then code dir
+    data_static = os.path.join(DATA_DIR, 'static')
+    if os.path.exists(os.path.join(data_static, filename)):
+        return send_from_directory(data_static, filename)
     return send_from_directory('static', filename)
 
 def get_air_raid_alert():
