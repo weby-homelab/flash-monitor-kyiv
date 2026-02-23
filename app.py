@@ -60,9 +60,20 @@ def service_worker():
 def serve_static(filename):
     # Try data dir first (for generated charts), then code dir
     data_static = os.path.join(DATA_DIR, 'static')
-    if os.path.exists(os.path.join(data_static, filename)):
-        return send_from_directory(data_static, filename)
-    return send_from_directory('static', filename)
+    full_path = os.path.join(data_static, filename)
+    
+    if os.path.exists(full_path):
+        response = make_response(send_from_directory(data_static, filename))
+    else:
+        response = make_response(send_from_directory('static', filename))
+    
+    # Disable caching for images to ensure they refresh in PWA/Mobile
+    if filename.endswith('.png'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    
+    return response
 
 def get_air_raid_alert():
     try:
