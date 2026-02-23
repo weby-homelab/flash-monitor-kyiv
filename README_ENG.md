@@ -44,5 +44,6 @@ It is highly recommended to use your **HTTPS domain address** (e.g., via Cloudfl
 MIT License.
 
 <p align="center">
-  ✦ 2026 WEBy Home Lab ✦
+  © 2026 Weby Homelab<br>
+  Built to survive 12h+ blackouts & grid attacks since 2022
 </p>
