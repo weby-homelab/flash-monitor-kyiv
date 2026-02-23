@@ -64,7 +64,7 @@ def trigger_daily_report_update():
 
     threading.Thread(target=run_script).start()
 
-def trigger_text_report_update():
+def trigger_text_report_update(force=False):
     """
     Triggers the generation and update of the text schedule report in Telegram.
     """
@@ -74,7 +74,10 @@ def trigger_text_report_update():
             base_dir = os.path.dirname(os.path.abspath(__file__))
             python_exec = os.path.join(base_dir, "venv/bin/python")
             script_path = os.path.join(base_dir, "generate_text_report.py")
-            subprocess.run([python_exec, script_path], check=True, cwd=base_dir)
+            cmd = [python_exec, script_path]
+            if force:
+                cmd.append("--force")
+            subprocess.run(cmd, check=True, cwd=base_dir)
         except Exception as e:
             print(f"Failed to trigger text report: {e}")
 
@@ -460,53 +463,42 @@ def monitor_loop():
                 # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
                 save_state()
 
-def sync_schedules():
-    """
-    Downloads schedule files from the primary project (light-monitor-kyiv) via HTTP.
-    This removes the need for local symlinks and enables Docker deployment.
-    """
-    try:
-        urls = {
-            SCHEDULE_FILE: f"{SCHEDULE_API_URL}/last_schedules.json",
-            HISTORY_FILE: f"{SCHEDULE_API_URL}/schedule_history.json"
-        }
-        for local_file, url in urls.items():
-            r = requests.get(url, timeout=10)
-            if r.status_code == 200:
-                with open(local_file, "wb") as f:
-                    f.write(r.content)
-    except Exception as e:
-        print(f"Failed to sync schedules from API: {e}")
-
 def schedule_loop():
     """
     Periodically triggers report updates to keep charts and texts fresh.
-    - Sync Schedules: every 10 mins
+    - Fetch & Parse Data + Text Report: every 30 mins
     - Daily Image: every 10 mins
-    - Text Report: every 30 mins (handled inside main or by counter)
     - Weekly Telegram: Monday 00:15
+    - Morning Text Force: Daily 06:00
     """
     print("Schedule loop started (10 min base interval)...")
     counter = 0
     weekly_sent_date = None
+    morning_sent_date = None
     
     while True:
-        # 0. Sync schedules from external API
-        sync_schedules()
-        
+        now = datetime.datetime.now(KYIV_TZ)
+        today_str = now.strftime("%Y-%m-%d")
+
         # 1. Trigger Daily Image Update (every 10 mins)
         try:
             trigger_daily_report_update()
         except: pass
         
-        # 2. Trigger Text Report Update (every 30 mins)
-        if counter % 3 == 0:
+        # 2. Trigger Morning Forced Text Report (Daily ~06:00)
+        if now.hour == 6 and now.minute < 15 and morning_sent_date != today_str:
             try:
-                trigger_text_report_update()
+                print("Triggering morning forced text report...")
+                trigger_text_report_update(force=True)
+                morning_sent_date = today_str
+            except: pass
+        # 3. Trigger Text Report Update (every 30 mins)
+        elif counter % 3 == 0:
+            try:
+                trigger_text_report_update(force=False)
             except: pass
             
-        # 3. Trigger Weekly Telegram Report (Monday around 00:10-00:20)
-        now = datetime.datetime.now(KYIV_TZ)
+        # 4. Trigger Weekly Telegram Report (Monday around 00:10-00:20)
         if now.weekday() == 0 and now.hour == 0 and 10 <= now.minute < 20:
             today_str = now.strftime("%Y-%m-%d")
             if weekly_sent_date != today_str:
