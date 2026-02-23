@@ -1,12 +1,12 @@
-# FLASH MONITOR KYIV
+# FLASH MONITOR KYIV (v1.2 Classic — Bare-Metal Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/classic/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
 </p>
 
-**Autonomous power monitoring and security system for Kyiv.**
+**Autonomous bare-metal power monitoring and security system for Kyiv.**
 
-The project provides full control over the energy situation by analyzing real network data and official Yasno/DTEK schedules. All calculations and parsing happen locally, ensuring independence and speed.
+The **Classic** branch is specifically designed for direct installation on a Linux server or PC. It is a highly reliable implementation that runs as a system service, providing full control over data without extra virtualization layers.
 
 🔗 **Live Monitoring:** [flash.srvrs.top](https://flash.srvrs.top/)
 
@@ -15,10 +15,10 @@ The project provides full control over the energy situation by analyzing real ne
 ## 🚀 Key Features
 
 ### 💡 Smart Power Monitoring
-- **Heartbeat Tracking:** Real-time power tracking via IoT signals.
-- **"Plan vs Fact" Analytics:** Automatic comparison of real outages with scheduled plans.
-- **Schedule Accuracy:** The system calculates deviations (delay or early power restoration) for each event.
-- **Visualization:** Generation of signature style daily and weekly charts.
+- **Heartbeat Tracking:** Real-time power tracking via IoT signals (Push API).
+- **"Plan vs Fact" Analytics:** Automatic comparison of real outages with scheduled plans on the dashboard.
+- **Schedule Accuracy:** Deviation calculation (delay or early power restoration) for each event.
+- **Visualization:** Generation of daily and weekly charts in a dark theme.
 
 ### 🛡️ Security & Environment (Borshchahivka)
 - **Air Alerts:** Instant status and integrated live map of Kyiv and the region.
@@ -28,49 +28,39 @@ The project provides full control over the energy situation by analyzing real ne
 ### 🔔 Telegram Notifications
 - **Intelligent Reports:** Dynamically updated text schedules.
 - **Merge Logic:** Smart merging of power intervals crossing midnight.
-- **Live Reports:** Daily chart reports that update within a single message.
-
----
-
-## 🐳 Quick Start with Docker
-
-The project is fully dockerized for stable operation on any server.
-
-**Official Image:** `webyhomelab/flash-monitor:latest`
-
-### Docker Compose
-```yaml
-services:
-  web:
-    image: webyhomelab/flash-monitor:latest
-    container_name: flash-monitor-web
-    ports:
-      - "5050:5050"
-    volumes:
-      - ./data:/app/data
-    environment:
-      - TELEGRAM_BOT_TOKEN=your_token
-      - TELEGRAM_CHANNEL_ID=your_channel_id
-      - DATA_DIR=/app/data
-
-  worker:
-    image: webyhomelab/flash-monitor:latest
-    container_name: flash-monitor-worker
-    command: python run_background.py
-    volumes:
-      - ./data:/app/data
-    environment:
-      - TELEGRAM_BOT_TOKEN=your_token
-      - TELEGRAM_CHANNEL_ID=your_channel_id
-      - DATA_DIR=/app/data
-```
+- **Automation:** Forced morning reports and instant status change notifications.
 
 ---
 
 ## 🛠 Tech Stack
 - **Backend:** Python 3.11, Flask, Gunicorn.
 - **Analytics:** Matplotlib (chart rendering), BeautifulSoup4 (local parsing).
-- **Infra:** Docker, PWA (Progressive Web App).
+- **Service Management:** Systemd (Ubuntu/Debian).
+
+---
+
+## 📦 Installation & Setup (Bare-Metal)
+
+### 1. Clone and Setup:
+```bash
+git clone https://github.com/weby-homelab/flash-monitor-kyiv.git
+cd flash-monitor-kyiv
+git checkout classic
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Configure Environment:
+Create a `.env` file and specify your credentials:
+```env
+TELEGRAM_BOT_TOKEN=your_token
+TELEGRAM_CHANNEL_ID=your_chat_id
+DATA_DIR=.
+```
+
+### 3. System Services Setup:
+Create configuration files in `/etc/systemd/system/` for `flash-monitor.service` and `flash-background.service`, ensuring the correct paths to `venv` and your project.
 
 ---
 
