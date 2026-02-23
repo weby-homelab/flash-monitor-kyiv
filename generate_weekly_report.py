@@ -15,10 +15,11 @@ load_dotenv()
 from generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ
 
 # --- Configuration ---
+DATA_DIR = os.environ.get("DATA_DIR", ".")
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
-EVENT_LOG_FILE = "event_log.json"
-HISTORY_FILE = "schedule_history.json"
+EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
+HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 
 def get_schedule_slots(date_obj):
     try:

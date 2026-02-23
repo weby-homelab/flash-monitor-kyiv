@@ -1,0 +1,32 @@
+services:
+  # 🌐 Веб-інтерфейс та API
+  web:
+    build: .
+    container_name: flash-monitor-web
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - DATA_DIR=/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5050/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ⚙️ Фоновий воркер (Моніторинг та звіти)
+  worker:
+    build: .
+    container_name: flash-monitor-worker
+    restart: unless-stopped
+    command: python run_background.py
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - DATA_DIR=/app/data
