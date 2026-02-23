@@ -268,6 +268,14 @@
             }
         }
 
+        function refreshCharts() {
+            const ts = Date.now();
+            document.getElementById('daily-chart').src = "/static/chart.png?v=" + ts;
+            const weeklyChart = document.getElementById('weekly-chart');
+            if (weeklyChart) weeklyChart.src = "/static/weekly.png?v=" + ts;
+            console.log('Charts refreshed at ' + new Date().toLocaleTimeString());
+        }
+
         function updateStatus() {
             fetch('/api/status')
                 .then(r => r.json())
@@ -292,8 +300,8 @@
                             showToast("Світло зникло!", "Зафіксовано відключення.", "down");
                             showNotification("🔴 Світло зникло!", "Зафіксовано відключення.");
                         }
-                        // Refresh chart
-                        document.getElementById('daily-chart').src = "/static/chart.png?v=" + Date.now();
+                        // Refresh charts immediately on status change
+                        refreshCharts();
                     }
                     lastLightStatus = currentStatus;
 
@@ -364,7 +372,9 @@
         }
 
         setInterval(updateStatus, 60000);
+        setInterval(refreshCharts, 300000); // 5 minutes periodic refresh
         setTimeout(updateStatus, 200);
+        setTimeout(refreshCharts, 500); // Initial refresh after load
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
