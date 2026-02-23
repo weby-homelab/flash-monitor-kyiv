@@ -6,7 +6,7 @@
 
 **Автономна Docker-система моніторингу електропостачання та безпеки Києва.**
 
-Проект забезпечує повний контроль над енергетичною та безпековою ситуацією, аналізуючи реальні дані мережі та офіційні графіки Yasno/ДТЕК. Версія **Docker Edition** (гілка `main`) розроблена для швидкого та стабільного розгортання в будь-якому контейнеризованому середовищі.
+Проект забезпечує повний контроль над енергетичною та безпековою ситуацією, аналізуючи реальні дані мережі та офіційні графіки Yasno/ДТЕК локально.
 
 🔗 **Живий моніторинг:** [flash.srvrs.top](https://flash.srvrs.top/)
 
@@ -29,6 +29,70 @@
 - **Інтелектуальні звіти:** Текстові графіки, що оновлюються динамічно.
 - **Merge Logic:** Розумне об'єднання інтервалів світла, що переходять через північ.
 - **Автоматика:** Ранкові примусові звіти та миттєві сповіщення про зміну статусу.
+
+---
+
+## 🏗 Архітектура Системи (v1.2)
+
+```mermaid
+flowchart TD
+    %% -- Style Definitions --
+    classDef access fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b,rx:10,ry:10
+    classDef network fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#7b1fa2,rx:5,ry:5
+    classDef core fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#2e7d32,rx:5,ry:5
+    classDef data fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100,rx:10,ry:10
+    classDef external fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#c2185b,rx:5,ry:5
+
+    %% -- Access Layer --
+    subgraph Access ["📡 ACCESS LAYER"]
+        IoT["⚡ <b>IoT SENSORS</b><br/>(Heartbeat Pulse)"]
+        PWA["📱 <b>PWA DASHBOARD</b><br/>(Interactive UI)"]
+    end
+
+    %% -- Network Layer --
+    subgraph Network ["☁️ SECURITY MESH"]
+        CF[("🔒 <b>CLOUDFLARE TUNNEL</b><br/>(HTTPS / WAF / Domain)")]
+    end
+
+    %% -- Core Engine --
+    subgraph Core ["🚀 CORE ENGINE (Docker)"]
+        direction TB
+        WEB["🧪 <b>FLASK SERVER</b><br/>(API & Web Engine)"]
+        WORKER["⚙️ <b>BACKGROUND WORKER</b><br/>(Monitor & Scheduler)"]
+    end
+
+    %% -- Data Layer --
+    subgraph Storage ["📦 PERSISTENCE"]
+        JSON[("🗄️ <b>JSON DATA MESH</b><br/>(States / Logs / Cache)")]
+    end
+
+    %% -- External Ecosystem --
+    subgraph Integration ["🔗 EXTERNAL ECOSYSTEM"]
+        direction LR
+        TG(("💬 <b>TELEGRAM<br/>BOT API</b>"))
+        DTEK["⚡ <b>YASNO / DTEK</b><br/>(Local Parsing)"]
+        SAFE["🛡️ <b>SAFETY API</b><br/>(AQI / Alerts)"]
+    end
+
+    %% -- Connections --
+    IoT -->|Secure Push| CF
+    PWA <-->|HTTPS| CF
+    CF <-->|Reverse Proxy| WEB
+    
+    WEB <-->|State Sync| JSON
+    WORKER <-->|History Persistence| JSON
+    
+    WORKER -->|Auto-Report| TG
+    WORKER -.->|Direct Sync| DTEK
+    WEB -.->|Live Fetch| SAFE
+
+    %% -- Applying Styles --
+    class IoT,PWA access
+    class CF network
+    class WEB,WORKER core
+    class JSON storage
+    class TG,DTEK,SAFE external
+```
 
 ---
 
