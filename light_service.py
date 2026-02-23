@@ -16,13 +16,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- Configuration ---
+DATA_DIR = os.environ.get("DATA_DIR", ".")
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 PORT = 8889
 # SECRET_KEY handled in state
-STATE_FILE = "power_monitor_state.json"
-SCHEDULE_FILE = "last_schedules.json"
-EVENT_LOG_FILE = "event_log.json"
+STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
+SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
+EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
 
 # --- State Management ---
