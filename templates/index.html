@@ -155,6 +155,14 @@
             <img src="/static/chart.png?v={{ ts }}" id="daily-chart" class="chart" alt="">
         </div>
 
+        <!-- Plan vs Fact Analytics -->
+        <div id="stats-card" class="card" style="display: none;">
+            <div class="title">План vs Факт (Сьогодні)</div>
+            <div style="font-size: 16px; margin-bottom: 5px; color: #CCC;">• За планом: <b id="stats-plan" style="color: #fff;">--</b></div>
+            <div style="font-size: 16px; margin-bottom: 5px; color: #CCC;">• Реально: <b id="stats-fact" style="color: #fff;">--</b></div>
+            <div style="font-size: 16px; color: #CCC;">• Відхилення: <b id="stats-diff" style="color: #fff;">--</b> (<span id="stats-pct">--</span>% від плану)</div>
+        </div>
+
         <!-- Weekly Chart -->
         <div class="card">
             <div class="title">Тижневий графік</div>
@@ -356,7 +364,21 @@
                         else aqiVal.style.color = '#f44336'; // Red
                     }
 
-                    // 4. Radiation
+                    // 4. Stats (Plan vs Fact)
+                    const statsCard = document.getElementById('stats-card');
+                    if (data.stats) {
+                        statsCard.style.display = 'block';
+                        document.getElementById('stats-plan').innerText = data.stats.plan_up;
+                        document.getElementById('stats-fact').innerText = data.stats.fact_up;
+                        
+                        const sign = data.stats.diff > 0 ? "+" : "";
+                        document.getElementById('stats-diff').innerText = sign + data.stats.diff.toFixed(1) + " год";
+                        document.getElementById('stats-pct').innerText = data.stats.pct;
+                    } else {
+                        statsCard.style.display = 'none';
+                    }
+
+                    // 5. Radiation
                     document.getElementById('rad-val').innerText = data.radiation.level;
 
                     document.getElementById('last-updated').innerText = data.timestamp;
