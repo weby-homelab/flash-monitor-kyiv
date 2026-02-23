@@ -22,7 +22,9 @@ PORT = 8889
 # SECRET_KEY handled in state
 STATE_FILE = "power_monitor_state.json"
 SCHEDULE_FILE = "last_schedules.json"
+HISTORY_FILE = "schedule_history.json"
 EVENT_LOG_FILE = "event_log.json"
+SCHEDULE_API_URL = os.environ.get("SCHEDULE_API_URL", "http://127.0.0.1:8889")
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
 
 # --- State Management ---
@@ -458,9 +460,28 @@ def monitor_loop():
                 # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
                 save_state()
 
+def sync_schedules():
+    """
+    Downloads schedule files from the primary project (light-monitor-kyiv) via HTTP.
+    This removes the need for local symlinks and enables Docker deployment.
+    """
+    try:
+        urls = {
+            SCHEDULE_FILE: f"{SCHEDULE_API_URL}/last_schedules.json",
+            HISTORY_FILE: f"{SCHEDULE_API_URL}/schedule_history.json"
+        }
+        for local_file, url in urls.items():
+            r = requests.get(url, timeout=10)
+            if r.status_code == 200:
+                with open(local_file, "wb") as f:
+                    f.write(r.content)
+    except Exception as e:
+        print(f"Failed to sync schedules from API: {e}")
+
 def schedule_loop():
     """
     Periodically triggers report updates to keep charts and texts fresh.
+    - Sync Schedules: every 10 mins
     - Daily Image: every 10 mins
     - Text Report: every 30 mins (handled inside main or by counter)
     - Weekly Telegram: Monday 00:15
@@ -470,6 +491,9 @@ def schedule_loop():
     weekly_sent_date = None
     
     while True:
+        # 0. Sync schedules from external API
+        sync_schedules()
+        
         # 1. Trigger Daily Image Update (every 10 mins)
         try:
             trigger_daily_report_update()
