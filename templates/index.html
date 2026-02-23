@@ -26,7 +26,11 @@
             margin-bottom: 20px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             text-align: center;
+            transition: background 0.5s ease;
         }
+        
+        .card.status-on { background: #0277bd !important; } /* Blue for light ON */
+        .card.status-off { background: #37474f !important; } /* Dark Grey for light OFF */
         
         .title { color: #aaa; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
         .value { font-size: 28px; font-weight: bold; }
@@ -143,7 +147,7 @@
         </div>
 
         <!-- Light Status -->
-        <div class="card">
+        <div id="light-card" class="card">
             <div class="title">Електропостачання (Група 36.1)</div>
             <div class="value" id="light-val">Завантаження...</div>
             <div class="status-text" id="light-status">Отримання даних...</div>
@@ -153,6 +157,14 @@
         <div class="card">
             <div class="title">Графік за сьогодні</div>
             <img src="/static/chart.png?v={{ ts }}" id="daily-chart" class="chart" alt="">
+        </div>
+
+        <!-- Plan vs Fact Analytics -->
+        <div id="stats-card" class="card" style="display: none;">
+            <div class="title">План vs Факт (Сьогодні)</div>
+            <div style="font-size: 16px; margin-bottom: 5px; color: #CCC;">• За планом: <b id="stats-plan" style="color: #fff;">--</b></div>
+            <div style="font-size: 16px; margin-bottom: 5px; color: #CCC;">• Реально: <b id="stats-fact" style="color: #fff;">--</b></div>
+            <div style="font-size: 16px; color: #CCC;">• Відхилення: <b id="stats-diff" style="color: #fff;">--</b> (<span id="stats-pct">--</span>% від плану)</div>
         </div>
 
         <!-- Weekly Chart -->
@@ -173,8 +185,7 @@
 
         <div class="footer">
             Оновлено: <span id="last-updated">--:--:--</span><br>
-            © 2026 Weby Homelab<br>
-            Built to survive 12h+ blackouts & grid attacks since 2022
+            © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv" target="_blank">СВІТЛО⚡БЕЗПЕКА</a>
         </div>
     </div>
 
@@ -269,26 +280,23 @@
             }
         }
 
-        function refreshCharts() {
-            const ts = Date.now();
-            document.getElementById('daily-chart').src = "/static/chart.png?v=" + ts;
-            const weeklyChart = document.getElementById('weekly-chart');
-            if (weeklyChart) weeklyChart.src = "/static/weekly.png?v=" + ts;
-            console.log('Charts refreshed at ' + new Date().toLocaleTimeString());
-        }
-
         function updateStatus() {
             fetch('/api/status')
                 .then(r => r.json())
                 .then(data => {
                     // 1. Light Status
                     const lightVal = document.getElementById('light-val');
+                    const lightCard = document.getElementById('light-card');
                     const currentStatus = data.light;
                     
                     if (currentStatus === 'on') {
                         lightVal.innerHTML = '<span style="color: #FFD700; text-transform: uppercase;">💡 Світло є</span>';
+                        lightCard.classList.add('status-on');
+                        lightCard.classList.remove('status-off');
                     } else if (currentStatus === 'off') {
                         lightVal.innerHTML = '<span style="color: #FFFFFF; text-transform: uppercase;">✖️ Світло зникло</span>';
+                        lightCard.classList.add('status-off');
+                        lightCard.classList.remove('status-on');
                     }
                     document.getElementById('light-status').innerHTML = data.light_event;
 
@@ -301,8 +309,8 @@
                             showToast("Світло зникло!", "Зафіксовано відключення.", "down");
                             showNotification("🔴 Світло зникло!", "Зафіксовано відключення.");
                         }
-                        // Refresh charts immediately on status change
-                        refreshCharts();
+                        // Refresh chart
+                        document.getElementById('daily-chart').src = "/static/chart.png?v=" + Date.now();
                     }
                     lastLightStatus = currentStatus;
 
@@ -365,7 +373,21 @@
                         else aqiVal.style.color = '#f44336'; // Red
                     }
 
-                    // 4. Radiation
+                    // 4. Stats (Plan vs Fact)
+                    const statsCard = document.getElementById('stats-card');
+                    if (data.stats) {
+                        statsCard.style.display = 'block';
+                        document.getElementById('stats-plan').innerText = data.stats.plan_up;
+                        document.getElementById('stats-fact').innerText = data.stats.fact_up;
+                        
+                        const sign = data.stats.diff > 0 ? "+" : "";
+                        document.getElementById('stats-diff').innerText = sign + data.stats.diff.toFixed(1) + " год";
+                        document.getElementById('stats-pct').innerText = data.stats.pct;
+                    } else {
+                        statsCard.style.display = 'none';
+                    }
+
+                    // 5. Radiation
                     document.getElementById('rad-val').innerText = data.radiation.level;
 
                     document.getElementById('last-updated').innerText = data.timestamp;
@@ -373,9 +395,7 @@
         }
 
         setInterval(updateStatus, 60000);
-        setInterval(refreshCharts, 300000); // 5 minutes periodic refresh
         setTimeout(updateStatus, 200);
-        setTimeout(refreshCharts, 500); // Initial refresh after load
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
