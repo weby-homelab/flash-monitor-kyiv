@@ -34,8 +34,6 @@
 
 ## 🐳 Швидкий запуск через Docker
 
-Проект повністю докерезовано для стабільної роботи на будь-якому сервері.
-
 **Офіційний образ:** `webyhomelab/flash-monitor:latest`
 
 ### Docker Compose
@@ -44,11 +42,8 @@ services:
   web:
     image: webyhomelab/flash-monitor:latest
     container_name: flash-monitor-web
-    restart: unless-stopped
-    ports:
-      - "5050:5050"
-    volumes:
-      - ./data:/app/data
+    ports: ["5050:5050"]
+    volumes: ["./data:/app/data"]
     environment:
       - TELEGRAM_BOT_TOKEN=your_token
       - TELEGRAM_CHANNEL_ID=your_channel_id
@@ -57,10 +52,8 @@ services:
   worker:
     image: webyhomelab/flash-monitor:latest
     container_name: flash-monitor-worker
-    restart: unless-stopped
     command: python run_background.py
-    volumes:
-      - ./data:/app/data
+    volumes: ["./data:/app/data"]
     environment:
       - TELEGRAM_BOT_TOKEN=your_token
       - TELEGRAM_CHANNEL_ID=your_channel_id
@@ -69,10 +62,21 @@ services:
 
 ---
 
+## 💡 Порада для IoT-датчиків (Heartbeat)
+
+Для надсилання Push-сигналів рекомендується використовувати **HTTPS-адресу вашого домену** (наприклад, через Cloudflare Tunnel) замість прямої IP-адреси:
+
+*   **🛡️ Безпека:** HTTPS шифрує ваш секретний ключ під час передачі.
+*   **🧩 Гнучкість:** При зміні сервера вам не потрібно перепрошивати датчики — достатньо змінити налаштування тунелю.
+
+**Приклад:** `https://flash.srvrs.top/api/push/ваш_ключ`
+
+---
+
 ## 🛠 Технологічний стек
 - **Backend:** Python 3.11, Flask, Gunicorn.
-- **Analytics:** Matplotlib (рендер графіків), BeautifulSoup4 (локальний парсинг).
-- **Containerization:** Docker + Docker Compose.
+- **Analytics:** Matplotlib, BeautifulSoup4.
+- **Infra:** Docker, PWA (Progressive Web App).
 
 ---
 
