@@ -248,6 +248,16 @@ def get_air_quality():
         "text": "Невідомо", "location": "Симиренка", "status": "error"
     }
 
+def get_stats_api():
+    stats_file = os.path.join(DATA_DIR, "static/stats.json")
+    if os.path.exists(stats_file):
+        try:
+            with open(stats_file, "r") as f:
+                return json.load(f)
+        except:
+            pass
+    return None
+
 @app.route('/')
 def index():
     ts = int(time.time())
@@ -329,6 +339,7 @@ def api_status():
     radiation = cached_fetch('radiation', get_radiation)
     light_info = cached_fetch('light', get_light_status_api)
     aqi = cached_fetch('aqi', get_air_quality)
+    stats = cached_fetch('stats', get_stats_api)
     
     return jsonify({
         "alert": alert,
@@ -337,6 +348,7 @@ def api_status():
         "light_event": light_info["event"],
         "light_history": light_info.get("history", []),
         "aqi": aqi,
+        "stats": stats,
         "timestamp": datetime.now().strftime("%H:%M:%S")
     })
 
