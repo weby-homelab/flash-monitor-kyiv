@@ -464,9 +464,12 @@ def schedule_loop():
     Periodically triggers report updates to keep charts and texts fresh.
     - Daily Image: every 10 mins
     - Text Report: every 30 mins (handled inside main or by counter)
+    - Weekly Telegram: Monday 00:15
     """
     print("Schedule loop started (10 min base interval)...")
     counter = 0
+    weekly_sent_date = None
+    
     while True:
         # 1. Trigger Daily Image Update (every 10 mins)
         try:
@@ -478,6 +481,22 @@ def schedule_loop():
             try:
                 trigger_text_report_update()
             except: pass
+            
+        # 3. Trigger Weekly Telegram Report (Monday around 00:10-00:20)
+        now = datetime.datetime.now(KYIV_TZ)
+        if now.weekday() == 0 and now.hour == 0 and 10 <= now.minute < 20:
+            today_str = now.strftime("%Y-%m-%d")
+            if weekly_sent_date != today_str:
+                try:
+                    print("Triggering weekly Telegram report...")
+                    base_dir = os.path.dirname(os.path.abspath(__file__))
+                    python_exec = os.path.join(base_dir, "venv/bin/python") if os.path.exists(os.path.join(base_dir, "venv/bin/python")) else "python3"
+                    script_path = os.path.join(base_dir, "generate_weekly_report.py")
+                    yesterday = (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+                    subprocess.run([python_exec, script_path, "--date", yesterday], check=True, cwd=base_dir)
+                    weekly_sent_date = today_str
+                except Exception as e:
+                    print(f"Failed to trigger weekly telegram report: {e}")
             
         counter += 1
         time.sleep(600) # 10 minutes
