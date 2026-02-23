@@ -1,69 +1,76 @@
-# FLASH MONITOR KYIV (v1.2 Classic)
+# FLASH MONITOR KYIV
 
-**Fully autonomous power monitoring and security system for Kyiv.**
+<p align="center">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/classic/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
+</p>
 
----
+**Autonomous power monitoring and security system for Kyiv.**
 
-## 🆕 What's New in v1.2 Classic?
+The project provides full control over the energy situation by analyzing real network data and official Yasno/DTEK schedules. All calculations and parsing happen locally, ensuring independence and speed.
 
-This version has become **completely independent**. `flash-monitor-kyiv` no longer requires external APIs from other projects to fetch schedules. All processes — from gathering DTEK/Yasno data to generating complex analytics — now happen locally within the project.
-
-### Key Updates:
-- **Built-in Schedule Parser:** Direct integration with Yasno and GitHub (DTEK) sources.
-- **"Plan vs Fact" Analytics:** Automatic comparison of real outages with scheduled plans on the dashboard and in reports.
-- **Smart Text Reports:** New algorithm for merging intervals across midnight and intelligent Telegram message updates.
-- **Full Autonomy:** All services (Web UI, background monitoring, report generators) operate within a single project environment.
+🔗 **Live Monitoring:** [flash.srvrs.top](https://flash.srvrs.top/)
 
 ---
 
 ## 🚀 Key Features
 
-### 💡 Light Monitoring
-- **Real-time Heartbeat:** Voltage tracking via IoT signals (push mechanism).
-- **Switching Accuracy:** Automatic calculation of schedule deviations (delay or early power restoration).
-- **Visualization:** Generation of daily and weekly charts in a signature dark theme.
+### 💡 Smart Power Monitoring
+- **Heartbeat Tracking:** Real-time power tracking via IoT signals.
+- **"Plan vs Fact" Analytics:** Automatic comparison of real outages with scheduled plans.
+- **Schedule Accuracy:** The system calculates deviations (delay or early power restoration) for each event.
+- **Visualization:** Generation of signature style daily and weekly charts.
 
-### 🛡️ Security & Environment
-- **Air Alerts:** Instant alert status (Kyiv/Region) and integrated live map.
-- **Air Quality (AQI):** Real-time PM2.5, PM10 levels, and radiation background (Location: Borshchahivka).
+### 🛡️ Security & Environment (Borshchahivka)
+- **Air Alerts:** Instant status and integrated live map of Kyiv and the region.
+- **Air Quality (AQI):** Real-time PM2.5, PM10 levels, and radiation background (Location: Symyrenka).
 - **Weather:** Current temperature, humidity, and wind parameters.
 
-### 📱 Web Dashboard (PWA)
-- Modern adaptive interface in HomeLab style (#1E122A).
-- Sound and Push notifications for status changes.
-- Full PWA support (installable on your smartphone's home screen).
+### 🔔 Telegram Notifications
+- **Intelligent Reports:** Dynamically updated text schedules.
+- **Merge Logic:** Smart merging of power intervals crossing midnight.
+- **Live Reports:** Daily chart reports that update within a single message.
+
+---
+
+## 🐳 Quick Start with Docker
+
+The project is fully dockerized for stable operation on any server.
+
+**Official Image:** `webyhomelab/flash-monitor:latest`
+
+### Docker Compose
+```yaml
+services:
+  web:
+    image: webyhomelab/flash-monitor:latest
+    container_name: flash-monitor-web
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - TELEGRAM_BOT_TOKEN=your_token
+      - TELEGRAM_CHANNEL_ID=your_channel_id
+      - DATA_DIR=/app/data
+
+  worker:
+    image: webyhomelab/flash-monitor:latest
+    container_name: flash-monitor-worker
+    command: python run_background.py
+    volumes:
+      - ./data:/app/data
+    environment:
+      - TELEGRAM_BOT_TOKEN=your_token
+      - TELEGRAM_CHANNEL_ID=your_channel_id
+      - DATA_DIR=/app/data
+```
 
 ---
 
 ## 🛠 Tech Stack
 - **Backend:** Python 3.11, Flask, Gunicorn.
-- **Analytics:** Matplotlib (chart rendering), BeautifulSoup4 (parsing).
-- **Data:** JSON-based persistence (no heavy DB required).
-- **Infra:** Docker + Docker Compose, Systemd.
-
----
-
-## 📦 Installation & Setup
-
-### 1. Clone the repository:
-```bash
-git clone https://github.com/weby-homelab/flash-monitor-kyiv.git
-cd flash-monitor-kyiv
-git checkout classic
-```
-
-### 2. Configure environment:
-Create a `.env` file and add your credentials:
-```env
-TELEGRAM_BOT_TOKEN=your_token
-TELEGRAM_CHANNEL_ID=your_chat_id
-DATA_DIR=.
-```
-
-### 3. Run with Docker:
-```bash
-docker compose up -d
-```
+- **Analytics:** Matplotlib (chart rendering), BeautifulSoup4 (local parsing).
+- **Infra:** Docker, PWA (Progressive Web App).
 
 ---
 
