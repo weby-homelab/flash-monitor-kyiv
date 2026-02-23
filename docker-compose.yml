@@ -1,25 +1,29 @@
 services:
-  web:
+  flash-monitor:
     image: webyhomelab/flash-monitor:latest
-    container_name: flash-monitor-web
+    container_name: flash-monitor
     restart: unless-stopped
     ports:
-      - "5050:5050"
+      - "5000:5000"
     volumes:
       - ./data:/app/data
+      - ./config.json:/app/config.json:ro
     environment:
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
-      - DATA_DIR=/app/data
+      - TZ=Europe/Kiev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  worker:
+  background-worker:
     image: webyhomelab/flash-monitor:latest
     container_name: flash-monitor-worker
     restart: unless-stopped
     command: python run_background.py
     volumes:
       - ./data:/app/data
+      - ./config.json:/app/config.json:ro
     environment:
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
-      - DATA_DIR=/app/data
+      - TZ=Europe/Kiev
