@@ -26,6 +26,70 @@
 
 ---
 
+## 🏗 Архітектура Системи (v1.2 Classic)
+
+```mermaid
+flowchart TD
+    %% -- Style Definitions --
+    classDef access fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b,rx:10,ry:10
+    classDef network fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#7b1fa2,rx:5,ry:5
+    classDef core fill:#fff9c4,stroke:#fbc02d,stroke-width:2px,color:#616161,rx:5,ry:5
+    classDef data fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100,rx:10,ry:10
+    classDef external fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#c2185b,rx:5,ry:5
+
+    %% -- Access Layer --
+    subgraph Access ["📡 ACCESS LAYER"]
+        IoT["⚡ <b>IoT SENSORS</b><br/>(Heartbeat Pulse)"]
+        PWA["📱 <b>PWA DASHBOARD</b><br/>(Interactive UI)"]
+    end
+
+    %% -- Network Layer --
+    subgraph Network ["☁️ SECURITY MESH"]
+        CF[("🔒 <b>CLOUDFLARE TUNNEL</b><br/>(HTTPS / WAF / Domain)")]
+    end
+
+    %% -- Core Engine --
+    subgraph Core ["🚀 CORE ENGINE (Bare-Metal)"]
+        direction TB
+        WEB["🧪 <b>SYSTEMD: FLASK</b><br/>(API & Web Engine)"]
+        WORKER["⚙️ <b>SYSTEMD: WORKER</b><br/>(Monitor & Scheduler)"]
+    end
+
+    %% -- Data Layer --
+    subgraph Storage ["📦 PERSISTENCE"]
+        JSON[("🗄️ <b>JSON DATA MESH</b><br/>(Local Files)")]
+    end
+
+    %% -- External Ecosystem --
+    subgraph Integration ["🔗 EXTERNAL ECOSYSTEM"]
+        direction LR
+        TG(("💬 <b>TELEGRAM<br/>BOT API</b>"))
+        DTEK["⚡ <b>YASNO / DTEK</b><br/>(Local Parsing)"]
+        SAFE["🛡️ <b>SAFETY API</b><br/>(AQI / Alerts)"]
+    end
+
+    %% -- Connections --
+    IoT -->|Secure Push| CF
+    PWA <-->|HTTPS| CF
+    CF <-->|Reverse Proxy| WEB
+    
+    WEB <-->|State Sync| JSON
+    WORKER <-->|History Persistence| JSON
+    
+    WORKER -->|Auto-Report| TG
+    WORKER -.->|Direct Sync| DTEK
+    WEB -.->|Live Fetch| SAFE
+
+    %% -- Applying Styles --
+    class IoT,PWA access
+    class CF network
+    class WEB,WORKER core
+    class JSON storage
+    class TG,DTEK,SAFE external
+```
+
+---
+
 ## 💡 Порада для IoT-датчиків (Heartbeat)
 
 Для надсилання Push-сигналів рекомендується використовувати **HTTPS-адресу вашого домену** (наприклад, через Cloudflare Tunnel) замість прямої IP-адреси:
@@ -34,13 +98,6 @@
 *   **🧩 Гнучкість:** При зміні сервера вам не потрібно перепрошивати датчики — достатньо змінити налаштування тунелю.
 
 **Приклад:** `https://flash.srvrs.top/api/push/ваш_ключ`
-
----
-
-## 🛠 Технологічний стек
-- **Backend:** Python 3.11, Flask, Gunicorn.
-- **Analytics:** Matplotlib, BeautifulSoup4.
-- **Service Management:** Systemd (Ubuntu/Debian).
 
 ---
 
