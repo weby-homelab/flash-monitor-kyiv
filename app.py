@@ -160,6 +160,7 @@ def get_power_events_data(limit=5):
     return latest_event_text, recent_events
 
 def get_light_status_api():
+    load_state()
     with state_lock:
         status = state.get("status", "unknown")
     
