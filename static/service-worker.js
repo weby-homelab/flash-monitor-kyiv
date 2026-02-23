@@ -18,13 +18,13 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // NEVER cache API requests
-  if (url.pathname.startsWith('/api/')) {
+  // NEVER cache API requests or generated charts
+  if (url.pathname.startsWith('/api/') || url.pathname.endsWith('.png')) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // Cache First for everything else
+  // Cache First for other assets
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
