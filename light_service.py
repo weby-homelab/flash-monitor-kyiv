@@ -26,6 +26,7 @@ SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 SCHEDULE_API_URL = os.environ.get("SCHEDULE_API_URL", "http://127.0.0.1:8889")
+ALERTS_API_URL = "https://ubilling.net.ua/aerialalerts/"
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
 
 # --- State Management ---
@@ -34,7 +35,8 @@ state = {
     "last_seen": 0,
     "went_down_at": 0,
     "came_up_at": 0,
-    "secret_key": None
+    "secret_key": None,
+    "alert_status": "clear" # clear, active, region
 }
 
 state_lock = threading.RLock()
@@ -400,6 +402,35 @@ def get_nearest_schedule_switch(event_time, target_is_up):
 
 
 
+def get_air_raid_alert():
+    try:
+        r = requests.get(ALERTS_API_URL, timeout=5)
+        if r.status_code == 200:
+            data = r.json()
+            alerts = data.get("states", {})
+            is_alert_city = "м. Київ" in alerts and alerts["м. Київ"].get("alertnow", False)
+            is_alert_region = "Київська область" in alerts and alerts["Київська область"].get("alertnow", False)
+            
+            if is_alert_city:
+                status_text = "active"
+                location = "м. Київ"
+            elif is_alert_region:
+                status_text = "region"
+                location = "Київська область"
+            else:
+                status_text = "clear"
+                location = "Тривоги немає"
+
+            return {
+                "city": is_alert_city,
+                "region": is_alert_region,
+                "status": status_text,
+                "location": location
+            }
+    except Exception as e:
+        print(f"Error fetching alerts: {e}")
+    return {"status": "unknown", "location": "Невідомо"}
+
 # --- Monitor Loop ---
 def monitor_loop():
     print("Monitor loop started...")
@@ -460,6 +491,44 @@ def monitor_loop():
                 threading.Thread(target=send_telegram, args=(msg,)).start()
                 # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
                 save_state()
+
+def alerts_loop():
+    """
+    Polls the air raid alert API every minute and sends Telegram notifications on status changes.
+    """
+    print("Alerts loop started...")
+    while True:
+        try:
+            current_alert = get_air_raid_alert()
+            new_status = current_alert.get("status")
+            
+            # Reload state to get latest alert_status
+            load_state()
+            
+            with state_lock:
+                old_status = state.get("alert_status", "clear")
+                
+                # We only care about "м. Київ" alerts for Telegram notifications
+                # active = м. Київ, region = Київська область, clear = No alert
+                
+                if new_status != old_status:
+                    time_str = datetime.datetime.now(KYIV_TZ).strftime("%H:%M")
+                    
+                    if new_status == "active":
+                        msg = f"🔴 <b>{time_str} ПОВІТРЯНА ТРИВОГА! (м. Київ)</b>\n\n🏠 Будьте в укритті!"
+                        threading.Thread(target=send_telegram, args=(msg,)).start()
+                    elif old_status == "active" and new_status != "active":
+                        msg = f"🟢 <b>{time_str} ВІДБІЙ ТРИВОГИ (м. Київ)</b>\n\n✅ Можна виходити з укриття."
+                        threading.Thread(target=send_telegram, args=(msg,)).start()
+                    
+                    # Update state
+                    state["alert_status"] = new_status
+                    save_state()
+                    
+        except Exception as e:
+            print(f"Error in alerts loop: {e}")
+            
+        time.sleep(60)
 
 def sync_schedules():
     """
@@ -524,7 +593,4 @@ def schedule_loop():
             
         counter += 1
         time.sleep(600) # 10 minutes
-
-# Start background threads
-threading.Thread(target=schedule_loop, daemon=True).start()
 
