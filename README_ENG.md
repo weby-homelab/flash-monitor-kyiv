@@ -9,7 +9,7 @@
 
 <br>
 
-# FLASH MONITOR KYIV (v1.2 Docker Edition)
+# FLASH MONITOR KYIV (v1.3 Docker Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
@@ -29,7 +29,8 @@
 - **Visualization:** Daily and weekly charts in a dark theme.
 
 ### 🛡️ Security & Environment
-- **Air Alerts:** Instant status and integrated live map.
+- **Air Alerts:** Instant status and Telegram notifications for alert start/end in Kyiv.
+- **Live Map:** Integrated air raid alert map for Kyiv and region.
 - **Air Quality (AQI):** Real-time PM2.5, PM10, and radiation background.
 
 ---
