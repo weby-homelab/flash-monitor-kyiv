@@ -15,28 +15,36 @@
 
     <style>
         :root {
-            /* Default to Velvet Gradient Dark */
-            --bg-main: linear-gradient(180deg, #120B1F 0%, #2A1B3F 100%);
-            --bg-card: rgba(30, 22, 51, 0.85);
-            --backdrop-blur: 20px;
-            --accent-deep: #30106b;
-            --accent-mint: #6EE7B7;
-            --accent-danger: #FF6B81;
+            /* Default to Amethyst Mist Dark */
+            --bg-main: #120B1F;
+            --bg-card: #1E1633;
+            --border-color: #2C1F4A;
             --text-primary: #F0E6FF;
             --text-deep: #1a0933;
-            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-deep: #30106b;
+            --accent-lavender: #E6E6FA;
+            --accent-mint: #AAF0D1;
+            --accent-danger: #FF6B81;
+            --accent-electric: linear-gradient(135deg, #30106b, #67E8F9);
+            --box-shadow: 0 8px 32px rgba(230, 230, 250, 0.05); /* тонкая лавандовая тінь */
+            --bg-stats-item: rgba(230, 230, 250, 0.1);
         }
 
         @media (prefers-color-scheme: light) {
             :root {
-                --bg-main: linear-gradient(180deg, #F0E6FA 0%, #FFFFFF 100%);
-                --bg-card: rgba(255, 255, 255, 0.92);
-                --backdrop-blur: 16px;
+                /* Amethyst Mist Light */
+                --bg-main: #F7F4FF;
+                --bg-card: #FFFFFF;
+                --border-color: #D8B4FE;
+                --text-primary: #1a0933;
+                --text-deep: #1a0933;
                 --accent-deep: #30106b;
+                --accent-lavender: #E6E6FA;
                 --accent-mint: #88E8C8;
                 --accent-danger: #FF6B81;
-                --text-primary: #1a0933;
-                --border-color: rgba(48, 16, 107, 0.1);
+                --accent-electric: linear-gradient(135deg, #30106b, #22D3EE);
+                --box-shadow: 0 8px 32px rgba(48, 16, 107, 0.1);
+                --bg-stats-item: rgba(48, 16, 107, 0.05);
             }
         }
 
@@ -57,12 +65,10 @@
 
         .card { 
             background: var(--bg-card); 
-            backdrop-filter: blur(var(--backdrop-blur));
-            -webkit-backdrop-filter: blur(var(--backdrop-blur));
             border-radius: 16px; 
             padding: 20px; 
             margin-bottom: 20px; 
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-shadow: var(--box-shadow);
             border: 1px solid var(--border-color);
             text-align: center;
             transition: transform 0.3s ease, background 0.5s ease;
@@ -71,11 +77,15 @@
         .card:hover { transform: translateY(-2px); }
 
         .card.status-on { 
-            background: rgba(110, 231, 183, 0.2) !important; 
-            border: 1px solid var(--accent-mint);
+            background: var(--accent-electric) !important; 
+            border: 1px solid var(--accent-deep);
+            box-shadow: 0 0 15px var(--accent-deep);
+        }
+        .card.status-on .title, .card.status-on .value, .card.status-on .status-text, .card.status-on span {
+            color: #FFFFFF !important;
         }
         .card.status-off { 
-            background: rgba(255, 107, 129, 0.15) !important; 
+            background: rgba(255, 107, 129, 0.1) !important; 
             border: 1px solid var(--accent-danger);
         }
         
@@ -85,21 +95,21 @@
         
         /* Alerts */
         .alert-card.active { 
-            background: rgba(211, 47, 47, 0.8) !important; 
+            background: var(--accent-danger) !important; 
             border: none; 
             animation: pulse 2s infinite; 
         }
         .alert-card.clear { 
-            background: rgba(56, 142, 60, 0.8) !important; 
+            background: var(--accent-mint) !important; 
             border: none; 
         }
-        .alert-card .title, .alert-card .status-text { color: #fff; opacity: 0.9; }
-        .alert-card .value { color: #fff !important; text-shadow: none !important; }
+        .alert-card .title, .alert-card .status-text { color: var(--text-deep); opacity: 0.9; }
+        .alert-card .value { color: var(--text-deep) !important; text-shadow: none !important; }
         
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(211, 47, 47, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(255, 107, 129, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(255, 107, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 107, 129, 0); }
         }
 
         .chart { width: 100%; border-radius: 12px; margin-top: 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); }
@@ -147,7 +157,7 @@
         /* Stats grid */
         .stats-grid { font-size: 14px; margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
         .stats-item { 
-            background: rgba(255, 255, 255, 0.1); 
+            background: var(--bg-stats-item); 
             padding: 6px 12px; 
             border-radius: 8px; 
             border: 1px solid var(--border-color);
@@ -361,13 +371,13 @@
                     const currentStatus = data.light;
                     
                     if (currentStatus === 'on') {
-                        lightVal.innerHTML = '<span style="color: #FFD700; text-transform: uppercase;">💡 Світло є</span>';
+                        lightVal.innerHTML = '<span style="text-transform: uppercase;">💡 Світло є</span>';
                         if (lightCard) {
                             lightCard.classList.add('status-on');
                             lightCard.classList.remove('status-off');
                         }
                     } else if (currentStatus === 'off') {
-                        lightVal.innerHTML = '<span style="color: #FFFFFF; text-transform: uppercase;">✖️ Світло зникло</span>';
+                        lightVal.innerHTML = '<span style="text-transform: uppercase;">✖️ Світло зникло</span>';
                         if (lightCard) {
                             lightCard.classList.add('status-off');
                             lightCard.classList.remove('status-on');

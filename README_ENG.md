@@ -9,7 +9,7 @@
 
 <br>
 
-# FLASH MONITOR KYIV (v1.4.1 Autonomous Edition)
+# FLASH MONITOR KYIV (v1.4.2 Autonomous Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
@@ -29,7 +29,8 @@
 - **Heartbeat Tracking:** Real-time power monitoring via IoT signals (Push API).
 - **"Plan vs Fact" Analytics:** Automatic comparison of real outages with scheduled plans.
 - **Schedule Accuracy:** Calculation of deviations (delays or early switches) for each event and displaying the next planned interval.
-- **Visualization:** Daily and weekly charts in a dark theme.
+- **Visualization:** Daily and weekly charts.
+- **UI/UX Design:** Adaptive Amethyst Mist theme with automatic Light/Dark mode and Glassmorphism.
 
 ### 🛡️ Security & Environment
 - **Air Alerts:** Instant status and Telegram notifications for alert start/end in Kyiv.

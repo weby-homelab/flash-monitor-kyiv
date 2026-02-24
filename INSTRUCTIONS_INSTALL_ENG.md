@@ -1,4 +1,4 @@
-# 🚀 Flash Monitor Kyiv Installation Guide (v1.4.1+)
+# 🚀 Flash Monitor Kyiv Installation Guide (v1.4.2+)
 
 This project is now fully autonomous. It can either parse schedules itself or synchronize with another server.
 
