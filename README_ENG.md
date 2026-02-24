@@ -19,6 +19,8 @@
 
 🔗 **Live Monitoring:** [flash.srvrs.top](https://flash.srvrs.top/)
 
+📖 **Guide:** [Full setup and configuration from scratch](INSTRUCTIONS_INSTALL_ENG.md)
+
 ---
 
 ## 🚀 Key Features
