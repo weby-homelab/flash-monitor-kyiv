@@ -113,12 +113,12 @@
         }
 
         /* Chart adaptability */
-        .chart-dark { display: block; }
-        .chart-light { display: none; }
+        .chart-dark { display: block !important; }
+        .chart-light { display: none !important; }
 
         @media (prefers-color-scheme: light) {
-            .chart-dark { display: none; }
-            .chart-light { display: block; }
+            .chart-dark { display: none !important; }
+            .chart-light { display: block !important; }
         }
 
         .chart { width: 100%; border-radius: 12px; margin-top: 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); }
