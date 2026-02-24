@@ -112,6 +112,15 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 107, 129, 0); }
         }
 
+        /* Chart adaptability */
+        .chart-dark { display: block; }
+        .chart-light { display: none; }
+
+        @media (prefers-color-scheme: light) {
+            .chart-dark { display: none; }
+            .chart-light { display: block; }
+        }
+
         .chart { width: 100%; border-radius: 12px; margin-top: 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); }
 
         .footer { margin-top: 40px; font-size: 13px; color: var(--text-primary); opacity: 0.6; text-align: center; }
@@ -228,7 +237,8 @@
         <!-- Light Chart -->
         <div class="card">
             <div class="title">Графік за сьогодні</div>
-            <img src="/static/chart.png?v={{ ts }}" id="daily-chart" class="chart" alt="">
+            <img src="/static/chart.png?v={{ ts }}" id="daily-chart" class="chart chart-dark" alt="">
+            <img src="/static/chart_light.png?v={{ ts }}" id="daily-chart-light" class="chart chart-light" alt="">
         </div>
 
         <!-- Plan vs Fact Analytics -->
@@ -242,7 +252,8 @@
         <!-- Weekly Chart -->
         <div class="card">
             <div class="title">Тижневий графік</div>
-            <img src="/static/weekly.png?v={{ ts }}" id="weekly-chart" class="chart" alt="">
+            <img src="/static/weekly.png?v={{ ts }}" id="weekly-chart" class="chart chart-dark" alt="">
+            <img src="/static/weekly_light.png?v={{ ts }}" id="weekly-chart-light" class="chart chart-light" alt="">
         </div>
 
         <!-- Recent Events -->
@@ -356,8 +367,14 @@
             const ts = Date.now();
             const dailyChart = document.getElementById('daily-chart');
             if (dailyChart) dailyChart.src = "/static/chart.png?v=" + ts;
+            const dailyChartLight = document.getElementById('daily-chart-light');
+            if (dailyChartLight) dailyChartLight.src = "/static/chart_light.png?v=" + ts;
+            
             const weeklyChart = document.getElementById('weekly-chart');
             if (weeklyChart) weeklyChart.src = "/static/weekly.png?v=" + ts;
+            const weeklyChartLight = document.getElementById('weekly-chart-light');
+            if (weeklyChartLight) weeklyChartLight.src = "/static/weekly_light.png?v=" + ts;
+            
             console.log('Charts refreshed at ' + new Date().toLocaleTimeString());
         }
 
