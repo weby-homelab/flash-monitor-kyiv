@@ -10,7 +10,10 @@ from zoneinfo import ZoneInfo
 import requests
 import subprocess
 from urllib.parse import urlparse, parse_qs
+import sys
 from dotenv import load_dotenv
+
+from parser_service import update_local_schedules
 
 # Load environment variables
 load_dotenv()
@@ -51,7 +54,7 @@ def trigger_daily_report_update():
             print("Triggering daily report update...")
             # Use absolute paths
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            python_exec = os.path.join(base_dir, "venv/bin/python")
+            python_exec = sys.executable
             script_path = os.path.join(base_dir, "generate_daily_report.py")
             
             # Run without --no-send so it updates Telegram
@@ -75,7 +78,7 @@ def trigger_text_report_update():
         try:
             print("Triggering text report update...")
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            python_exec = os.path.join(base_dir, "venv/bin/python")
+            python_exec = sys.executable
             script_path = os.path.join(base_dir, "generate_text_report.py")
             subprocess.run([python_exec, script_path], check=True, cwd=base_dir)
         except Exception as e:
@@ -91,7 +94,7 @@ def trigger_weekly_report_update():
         try:
             print("Triggering weekly report update...")
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            python_exec = os.path.join(base_dir, "venv/bin/python")
+            python_exec = sys.executable
             script_path = os.path.join(base_dir, "generate_weekly_report.py")
             output_path = os.path.join(base_dir, "static/weekly.png")
             
@@ -532,21 +535,32 @@ def alerts_loop():
 
 def sync_schedules():
     """
-    Downloads schedule files from the primary project (light-monitor-kyiv) via HTTP.
-    This removes the need for local symlinks and enables Docker deployment.
+    Downloads schedule files from the primary project via HTTP.
+    If sync fails or URL is not set, falls back to local parsing.
     """
-    try:
-        urls = {
-            SCHEDULE_FILE: f"{SCHEDULE_API_URL}/last_schedules.json",
-            HISTORY_FILE: f"{SCHEDULE_API_URL}/schedule_history.json"
-        }
-        for local_file, url in urls.items():
-            r = requests.get(url, timeout=10)
-            if r.status_code == 200:
-                with open(local_file, "wb") as f:
-                    f.write(r.content)
-    except Exception as e:
-        print(f"Failed to sync schedules from API: {e}")
+    sync_success = False
+    
+    if SCHEDULE_API_URL and "127.0.0.1" not in SCHEDULE_API_URL:
+        try:
+            urls = {
+                SCHEDULE_FILE: f"{SCHEDULE_API_URL}/last_schedules.json",
+                HISTORY_FILE: f"{SCHEDULE_API_URL}/schedule_history.json"
+            }
+            for local_file, url in urls.items():
+                r = requests.get(url, timeout=10)
+                if r.status_code == 200:
+                    with open(local_file, "wb") as f:
+                        f.write(r.content)
+            sync_success = True
+            print("Schedules synced from remote API.")
+        except Exception as e:
+            print(f"Failed to sync schedules from API: {e}")
+
+    # Fallback to local parsing if remote sync failed or was skipped
+    if not sync_success:
+        print("Starting local schedule parsing...")
+        config_path = os.path.join(os.path.dirname(__file__), "config.json")
+        update_local_schedules(config_path, SCHEDULE_FILE)
 
 def schedule_loop():
     """
@@ -583,7 +597,7 @@ def schedule_loop():
                 try:
                     print("Triggering weekly Telegram report...")
                     base_dir = os.path.dirname(os.path.abspath(__file__))
-                    python_exec = os.path.join(base_dir, "venv/bin/python") if os.path.exists(os.path.join(base_dir, "venv/bin/python")) else "python3"
+                    python_exec = sys.executable
                     script_path = os.path.join(base_dir, "generate_weekly_report.py")
                     yesterday = (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
                     subprocess.run([python_exec, script_path, "--date", yesterday], check=True, cwd=base_dir)

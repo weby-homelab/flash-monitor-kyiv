@@ -143,7 +143,24 @@ def get_power_events_data(limit=5):
                         icon = "🟢" if evt == "up" else "🔴"
                         text = "Світло з'явилося" if evt == "up" else "Світло зникло"
                         pre_text = "не було" if evt == "up" else "було"
-                        latest_event_text = f"{dt_str} {icon} {text}<br><span style='font-size: 0.9em; color: #aaa;'>({pre_text} {dur_str})</span>"
+                        
+                        sched_light_now, current_end, next_range, next_duration = get_schedule_context()
+                        next_sched_text = f"Наступне планове за графіком: {next_range}"
+                        
+                        dev_msg = get_deviation_info(ts, evt == "up")
+                        dev_html = ""
+                        if dev_msg and "точно за графіком" not in dev_msg:
+                            import re
+                            m = re.search(r"(\d+)\s*хв\s*\((запізнення|раніше)", dev_msg)
+                            if m:
+                                mins = m.group(1)
+                                kind = m.group(2).capitalize()
+                                dev_str = f"{kind} {mins} хв"
+                                dev_html = f"<br><span style='font-size: 0.9em; color: #ff9800;'>Відхилення: {dev_str}</span>"
+                            else:
+                                dev_html = f"<br><span style='font-size: 0.9em; color: #ff9800;'>{dev_msg.replace('• Точність: ', '')}</span>"
+                                
+                        latest_event_text = f"{next_sched_text}{dev_html}"
     except Exception as e:
         print(f"Error reading events: {e}")
         pass

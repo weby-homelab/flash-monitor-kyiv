@@ -1,6 +1,6 @@
-# 🚀 Flash Monitor Kyiv Installation Guide (v1.3.1+)
+# 🚀 Flash Monitor Kyiv Installation Guide (v1.4.1+)
 
-This project is designed for autonomous monitoring of power outages and security. Follow these steps for a complete setup on a new server:
+This project is now fully autonomous. It can either parse schedules itself or synchronize with another server.
 
 ## 1. Server Preparation (Ubuntu/Debian)
 Install Docker and Docker Compose (if not already installed):
@@ -36,8 +36,10 @@ Copy this example (replace `your_group` with your outage group, e.g., `GPV36.1`)
 ```env
 TELEGRAM_BOT_TOKEN=your_bot_token
 TELEGRAM_CHANNEL_ID=your_channel_id
-# Optional: URL for syncing schedules from another server
-SCHEDULE_API_URL=http://your-primary-server-ip:8889
+# SCHEDULE_API_URL:
+# 1. Leave EMPTY for autonomous mode (server will fetch schedules itself)
+# 2. Provide URL (e.g. http://ip:8889) to sync from another server
+SCHEDULE_API_URL=
 ```
 
 ## 3. System Launch
