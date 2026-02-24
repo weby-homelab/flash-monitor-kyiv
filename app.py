@@ -12,6 +12,7 @@ from light_service import (
     log_event, get_schedule_context, send_telegram, 
     get_deviation_info, get_nearest_schedule_switch,
     trigger_daily_report_update, trigger_weekly_report_update,
+    get_air_raid_alert,
     KYIV_TZ
 )
 
@@ -20,7 +21,6 @@ app = Flask(__name__)
 
 # --- Configuration ---
 DATA_DIR = os.environ.get("DATA_DIR", ".")
-ALERTS_API_URL = "https://ubilling.net.ua/aerialalerts/"
 LIGHT_MONITOR_URL = "http://127.0.0.1:8889/"
 
 # --- Paths ---
@@ -74,35 +74,6 @@ def serve_static(filename):
         response.headers['Expires'] = '0'
     
     return response
-
-def get_air_raid_alert():
-    try:
-        r = requests.get(ALERTS_API_URL, timeout=5)
-        if r.status_code == 200:
-            data = r.json()
-            alerts = data.get("states", {})
-            is_alert_city = "м. Київ" in alerts and alerts["м. Київ"].get("alertnow", False)
-            is_alert_region = "Київська область" in alerts and alerts["Київська область"].get("alertnow", False)
-            
-            if is_alert_city:
-                status_text = "active"
-                location = "м. Київ"
-            elif is_alert_region:
-                status_text = "region"
-                location = "Київська область"
-            else:
-                status_text = "clear"
-                location = "Тривоги немає"
-
-            return {
-                "city": is_alert_city,
-                "region": is_alert_region,
-                "status": status_text,
-                "location": location
-            }
-    except Exception as e:
-        print(f"Error fetching alerts: {e}")
-    return {"status": "unknown", "location": "Невідомо"}
 
 def get_radiation():
     # Return stable background value
