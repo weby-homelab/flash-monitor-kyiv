@@ -1,4 +1,4 @@
-# 🚀 Flash Monitor Kyiv Installation Guide (v1.3+)
+# 🚀 Flash Monitor Kyiv Installation Guide (v1.3.1+)
 
 This project is designed for autonomous monitoring of power outages and security. Follow these steps for a complete setup on a new server:
 
@@ -50,7 +50,7 @@ The dashboard will be available at port `:5050`.
 ## 4. Power Monitoring Setup (Heartbeat)
 To enable power status and charts, configure your IoT device (ESP8266/ESP32) or another server to send a "pulse":
 
-1. Find your unique secret key:
+1. Find your unique secret key (while inside the flash-monitor folder):
    ```bash
    cat data/power_monitor_state.json | grep secret_key
    ```
@@ -58,4 +58,4 @@ To enable power status and charts, configure your IoT device (ESP8266/ESP32) or 
    `http://your-ip:5050/api/push/YOUR_SECRET_KEY`
 
 ---
-© 2026 Weby Homelab — infrastructure that doesn’t give up.
+© 2026 Weby Homelab. Made with ❤️ in Kyiv under air raid sirens and blackouts
