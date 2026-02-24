@@ -9,7 +9,7 @@
 
 <br>
 
-# FLASH MONITOR KYIV (v1.3 Docker Edition)
+# FLASH MONITOR KYIV (v1.3.1 Docker Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
@@ -58,6 +58,6 @@ It is highly recommended to use your **HTTPS domain address** (e.g., via Cloudfl
 MIT License.
 
 <p align="center">
-  © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv">Weby Homelab</a> — infrastructure that doesn’t give up<br>
-  Made with ❤️ in Kyiv under air raid sirens
+  © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv">Weby Homelab</a><br>
+  Made with ❤️ in Kyiv under air raid sirens and blackouts
 </p>

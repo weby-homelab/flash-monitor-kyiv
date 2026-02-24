@@ -9,7 +9,7 @@
 
 <br>
 
-# СВІТЛО⚡БЕЗПЕКА (v1.3 Docker Edition)
+# СВІТЛО⚡БЕЗПЕКА (v1.3.1 Docker Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡БЕЗПЕКА Dashboard Preview" width="100%">
@@ -162,6 +162,6 @@ services:
 Розповсюджується під ліцензією **MIT**.
 
 <p align="center">
-  © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv">Weby Homelab</a> — infrastructure that doesn’t give up<br>
-  Made with ❤️ in Kyiv under air raid sirens
+  © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv">Weby Homelab</a><br>
+  Made with ❤️ in Kyiv under air raid sirens and blackouts
 </p>
