@@ -165,12 +165,30 @@ def format_duration(seconds):
     m = total_minutes % 60
     return f"{h} год {m} хв"
 
-def generate_chart(target_date, intervals, schedule_intervals):
-    # Dark Mode - Deep Purple Background
-    with plt.style.context('dark_background'):
-        # Reduced height again (was 2.4, now 2.0 -> thinner bars)
-        fig, ax = plt.subplots(figsize=(10, 2.0), facecolor='#1E122A')
-        ax.set_facecolor('#1E122A')
+def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
+    # Amethyst Mist Palette
+    if theme == 'dark':
+        bg_color = '#120B1F'
+        card_color = '#1E1633'
+        text_color = '#F0E6FF'
+        fact_on_color = '#67E8F9'
+        fact_off_color = '#FF6B81'
+        plan_on_color = '#C4B5FD'
+        plan_off_color = '#475569'
+        plt_style = 'dark_background'
+    else:
+        bg_color = '#F7F4FF'
+        card_color = '#FFFFFF'
+        text_color = '#1a0933'
+        fact_on_color = '#88E8C8'
+        fact_off_color = '#FF6B81'
+        plan_on_color = '#A78BFA'
+        plan_off_color = '#94A3B8'
+        plt_style = 'default'
+
+    with plt.style.context(plt_style):
+        fig, ax = plt.subplots(figsize=(10, 2.0), facecolor=bg_color)
+        ax.set_facecolor(bg_color)
         
         # Define geometries - Glued together
         sched_y = 12.5
@@ -182,17 +200,17 @@ def generate_chart(target_date, intervals, schedule_intervals):
         day_end = datetime.datetime.combine(target_date, datetime.time.max).replace(tzinfo=KYIV_TZ)
         
         # --- Schedule Data (Bottom Bar) ---
-        sched_color_map = {True: '#FFF59D', False: '#BDBDBD'} # Light Yellow, Gray
+        sched_color_map = {True: plan_on_color, False: plan_off_color}
         
         if schedule_intervals:
             for start, duration_hours, is_light in schedule_intervals:
-                color = sched_color_map.get(is_light, '#E0E0E0')
+                color = sched_color_map.get(is_light, plan_off_color)
                 start_num = mdates.date2num(start)
                 duration_days = duration_hours / 24.0
                 ax.broken_barh([(start_num, duration_days)], (sched_y, sched_h), facecolors=color, edgecolor='none')
 
         # --- Separator Line (Background Color) ---
-        ax.axhline(y=15, color='#1E122A', linewidth=0.5, zorder=5)
+        ax.axhline(y=15, color=bg_color, linewidth=0.5, zorder=5)
 
         # --- Hour Markers on the Bars (Background Color) ---
         hour_points = []
@@ -200,17 +218,13 @@ def generate_chart(target_date, intervals, schedule_intervals):
             point_time = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ) + datetime.timedelta(hours=h)
             hour_points.append(mdates.date2num(point_time))
             
-        # Draw vertical lines across the bars to act as hour markers
-        # We use a high zorder (10) to make sure they are visible on top of the bars
-        ax.vlines(hour_points, 12.5, 17.5, colors='#1E122A', linewidth=0.8, zorder=10)
+        ax.vlines(hour_points, 12.5, 17.5, colors=bg_color, linewidth=0.8, zorder=10)
 
         # --- Actual Data (Top Bar) ---
-        color_map = {'up': '#4CAF50', 'down': '#EF9A9A', 'unknown': '#C8E6C9'}
+        color_map = {'up': fact_on_color, 'down': fact_off_color, 'unknown': fact_on_color}
         
         total_up = 0
         total_down = 0
-        
-        last_actual_end = day_start
         
         for start, end, state in intervals:
             duration_sec = (end - start).total_seconds()
@@ -221,16 +235,13 @@ def generate_chart(target_date, intervals, schedule_intervals):
             elif state == 'unknown':
                 total_up += duration_sec
                 
-            color = color_map.get(state, '#C8E6C9')
+            color = color_map.get(state, fact_on_color)
             
             start_num = mdates.date2num(start)
             end_num = mdates.date2num(end)
             duration_num = end_num - start_num
             
             ax.broken_barh([(start_num, duration_num)], (act_y, act_h), facecolors=color, edgecolor='none')
-            
-            if end > last_actual_end:
-                last_actual_end = end
 
         # --- Formatting ---
         ax.set_ylim(11, 19) 
@@ -239,35 +250,36 @@ def generate_chart(target_date, intervals, schedule_intervals):
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
-        ax.spines['bottom'].set_color('white')
+        ax.spines['bottom'].set_color(text_color)
         
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=KYIV_TZ))
         ax.xaxis.set_major_locator(mdates.HourLocator(interval=2, tz=KYIV_TZ))
         ax.xaxis.set_minor_locator(mdates.HourLocator(interval=1, tz=KYIV_TZ))
         
-        ax.tick_params(axis='x', colors='white')
-        ax.tick_params(axis='y', colors='white')
+        ax.tick_params(axis='x', colors=text_color)
+        ax.tick_params(axis='y', colors=text_color)
         
         ax.set_yticks([sched_y + sched_h/2, act_y + act_h/2])
-        ax.set_yticklabels(['Графік', 'Факт'], color='white')
+        ax.set_yticklabels(['Графік', 'Факт'], color=text_color)
         
-        ax.set_title(f"Статистика світла за {target_date.strftime('%d.%m.%Y')}", fontsize=12, color='white')
+        ax.set_title(f"Статистика світла за {target_date.strftime('%d.%m.%Y')}", fontsize=12, color=text_color)
         
         import matplotlib.patches as mpatches
-        green_patch = mpatches.Patch(color='#4CAF50', label=f'Світло є')
-        red_patch = mpatches.Patch(color='#EF9A9A', label=f'Світла немає')
-        yellow_patch = mpatches.Patch(color='#FFF59D', label='Графік: Є')
-        gray_patch = mpatches.Patch(color='#BDBDBD', label='Графік: Немає')
+        green_patch = mpatches.Patch(color=fact_on_color, label=f'Світло є')
+        red_patch = mpatches.Patch(color=fact_off_color, label=f'Світла немає')
+        yellow_patch = mpatches.Patch(color=plan_on_color, label='Графік: Є')
+        gray_patch = mpatches.Patch(color=plan_off_color, label='Графік: Немає')
         
         legend = plt.legend(handles=[green_patch, red_patch, yellow_patch, gray_patch], 
                    loc='upper center', bbox_to_anchor=(0.5, -0.25),
                    fancybox=False, frameon=False, shadow=False, ncol=4, fontsize='small')
-        plt.setp(legend.get_texts(), color='white')
+        plt.setp(legend.get_texts(), color=text_color)
 
         plt.tight_layout()
         plt.subplots_adjust(bottom=0.35)
         
-        filename = f"report_{target_date.strftime('%Y-%m-%d')}.png"
+        suffix = "_light" if theme == 'light' else ""
+        filename = f"report_{target_date.strftime('%Y-%m-%d')}{suffix}.png"
         plt.savefig(filename, dpi=100, facecolor=fig.get_facecolor())
         plt.close()
         
@@ -400,12 +412,14 @@ if __name__ == "__main__":
         calc_end = now if target_date == now.date() else day_start + datetime.timedelta(hours=24)
         intervals = [(day_start, calc_end, "unknown")]
 
-    filename, t_up, t_down = generate_chart(target_date, intervals, sched_intervals)
+    filename, t_up, t_down = generate_chart(target_date, intervals, sched_intervals, theme='dark')
+    filename_light, _, _ = generate_chart(target_date, intervals, sched_intervals, theme='light')
     
     # Save copy for Web Dashboard
     web_dir = os.path.join(DATA_DIR, "static")
     if not os.path.exists(web_dir): os.makedirs(web_dir)
     shutil.copy(filename, os.path.join(web_dir, "chart.png"))
+    shutil.copy(filename_light, os.path.join(web_dir, "chart_light.png"))
     
     caption = (f"📊 <b>Звіт за {target_date.strftime('%d.%m.%Y')}</b>\n\n"
                f"💡 Світло було: <b>{format_duration(t_up)}</b>\n"
@@ -456,3 +470,5 @@ if __name__ == "__main__":
     
     if os.path.exists(filename):
         os.remove(filename)
+    if os.path.exists(filename_light):
+        os.remove(filename_light)
