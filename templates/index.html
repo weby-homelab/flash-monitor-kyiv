@@ -14,32 +14,86 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #1E122A; color: white; text-align: center; padding: 20px; margin: 0; }
+        :root {
+            /* Default to Velvet Gradient Dark */
+            --bg-main: linear-gradient(180deg, #120B1F 0%, #2A1B3F 100%);
+            --bg-card: rgba(30, 22, 51, 0.85);
+            --backdrop-blur: 20px;
+            --accent-deep: #30106b;
+            --accent-mint: #6EE7B7;
+            --accent-danger: #FF6B81;
+            --text-primary: #F0E6FF;
+            --text-deep: #1a0933;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-main: linear-gradient(180deg, #F0E6FA 0%, #FFFFFF 100%);
+                --bg-card: rgba(255, 255, 255, 0.92);
+                --backdrop-blur: 16px;
+                --accent-deep: #30106b;
+                --accent-mint: #88E8C8;
+                --accent-danger: #FF6B81;
+                --text-primary: #1a0933;
+                --border-color: rgba(48, 16, 107, 0.1);
+            }
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg-main); 
+            background-attachment: fixed;
+            color: var(--text-primary); 
+            text-align: center; 
+            padding: 20px; 
+            margin: 0; 
+            min-height: 100vh;
+        }
+
         .container { max-width: 600px; margin: 0 auto; }
         
-        h1 { font-weight: 500; letter-spacing: 0.5px; color: #fff; margin-bottom: 30px; }
+        h1 { font-weight: 500; letter-spacing: 0.5px; color: var(--text-primary); margin-bottom: 30px; }
 
         .card { 
-            background: #1E122A; 
-            border-radius: 12px; 
+            background: var(--bg-card); 
+            backdrop-filter: blur(var(--backdrop-blur));
+            -webkit-backdrop-filter: blur(var(--backdrop-blur));
+            border-radius: 16px; 
             padding: 20px; 
             margin-bottom: 20px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
             text-align: center;
-            transition: background 0.5s ease;
+            transition: transform 0.3s ease, background 0.5s ease;
         }
         
-        .card.status-on { background: #0277bd !important; } /* Blue for light ON */
-        .card.status-off { background: #37474f !important; } /* Dark Grey for light OFF */
+        .card:hover { transform: translateY(-2px); }
+
+        .card.status-on { 
+            background: rgba(110, 231, 183, 0.2) !important; 
+            border: 1px solid var(--accent-mint);
+        }
+        .card.status-off { 
+            background: rgba(255, 107, 129, 0.15) !important; 
+            border: 1px solid var(--accent-danger);
+        }
         
-        .title { color: #aaa; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
-        .value { font-size: 28px; font-weight: bold; }
-        .status-text { font-size: 16px; margin-top: 5px; color: #ccc; }
+        .title { color: var(--text-primary); opacity: 0.7; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
+        .value { font-size: 28px; font-weight: bold; color: var(--text-primary); }
+        .status-text { font-size: 16px; margin-top: 5px; color: var(--text-primary); opacity: 0.8; }
         
         /* Alerts */
-        .alert-card.active { background: #d32f2f; border: none; animation: pulse 2s infinite; }
-        .alert-card.clear { background: #388e3c; border: none; }
-        .alert-card .title, .alert-card .status-text { color: rgba(255,255,255,0.8); }
+        .alert-card.active { 
+            background: rgba(211, 47, 47, 0.8) !important; 
+            border: none; 
+            animation: pulse 2s infinite; 
+        }
+        .alert-card.clear { 
+            background: rgba(56, 142, 60, 0.8) !important; 
+            border: none; 
+        }
+        .alert-card .title, .alert-card .status-text { color: #fff; opacity: 0.9; }
         .alert-card .value { color: #fff !important; text-shadow: none !important; }
         
         @keyframes pulse {
@@ -48,11 +102,11 @@
             100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
         }
 
-        .chart { width: 100%; border-radius: 8px; margin-top: 10px; background: #1E122A; }
+        .chart { width: 100%; border-radius: 12px; margin-top: 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); }
 
-        .footer { margin-top: 40px; font-size: 12px; color: #666; text-align: center; }
-        .footer a { color: #888; text-decoration: none; }
-        .footer a:hover { color: #fff; text-decoration: underline; }
+        .footer { margin-top: 40px; font-size: 13px; color: var(--text-primary); opacity: 0.6; text-align: center; }
+        .footer a { color: var(--text-primary); text-decoration: none; font-weight: bold; }
+        .footer a:hover { opacity: 1; text-decoration: underline; }
 
         /* Toast Styles */
         #toast-container {
@@ -66,13 +120,15 @@
             pointer-events: none;
         }
         .toast {
-            background: rgba(30, 18, 42, 0.95);
-            border: 1px solid #3a2d4d;
-            border-left: 5px solid #4CAF50;
-            color: white;
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-left: 5px solid var(--accent-mint);
+            color: var(--text-primary);
             padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
             font-size: 14px;
             display: flex;
             flex-direction: column;
@@ -84,22 +140,28 @@
             max-width: 300px;
         }
         .toast.show { opacity: 1; transform: translateX(0); }
-        .toast.down { border-left-color: #EF9A9A; }
+        .toast.down { border-left-color: var(--accent-danger); }
         .toast.alert { border-left-color: #ff5252; }
         .toast-title { font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 8px; }
 
         /* Stats grid */
-        .stats-grid { color: #aaa; font-size: 14px; margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-        .stats-item { background: #2a2a2a; padding: 5px 10px; border-radius: 6px; }
-        .stats-item b { color: #fff; }
+        .stats-grid { font-size: 14px; margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .stats-item { 
+            background: rgba(255, 255, 255, 0.1); 
+            padding: 6px 12px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .stats-item b { color: var(--accent-mint); }
 
         /* Table Styles */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
-        td { padding: 10px 8px; border-bottom: 1px solid #3a2d4d; text-align: left; }
+        td { padding: 12px 8px; border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-primary); }
         tr:last-child td { border-bottom: none; }
-        .td-time { white-space: nowrap; width: 100px; color: #ccc; }
+        .td-time { white-space: nowrap; width: 100px; opacity: 0.7; }
         .td-event { font-weight: bold; }
-        .td-event span { display: block; font-weight: normal; font-size: 0.9em; color: #aaa; text-align: right; }
+        .td-event span { display: block; font-weight: normal; font-size: 0.9em; opacity: 0.6; text-align: right; }
 
     </style>
 </head>
@@ -147,10 +209,10 @@
         <!-- Radiation background (Moved up) -->
         <div class="card">
             <div class="title">Радіаційний фон</div>
-            <div class="value" style="color: #4fc3f7;">
-                <span id="rad-val">--</span> <span style="font-size: 16px; color: #888;">мкЗв/год</span>
+            <div class="value">
+                <span id="rad-val">--</span> <span style="font-size: 16px; opacity: 0.6;">мкЗв/год</span>
             </div>
-            <div class="status-text" style="color: #4caf50;">В нормі</div>
+            <div class="status-text" style="color: var(--accent-mint);">В нормі</div>
         </div>
 
         <!-- Light Chart -->
@@ -162,9 +224,9 @@
         <!-- Plan vs Fact Analytics -->
         <div id="stats-card" class="card" style="display: none;">
             <div class="title">План vs Факт (Сьогодні)</div>
-            <div style="font-size: 16px; margin-bottom: 5px; color: #CCC;">• За планом: <b id="stats-plan" style="color: #fff;">--</b></div>
-            <div style="font-size: 16px; margin-bottom: 5px; color: #CCC;">• Реально: <b id="stats-fact" style="color: #fff;">--</b></div>
-            <div style="font-size: 16px; color: #CCC;">• Відхилення: <b id="stats-diff" style="color: #fff;">--</b> (<span id="stats-pct">--</span>% від плану)</div>
+            <div style="font-size: 16px; margin-bottom: 5px;">• За планом: <b id="stats-plan">--</b></div>
+            <div style="font-size: 16px; margin-bottom: 5px;">• Реально: <b id="stats-fact">--</b></div>
+            <div style="font-size: 16px;">• Відхилення: <b id="stats-diff">--</b> (<span id="stats-pct">--</span>% від плану)</div>
         </div>
 
         <!-- Weekly Chart -->
