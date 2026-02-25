@@ -435,6 +435,14 @@ def index():
 def robots_txt():
     return "User-agent: *\nAllow: /", 200, {'Content-Type': 'text/plain'}
 
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_from_directory('static', 'manifest.json')
+
+@app.route('/service-worker.js')
+def serve_sw():
+    return send_from_directory('static', 'service-worker.js')
+
 
 @app.route('/api/push/<secret_key>', methods=['GET'])
 def push_api(secret_key):

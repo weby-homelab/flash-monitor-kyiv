@@ -98,8 +98,13 @@ def main():
     with open(SCHEDULE_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
         
-    group = cfg['settings']['groups'][0]
-    header = cfg['ui']['format']['header_template'].format(group=group.replace("GPV", ""))
+    # Safe access to icons and formatting
+    ui_cfg = cfg.get('ui', {})
+    icons = ui_cfg.get('icons', {'calendar': '📆', 'pending': '⏳', 'on': '🔆', 'off': '✖️'})
+    format_cfg = ui_cfg.get('format', {'header_template': "🔆 Графік групи {group} 🔆", 'footer_template': "🕐 Оновлено: {time}\n© 2026 Weby Homelab"})
+    
+    header = format_cfg.get('header_template', "🔆 Графік групи {group} 🔆").format(group=group.replace("GPV", ""))
+    
     today_str = now.strftime("%Y-%m-%d")
     tomorrow_str = (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
     
@@ -107,15 +112,17 @@ def main():
     # Build core content for hash comparison (without footer time)
     for d_str in [today_str, tomorrow_str]:
         dt = datetime.datetime.strptime(d_str, "%Y-%m-%d")
-        day_title = f"{cfg['ui']['icons']['calendar']}  {dt.strftime('%d.%m')} ({DAYS_UA[dt.weekday()]})"
+        day_title = f"{icons.get('calendar', '📆')}  {dt.strftime('%d.%m')} ({DAYS_UA[dt.weekday()]})"
         source_texts = []
         for s_key in ['github', 'yasno']:
             s_data = data.get(s_key, {}).get(group, {})
             if d_str in s_data and s_data[d_str].get('slots'):
-                source_texts.append((cfg['sources'][s_key]['name'], generate_text_for_day(d_str, s_data, cfg)))
+                source_name = cfg.get('sources', {}).get(s_key, {}).get('name', s_key.capitalize())
+                source_texts.append((source_name, generate_text_for_day(d_str, s_data, cfg)))
         
         if not source_texts:
-            report_sections.append(f"{day_title}:\n\n{cfg['ui']['icons']['pending']} {cfg['ui']['text']['pending']}")
+            pending_text = ui_cfg.get('text', {}).get('pending', 'Графік очікується')
+            report_sections.append(f"{day_title}:\n\n{icons.get('pending', '⏳')} {pending_text}")
         elif len(source_texts) == 2 and source_texts[0][1] == source_texts[1][1]:
             report_sections.append(f"{day_title} [{source_texts[0][0]}, {source_texts[1][0]}]:\n\n{source_texts[0][1]}")
         else:
@@ -126,8 +133,10 @@ def main():
     core_content = "\n".join(report_sections)
     content_hash = hashlib.md5(core_content.encode()).hexdigest()
     
-    footer = f"\n{cfg['ui']['icons']['clock']} {cfg['ui']['text']['updated']}: {now.strftime('%d.%m.%Y %H:%M')} (Київ)"
-    full_text = f"{header}\n\n{core_content}\n{footer}"
+    clock_icon = icons.get('clock', '🕐')
+    updated_text = ui_cfg.get('text', {}).get('updated', 'Оновлено')
+    footer = f"\n{clock_icon} {updated_text}: {now.strftime('%H:%M')} (Київ)\n© 2026 Weby Homelab"
+    full_text = f"<b>{header}</b>\n\n{core_content}\n\n---\n{footer}"
     
     state = get_report_state()
     last_id = state.get("message_id")
