@@ -16,7 +16,18 @@ CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 CONFIG_FILE = "config.json" # Config usually stays with code
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 TEXT_REPORT_ID_FILE = os.path.join(DATA_DIR, "text_report_id.json")
-KYIV_TZ = ZoneInfo("Europe/Kyiv")
+def get_timezone():
+    try:
+        config_path = os.path.join(DATA_DIR, "config.json")
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                cfg = json.load(f)
+                tz_name = cfg.get("settings", {}).get("timezone", "Europe/Kyiv")
+                return ZoneInfo(tz_name)
+    except: pass
+    return ZoneInfo("Europe/Kyiv")
+
+KYIV_TZ = get_timezone()
 
 DAYS_UA = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
 

@@ -5,7 +5,19 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Optional
 
-KYIV_TZ = ZoneInfo("Europe/Kyiv")
+def get_timezone():
+    try:
+        data_dir = os.environ.get("DATA_DIR", ".")
+        config_path = os.path.join(data_dir, "config.json")
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                cfg = json.load(f)
+                tz_name = cfg.get("settings", {}).get("timezone", "Europe/Kyiv")
+                return ZoneInfo(tz_name)
+    except: pass
+    return ZoneInfo("Europe/Kyiv")
+
+KYIV_TZ = get_timezone()
 GITHUB_URL = "https://raw.githubusercontent.com/Baskerville42/outage-data-ua/main/data/{region}.json"
 YASNO_URL = "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages"
 
