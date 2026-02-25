@@ -28,7 +28,7 @@ STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
-SCHEDULE_API_URL = os.environ.get("SCHEDULE_API_URL", "http://127.0.0.1:8889")
+SCHEDULE_API_URL = os.environ.get("SCHEDULE_API_URL", "")
 ALERTS_API_URL = "https://ubilling.net.ua/aerialalerts/"
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
 
@@ -331,7 +331,7 @@ def get_deviation_info(event_time, is_up):
                     else:
                         transition_type = 'down'
 
-        if abs(best_diff) > 90:
+        if abs(best_diff) > 180:
             return ""
 
         expected_type = 'up' if is_up else 'down'
@@ -399,7 +399,7 @@ def get_nearest_schedule_switch(event_time, target_is_up):
                         best_diff = diff
                         best_time_str = f"{trans_h:02d}:{trans_m:02d}"
                         
-        if best_diff > 5400: # If closest is more than 1.5 hours away, ignore
+        if best_diff > 10800: # If closest is more than 3 hours away, ignore
             return None
             
         return best_time_str
@@ -470,7 +470,7 @@ def monitor_loop():
                 sched_light_now, current_end, next_range, next_duration = get_schedule_context()
                 
                 time_str = datetime.datetime.fromtimestamp(down_time_ts, KYIV_TZ).strftime("%H:%M")
-                dev_msg = get_deviation_info(current_time, False)
+                dev_msg = get_deviation_info(down_time_ts, False)
                 
                 # Header
                 msg = f"🔴 <b>{time_str} Світло зникло!</b>\n\n"
