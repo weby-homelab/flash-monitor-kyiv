@@ -18,7 +18,7 @@ from light_service import (
 )
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=None)
 
 # --- Configuration ---
 DATA_DIR = os.environ.get("DATA_DIR", ".")
