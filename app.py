@@ -182,6 +182,9 @@ def get_light_status_api():
     event_text, recent_events = get_power_events_data()
     
     config_path = os.path.join(DATA_DIR, "config.json")
+    if not os.path.exists(config_path):
+        config_path = "config.json"
+        
     group_name = "36.1"
     if os.path.exists(config_path):
         try:
@@ -203,6 +206,9 @@ def get_today_schedule_text():
         DAYS_UA = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
         
         config_path = os.path.join(DATA_DIR, "config.json")
+        if not os.path.exists(config_path):
+            config_path = "config.json"
+            
         target_group = "GPV36.1" # Default
         if os.path.exists(config_path):
             with open(config_path, 'r') as f:
@@ -319,6 +325,9 @@ def get_air_quality():
     try:
         # Load AQI settings from config
         config_path = os.path.join(DATA_DIR, "config.json")
+        if not os.path.exists(config_path):
+            config_path = "config.json"
+            
         seb_station = "17095" # Default: Symyrenka
         lat, lon = "50.408", "30.400" # Default: Borshchahivka
         loc_name = "Борщагівка (Симиренка)"
