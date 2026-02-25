@@ -1,12 +1,11 @@
 {
   "name": "СВІТЛО⚡БЕЗПЕКА",
-  "short_name": "СВІТЛО⚡БЕЗПЕКА",
+  "short_name": "Світло",
+  "description": "Моніторинг світла та безпеки Києва в реальному часі",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "background_color": "#1E122A",
-  "theme_color": "#1E122A",
-  "orientation": "portrait-primary",
+  "background_color": "#050505",
+  "theme_color": "#a78bfa",
   "icons": [
     {
       "src": "/static/icon.svg",
