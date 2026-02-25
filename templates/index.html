@@ -100,8 +100,8 @@
             font-weight: 700;
         }
 
-        .status-row { display: flex; align-items: center; gap: 16px; }
-        .status-icon { font-size: 2.2rem; }
+        .status-row { display: flex; align-items: center; gap: 16px; width: 100%; }
+        .status-icon { font-size: 2.2rem; min-width: 40px; }
         .status-info { flex-grow: 1; }
         .status-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 2px; }
         .status-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.4; font-weight: 500; }
@@ -116,13 +116,13 @@
             100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
         }
 
-        /* Map Container */
         .map-container {
             border-radius: 20px;
             overflow: hidden;
-            height: 300px;
+            height: 320px;
             background: rgba(0,0,0,0.1);
             border: 1px solid var(--card-border);
+            margin-top: 12px;
         }
         .map-container iframe { width: 100%; height: 100%; border: none; }
 
@@ -139,12 +139,13 @@
             border-top: 1px solid var(--card-border);
             display: flex;
             justify-content: space-between;
+            align-items: center;
             font-size: 0.85rem;
             color: var(--text-secondary);
             font-weight: 500;
         }
 
-        .rad-status { color: var(--success); font-weight: 700; }
+        .rad-badge { color: var(--success); font-weight: 700; }
 
         .section-header {
             margin: 24px 0 12px;
@@ -159,14 +160,7 @@
         }
         .section-header::after { content: ''; height: 1px; flex-grow: 1; background: var(--card-border); }
 
-        .chart-wrap { 
-            border-radius: 24px; 
-            overflow: hidden; 
-            border: 1px solid var(--card-border); 
-            margin-top: 12px;
-            background: #000;
-            cursor: pointer;
-        }
+        .chart-wrap { border-radius: 24px; overflow: hidden; border: 1px solid var(--card-border); margin-top: 12px; background: #000; cursor: pointer; }
         .chart-wrap img { width: 100%; display: block; }
 
         .schedule-text {
@@ -192,16 +186,7 @@
 
         #last-update { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent); }
 
-        #modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.98);
-            padding: 16px;
-            align-items: center;
-            justify-content: center;
-        }
+        #modal { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); padding: 16px; align-items: center; justify-content: center; }
         #modal img { max-width: 100%; max-height: 90vh; border-radius: 16px; }
     </style>
 </head>
@@ -237,7 +222,8 @@
         </div>
 
         <!-- Air Raid Map -->
-        <div class="card" style="padding: 12px;">
+        <div class="card" style="padding: 16px;">
+            <span class="card-label">Карта тривог</span>
             <div class="map-container">
                 <iframe id="alert-map" src="https://alerts.in.ua/widgets/map?light=1"></iframe>
             </div>
@@ -247,7 +233,7 @@
         <div class="card">
             <span class="card-label" id="aqi-loc">Якість повітря</span>
             <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px;">
-                <span id="aqi-num" style="font-size: 3.5rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em;">--</span>
+                <span id="aqi-num" style="font-size: 3.5rem; font-weight: 800; line-height: 1;">--</span>
                 <div>
                     <div id="aqi-text" style="font-size: 1.2rem; font-weight: 700;">---</div>
                     <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">AQI INDEX</div>
@@ -262,7 +248,7 @@
             </div>
             <div class="weather-info">
                 <span id="wind-status">---</span>
-                <span id="rad-status">☢️ -- мкЗв/год <span class="rad-status">(норма)</span></span>
+                <span id="rad-container">☢️ <span id="rad-val">--</span> мкЗв/год <span class="rad-badge">(норма)</span></span>
             </div>
         </div>
 
@@ -305,7 +291,9 @@
         function updateMapTheme() {
             const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const map = document.getElementById('alert-map');
-            map.src = isDark ? "https://alerts.in.ua/widgets/map?dark=1" : "https://alerts.in.ua/widgets/map?light=1";
+            if (map) {
+                map.src = isDark ? "https://alerts.in.ua/widgets/map?dark=1" : "https://alerts.in.ua/widgets/map?light=1";
+            }
         }
 
         function update() {
@@ -357,7 +345,7 @@
                     document.getElementById('temp').innerText = data.aqi.temp + '°C';
                     document.getElementById('hum').innerText = data.aqi.hum + '%';
                     document.getElementById('wind-status').innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
-                    document.getElementById('rad-status').innerHTML = '☢️ ' + data.radiation.level + ' мкЗв/год <span class="rad-status">(норма)</span>';
+                    document.getElementById('rad-val').innerText = data.radiation.level;
 
                     // Schedule & Time
                     document.getElementById('schedule-text').innerHTML = data.schedule_text;
