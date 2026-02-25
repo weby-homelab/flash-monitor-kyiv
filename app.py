@@ -146,7 +146,7 @@ def get_power_events_data(limit=5):
                     
                     if dev_msg:
                         if "точно за графіком" in dev_msg:
-                            dev_html = f"{verb}: точно за графіком"
+                            dev_html = f"{verb} точно за графіком"
                         else:
                             # Match sign, minutes and the label (запізнення/раніше)
                             m = re.search(r"([+−])(\d+)\s*хв\s*\((запізнення|раніше)", dev_msg)
@@ -154,12 +154,10 @@ def get_power_events_data(limit=5):
                                 mins = int(m.group(2))
                                 kind_raw = m.group(3)
                                 kind = "пізніше" if kind_raw == "запізнення" else "раніше"
-                                if evt == "up":
-                                    kind = kind.capitalize()
                                 dur_str = format_duration(mins * 60)
-                                dev_html = f"{verb}: {kind} на {dur_str}"
+                                dev_html = f"{verb} {kind} на {dur_str}"
                             else:
-                                dev_html = f"{verb}: {dev_msg.replace('• Точність: ', '')}"
+                                dev_html = f"{verb} {dev_msg.replace('• Точність: ', '')}"
                     
                     next_line = f"Наступне планове: {next_range}"
                     if dev_html:
