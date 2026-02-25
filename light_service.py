@@ -34,6 +34,9 @@ ALERTS_API_URL = "https://ubilling.net.ua/aerialalerts/"
 def get_timezone():
     try:
         config_path = os.path.join(DATA_DIR, "config.json")
+        if not os.path.exists(config_path):
+            config_path = "config.json"
+            
         if os.path.exists(config_path):
             with open(config_path, 'r') as f:
                 cfg = json.load(f)
