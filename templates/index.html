@@ -257,6 +257,7 @@
         <div id="schedule-text" class="schedule-text">Завантаження...</div>
 
         <footer>
+            Оновлено: <span id="last-update">--:--:--</span><br>
             © 2026 Weby Homelab<br>
             Made with ❤️ in Kyiv under air raid sirens and blackouts
         </footer>
@@ -333,6 +334,9 @@
 
                     // Schedule
                     document.getElementById('schedule-text').innerHTML = data.schedule_text;
+
+                    // Last Update Time
+                    document.getElementById('last-update').innerText = data.timestamp;
                 });
         }
 
