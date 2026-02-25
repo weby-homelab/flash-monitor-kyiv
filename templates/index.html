@@ -54,16 +54,6 @@
         .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
         .logo span { color: var(--accent); }
 
-        .time-badge {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            padding: 6px 12px;
-            border-radius: 100px;
-            font-size: 0.75rem;
-            font-family: 'JetBrains Mono', monospace;
-            backdrop-filter: blur(10px);
-        }
-
         .card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -191,7 +181,6 @@
     <div class="container">
         <header>
             <div class="logo">СВІТЛО<span>⚡</span>БЕЗПЕКА</div>
-            <div class="time-badge" id="live-clock">--:--:--</div>
         </header>
 
         <!-- Power -->
@@ -295,9 +284,6 @@
             fetch('/api/status')
                 .then(r => r.json())
                 .then(data => {
-                    // Time
-                    document.getElementById('live-clock').innerText = data.timestamp;
-
                     // Light
                     const lCard = document.getElementById('light-card');
                     if (data.light === 'on') {
