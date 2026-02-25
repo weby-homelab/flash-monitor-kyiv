@@ -9,7 +9,7 @@
 
 <br>
 
-# FLASH MONITOR KYIV (v1.4.9 Autonomous Edition)
+# FLASH MONITOR KYIV (v1.4.10 Autonomous Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
@@ -18,6 +18,7 @@
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
 Recent fixes and improvements:
+- **Docker Fix:** Fixed `Invalid cross-device link` error during chart generation (replaced `os.rename` with `shutil.move`).
 - **Weekly Charts:** Fixed schedule display logic (now using `last_schedules.json` for current days).
 - **Synchronization:** Enabled local host (`127.0.0.1`) sync for flexible setup in multi-service environments.
 - **Stability:** Added `shutil` in `generate_weekly_report.py` and improved resilience to different history data formats.
