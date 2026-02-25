@@ -307,36 +307,29 @@ def get_deviation_info(event_time, is_up):
             
         slots = schedule_data[date_str]['slots']
         
-        # Find nearest transition
+        # Find nearest transition of the target type
         best_diff = 9999
-        transition_type = None # 'up' or 'down'
         
         for i in range(49):
-            state_before = slots[i-1] if i > 0 else slots[0] 
+            state_before = slots[i-1] if i > 0 else (not slots[0])
             state_after = slots[i] if i < 48 else slots[47] 
             
-            if i == 0: state_before = not state_after 
-            
             if state_before != state_after:
-                trans_h = i // 2
-                trans_m = 30 if i % 2 else 0
+                transition_type = 'up' if (not state_before and state_after) else 'down'
                 
-                trans_dt = dt.replace(hour=trans_h, minute=trans_m, second=0, microsecond=0)
-                diff = (dt - trans_dt).total_seconds() / 60
-                
-                if abs(diff) < abs(best_diff):
-                    best_diff = int(diff)
-                    if not state_before and state_after:
-                        transition_type = 'up'
-                    else:
-                        transition_type = 'down'
+                expected_type = 'up' if is_up else 'down'
+                if transition_type == expected_type:
+                    trans_h = i // 2
+                    trans_m = 30 if i % 2 else 0
+                    
+                    trans_dt = dt.replace(hour=trans_h, minute=trans_m, second=0, microsecond=0)
+                    diff = (dt - trans_dt).total_seconds() / 60
+                    
+                    if abs(diff) < abs(best_diff):
+                        best_diff = int(diff)
 
         if abs(best_diff) > 180:
             return ""
-
-        expected_type = 'up' if is_up else 'down'
-        if transition_type != expected_type:
-            return "" 
 
         abs_diff = abs(best_diff)
         h = abs_diff // 60
