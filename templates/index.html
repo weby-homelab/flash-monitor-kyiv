@@ -89,7 +89,7 @@
             border: 1px solid var(--accent-danger);
         }
         
-        .title { color: var(--text-primary); opacity: 0.7; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
+        .title { color: var(--text-primary); opacity: 0.7; font-size: 14px; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
         .value { font-size: 28px; font-weight: bold; color: var(--text-primary); }
         .status-text { font-size: 16px; margin-top: 5px; color: var(--text-primary); opacity: 0.8; }
         
@@ -256,14 +256,12 @@
             <img src="/static/weekly_light.png?v={{ ts }}" id="weekly-chart-light" class="chart chart-light" alt="">
         </div>
 
-        <!-- Recent Events -->
+        <!-- Group Schedule -->
         <div class="card">
-            <div class="title">Останні події</div>
-            <table>
-                <tbody id="events-table-body">
-                    <tr><td colspan="2" style="text-align: center;">Завантаження...</td></tr>
-                </tbody>
-            </table>
+            <div class="title">Графік групи 36.1</div>
+            <div id="schedule-text" style="text-align: left; padding: 10px; line-height: 1.4;">
+                Завантаження...
+            </div>
         </div>
 
         <div class="footer">
@@ -388,13 +386,13 @@
                     const currentStatus = data.light;
                     
                     if (currentStatus === 'on') {
-                        lightVal.innerHTML = '<span style="text-transform: uppercase;">💡 Світло є</span>';
+                        lightVal.innerHTML = '<span>💡 Світло є</span>';
                         if (lightCard) {
                             lightCard.classList.add('status-on');
                             lightCard.classList.remove('status-off');
                         }
                     } else if (currentStatus === 'off') {
-                        lightVal.innerHTML = '<span style="text-transform: uppercase;">✖️ Світло зникло</span>';
+                        lightVal.innerHTML = '<span>✖️ Світло зникло</span>';
                         if (lightCard) {
                             lightCard.classList.add('status-off');
                             lightCard.classList.remove('status-on');
@@ -416,20 +414,12 @@
                     }
                     lastLightStatus = currentStatus;
 
-                    // 1.5 History Table
-                    const tbody = document.getElementById('events-table-body');
-                    if (data.light_history && data.light_history.length > 0) {
-                        let rowsHtml = '';
-                        data.light_history.forEach(ev => {
-                            const color = ev.icon === '🟢' ? '#4CAF50' : '#EF9A9A';
-                            rowsHtml += `<tr>
-                                <td class="td-time">${ev.time}</td>
-                                <td class="td-event" style="color: ${color};">${ev.icon} ${ev.text}<span>${ev.desc}</span></td>
-                            </tr>`;
-                        });
-                        tbody.innerHTML = rowsHtml;
+                    // 1.5 Schedule Text
+                    const scheduleTextDiv = document.getElementById('schedule-text');
+                    if (data.schedule_text) {
+                        scheduleTextDiv.innerHTML = data.schedule_text;
                     } else {
-                        tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #aaa;">Немає даних про події</td></tr>';
+                        scheduleTextDiv.innerHTML = 'Немає даних про графік';
                     }
 
                     // 2. Air Raid Alert
