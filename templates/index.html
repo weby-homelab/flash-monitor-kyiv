@@ -9,20 +9,36 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="/manifest.json">
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #0a0a0c;
-            --card-bg: rgba(30, 30, 35, 0.6);
+            /* Dark Theme Variables (Black-and-White Base) */
+            --bg-color: #050505;
+            --card-bg: rgba(25, 25, 30, 0.6);
             --card-border: rgba(255, 255, 255, 0.08);
-            --text-primary: #f0f0f5;
-            --text-secondary: #a0a0aa;
-            --accent: #a78bfa; /* Amethyst */
-            --accent-glow: rgba(167, 139, 250, 0.25);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --accent: #a78bfa;
             --success: #34d399;
             --danger: #f87171;
             --warning: #fbbf24;
+            --blur: 25px;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                /* Light Theme Variables (Crystal White) */
+                --bg-color: #f3f4f6;
+                --card-bg: rgba(255, 255, 255, 0.7);
+                --card-border: rgba(0, 0, 0, 0.05);
+                --text-primary: #111827;
+                --text-secondary: #4b5563;
+                --accent: #8b5cf6;
+                --success: #059669;
+                --danger: #dc2626;
+                --warning: #d97706;
+            }
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -36,9 +52,19 @@
             flex-direction: column;
             align-items: center;
             padding: 24px 16px 60px;
-            background-image: 
-                radial-gradient(circle at 10% 10%, rgba(167, 139, 250, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.05) 0%, transparent 40%);
+            transition: background-color 0.3s;
+            background-attachment: fixed;
+        }
+
+        /* Ambient gradients */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 10%, rgba(167, 139, 250, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.08) 0%, transparent 40%);
+            z-index: -1;
         }
 
         .container { width: 100%; max-width: 480px; }
@@ -46,12 +72,11 @@
         header { 
             width: 100%; 
             display: flex; 
-            justify-content: space-between; 
-            align-items: center;
+            justify-content: flex-start; 
             margin-bottom: 24px;
         }
 
-        .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
+        .logo { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); }
         .logo span { color: var(--accent); }
 
         .card {
@@ -60,40 +85,36 @@
             border-radius: 28px;
             padding: 24px;
             margin-bottom: 16px;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            backdrop-filter: blur(var(--blur));
+            -webkit-backdrop-filter: blur(var(--blur));
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             position: relative;
             overflow: hidden;
+            transition: transform 0.2s, background-color 0.3s;
         }
 
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 100%);
-            pointer-events: none;
-        }
+        .card:active { transform: scale(0.98); }
 
         .card-label {
             font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.12em;
             color: var(--text-secondary);
             margin-bottom: 16px;
             display: block;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .status-row { display: flex; align-items: center; gap: 16px; }
-        .status-icon { font-size: 2.2rem; }
+        .status-icon { font-size: 2.2rem; filter: drop-shadow(0 0 10px rgba(0,0,0,0.1)); }
         .status-info { flex-grow: 1; }
-        .status-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
-        .status-desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4; }
+        .status-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 2px; }
+        .status-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.4; font-weight: 500; }
 
-        /* Color Variations */
-        .status-on { border-color: rgba(52, 211, 153, 0.2); box-shadow: 0 0 30px rgba(52, 211, 153, 0.05); }
-        .status-off { border-color: rgba(248, 113, 113, 0.2); box-shadow: 0 0 30px rgba(248, 113, 113, 0.05); }
-        .alert-active { border-color: var(--danger); background: rgba(248, 113, 113, 0.1); animation: pulse-danger 2s infinite; }
+        /* Status Colors */
+        .status-on { border-color: rgba(52, 211, 153, 0.3); }
+        .status-off { border-color: rgba(248, 113, 113, 0.3); }
+        .alert-active { border-color: var(--danger); background: rgba(248, 113, 113, 0.15); animation: pulse-danger 2s infinite; }
 
         @keyframes pulse-danger {
             0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4); }
@@ -101,13 +122,14 @@
             100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
         }
 
-        /* AQI / Rad Grid */
+        /* Grid for AQI / Weather */
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .grid-item { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 20px; }
+        .grid-item { background: rgba(0,0,0,0.03); padding: 16px; border-radius: 20px; border: 1px solid var(--card-border); }
+        @media (prefers-color-scheme: dark) { .grid-item { background: rgba(255,255,255,0.03); } }
+        
         .grid-val { font-size: 1.25rem; font-weight: 700; margin-bottom: 2px; }
-        .grid-label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+        .grid-label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
 
-        /* Weather Section in AQI */
         .weather-info { 
             margin-top: 16px; 
             padding-top: 16px; 
@@ -116,9 +138,23 @@
             justify-content: space-between;
             font-size: 0.85rem;
             color: var(--text-secondary);
+            font-weight: 500;
         }
 
-        /* Charts */
+        /* Charts Section */
+        .section-header {
+            margin: 24px 0 12px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-header::after { content: ''; height: 1px; flex-grow: 1; background: var(--card-border); }
+
         .chart-wrap { 
             border-radius: 24px; 
             overflow: hidden; 
@@ -126,43 +162,35 @@
             margin-top: 12px;
             background: #000;
             cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
-        .chart-wrap img { width: 100%; display: block; opacity: 0.9; transition: opacity 0.3s; }
-        .chart-wrap:hover img { opacity: 1; }
+        .chart-wrap img { width: 100%; display: block; transition: opacity 0.3s; }
 
-        .section-header {
-            margin: 24px 0 12px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .section-header::after { content: ''; height: 1px; flex-grow: 1; background: var(--card-border); }
-
+        /* Schedule Text (The one you asked to change font) */
         .schedule-text {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 24px;
-            padding: 20px;
+            padding: 24px;
             font-family: 'Inter', sans-serif;
-            font-size: 0.9rem;
-            line-height: 1.6;
+            font-size: 0.95rem;
+            line-height: 1.7;
             white-space: pre-wrap;
+            font-weight: 500;
         }
 
         footer {
             margin-top: 40px;
             text-align: center;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            opacity: 0.6;
+            font-weight: 500;
+            line-height: 1.6;
         }
 
-        /* Zoom */
+        #last-update { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent); }
+
+        /* Image Zoom Modal */
         #modal {
             display: none;
             position: fixed;
@@ -173,7 +201,7 @@
             align-items: center;
             justify-content: center;
         }
-        #modal img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
+        #modal img { max-width: 100%; max-height: 90vh; border-radius: 16px; }
     </style>
 </head>
 <body>
@@ -183,38 +211,38 @@
             <div class="logo">СВІТЛО<span>⚡</span>БЕЗПЕКА</div>
         </header>
 
-        <!-- Power -->
+        <!-- Power Status Card -->
         <div id="light-card" class="card">
             <span class="card-label" id="group-title">Електропостачання (Група ...)</span>
             <div class="status-row">
                 <div class="status-icon" id="light-icon">⏳</div>
                 <div class="status-info">
                     <div class="status-title" id="light-text">Завантаження</div>
-                    <div class="status-desc" id="light-event">Отримання статусу мережі...</div>
+                    <div class="status-desc" id="light-event">Отримання статусу...</div>
                 </div>
             </div>
         </div>
 
-        <!-- Air Raid -->
+        <!-- Air Raid Alert Card -->
         <div id="alert-card" class="card">
             <span class="card-label">Повітряна тривога (Київ)</span>
             <div class="status-row">
                 <div class="status-icon" id="alert-icon">🛡️</div>
                 <div class="status-info">
                     <div class="status-title" id="alert-val">---</div>
-                    <div class="status-desc" id="alert-status">Очікування даних...</div>
+                    <div class="status-desc" id="alert-status">Очікування...</div>
                 </div>
             </div>
         </div>
 
-        <!-- AQI & Environment -->
+        <!-- AQI & Environment Card -->
         <div class="card">
             <span class="card-label" id="aqi-loc">Якість повітря</span>
-            <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px;">
-                <span id="aqi-num" style="font-size: 3rem; font-weight: 700; line-height: 1;">--</span>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px;">
+                <span id="aqi-num" style="font-size: 3.5rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em;">--</span>
                 <div>
-                    <div id="aqi-text" style="font-size: 1.1rem; font-weight: 600;">---</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">AQI Index</div>
+                    <div id="aqi-text" style="font-size: 1.2rem; font-weight: 700;">---</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">AQI INDEX</div>
                 </div>
             </div>
             
@@ -242,19 +270,21 @@
             </div>
         </div>
 
-        <!-- Charts -->
+        <!-- Daily Analytics -->
         <div class="section-header">Аналітика за сьогодні</div>
         <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)">
-            <img id="main-chart" src="/static/chart.png" alt="Daily">
+            <img id="main-chart" src="/static/chart.png" alt="Daily Status">
         </div>
 
+        <!-- Weekly Analytics -->
         <div class="section-header">Тижневий звіт</div>
         <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)">
-            <img id="weekly-chart" src="/static/weekly.png" alt="Weekly">
+            <img id="weekly-chart" src="/static/weekly.png" alt="Weekly Status">
         </div>
 
+        <!-- Detailed Schedule Text -->
         <div class="section-header" id="group-schedule-header">Графік групи ...</div>
-        <div id="schedule-text" class="schedule-text">Завантаження...</div>
+        <div id="schedule-text" class="schedule-text">Завантаження розкладу...</div>
 
         <footer>
             Оновлено: <span id="last-update">--:--:--</span><br>
@@ -263,8 +293,9 @@
         </footer>
     </div>
 
+    <!-- Zoom Modal -->
     <div id="modal" onclick="this.style.display='none'">
-        <img id="modal-img" src="">
+        <img id="modal-img" src="" alt="Zoomed View">
     </div>
 
     <script>
@@ -285,7 +316,7 @@
             fetch('/api/status')
                 .then(r => r.json())
                 .then(data => {
-                    // Light
+                    // 1. Light Status
                     const lCard = document.getElementById('light-card');
                     if (data.light === 'on') {
                         lCard.className = 'card status-on';
@@ -306,7 +337,10 @@
                     if (lastStatus && data.light !== lastStatus) refreshCharts();
                     lastStatus = data.light;
 
-                    // Alert
+                    // 2. Schedule Text
+                    document.getElementById('schedule-text').innerHTML = data.schedule_text;
+
+                    // 3. Air Raid Alert
                     const aCard = document.getElementById('alert-card');
                     if (data.alert.city) {
                         aCard.className = 'card alert-active';
@@ -320,7 +354,7 @@
                         document.getElementById('alert-status').innerText = 'Тривоги немає';
                     }
 
-                    // AQI
+                    // 4. AQI & Radiation
                     document.getElementById('aqi-num').innerText = data.aqi.aqi;
                     document.getElementById('aqi-text').innerText = data.aqi.text;
                     document.getElementById('aqi-num').style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
@@ -332,12 +366,10 @@
                     document.getElementById('wind-status').innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
                     document.getElementById('rad-status').innerText = 'Радіація: ' + data.radiation.level + ' мкЗв/год';
 
-                    // Schedule
-                    document.getElementById('schedule-text').innerHTML = data.schedule_text;
-
-                    // Last Update Time
+                    // 5. Update Time
                     document.getElementById('last-update').innerText = data.timestamp;
-                });
+                })
+                .catch(err => console.error("Update error:", err));
         }
 
         setInterval(update, 30000);
