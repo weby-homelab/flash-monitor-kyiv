@@ -96,7 +96,10 @@ def trigger_weekly_report_update():
             base_dir = os.path.dirname(os.path.abspath(__file__))
             python_exec = sys.executable
             script_path = os.path.join(base_dir, "generate_weekly_report.py")
-            output_path = os.path.join(base_dir, "static/weekly.png")
+            output_path = os.path.join(DATA_DIR, "static", "weekly.png")
+            
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
             
             subprocess.run([python_exec, script_path, "--output", output_path], check=True, cwd=base_dir)
         except Exception as e:
