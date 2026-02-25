@@ -13,7 +13,6 @@
     
     <style>
         :root {
-            /* Dark Theme Variables (Black-and-White Base) */
             --bg-color: #050505;
             --card-bg: rgba(25, 25, 30, 0.6);
             --card-border: rgba(255, 255, 255, 0.08);
@@ -28,7 +27,6 @@
 
         @media (prefers-color-scheme: light) {
             :root {
-                /* Light Theme Variables (Crystal White) */
                 --bg-color: #f3f4f6;
                 --card-bg: rgba(255, 255, 255, 0.7);
                 --card-border: rgba(0, 0, 0, 0.05);
@@ -56,7 +54,6 @@
             background-attachment: fixed;
         }
 
-        /* Ambient gradients */
         body::before {
             content: '';
             position: fixed;
@@ -93,8 +90,6 @@
             transition: transform 0.2s, background-color 0.3s;
         }
 
-        .card:active { transform: scale(0.98); }
-
         .card-label {
             font-size: 0.7rem;
             text-transform: uppercase;
@@ -106,12 +101,11 @@
         }
 
         .status-row { display: flex; align-items: center; gap: 16px; }
-        .status-icon { font-size: 2.2rem; filter: drop-shadow(0 0 10px rgba(0,0,0,0.1)); }
+        .status-icon { font-size: 2.2rem; }
         .status-info { flex-grow: 1; }
         .status-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 2px; }
         .status-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.4; font-weight: 500; }
 
-        /* Status Colors */
         .status-on { border-color: rgba(52, 211, 153, 0.3); }
         .status-off { border-color: rgba(248, 113, 113, 0.3); }
         .alert-active { border-color: var(--danger); background: rgba(248, 113, 113, 0.15); animation: pulse-danger 2s infinite; }
@@ -122,7 +116,16 @@
             100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
         }
 
-        /* Grid for AQI / Weather */
+        /* Map Container */
+        .map-container {
+            border-radius: 20px;
+            overflow: hidden;
+            height: 300px;
+            background: rgba(0,0,0,0.1);
+            border: 1px solid var(--card-border);
+        }
+        .map-container iframe { width: 100%; height: 100%; border: none; }
+
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .grid-item { background: rgba(0,0,0,0.03); padding: 16px; border-radius: 20px; border: 1px solid var(--card-border); }
         @media (prefers-color-scheme: dark) { .grid-item { background: rgba(255,255,255,0.03); } }
@@ -141,7 +144,8 @@
             font-weight: 500;
         }
 
-        /* Charts Section */
+        .rad-status { color: var(--success); font-weight: 700; }
+
         .section-header {
             margin: 24px 0 12px;
             font-size: 0.7rem;
@@ -162,11 +166,9 @@
             margin-top: 12px;
             background: #000;
             cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
-        .chart-wrap img { width: 100%; display: block; transition: opacity 0.3s; }
+        .chart-wrap img { width: 100%; display: block; }
 
-        /* Schedule Text (The one you asked to change font) */
         .schedule-text {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -190,7 +192,6 @@
 
         #last-update { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent); }
 
-        /* Image Zoom Modal */
         #modal {
             display: none;
             position: fixed;
@@ -211,7 +212,7 @@
             <div class="logo">СВІТЛО<span>⚡</span>БЕЗПЕКА</div>
         </header>
 
-        <!-- Power Status Card -->
+        <!-- Power Status -->
         <div id="light-card" class="card">
             <span class="card-label" id="group-title">Електропостачання (Група ...)</span>
             <div class="status-row">
@@ -223,7 +224,7 @@
             </div>
         </div>
 
-        <!-- Air Raid Alert Card -->
+        <!-- Air Raid -->
         <div id="alert-card" class="card">
             <span class="card-label">Повітряна тривога (Київ)</span>
             <div class="status-row">
@@ -235,7 +236,14 @@
             </div>
         </div>
 
-        <!-- AQI & Environment Card -->
+        <!-- Air Raid Map -->
+        <div class="card" style="padding: 12px;">
+            <div class="map-container">
+                <iframe id="alert-map" src="https://alerts.in.ua/widgets/map?light=1"></iframe>
+            </div>
+        </div>
+
+        <!-- AQI & Environment -->
         <div class="card">
             <span class="card-label" id="aqi-loc">Якість повітря</span>
             <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px;">
@@ -247,56 +255,38 @@
             </div>
             
             <div class="grid">
-                <div class="grid-item">
-                    <div class="grid-val" id="pm25">--</div>
-                    <div class="grid-label">PM2.5</div>
-                </div>
-                <div class="grid-item">
-                    <div class="grid-val" id="pm10">--</div>
-                    <div class="grid-label">PM10</div>
-                </div>
-                <div class="grid-item">
-                    <div class="grid-val" id="temp">--</div>
-                    <div class="grid-label">Температура</div>
-                </div>
-                <div class="grid-item">
-                    <div class="grid-val" id="hum">--</div>
-                    <div class="grid-label">Вологість</div>
-                </div>
+                <div class="grid-item"><div class="grid-val" id="pm25">--</div><div class="grid-label">PM2.5</div></div>
+                <div class="grid-item"><div class="grid-val" id="pm10">--</div><div class="grid-label">PM10</div></div>
+                <div class="grid-item"><div class="grid-val" id="temp">--</div><div class="grid-label">Температура</div></div>
+                <div class="grid-item"><div class="grid-val" id="hum">--</div><div class="grid-label">Вологість</div></div>
             </div>
             <div class="weather-info">
                 <span id="wind-status">---</span>
-                <span id="rad-status">Радіація: --</span>
+                <span id="rad-status">☢️ -- мкЗв/год <span class="rad-status">(норма)</span></span>
             </div>
         </div>
 
-        <!-- Daily Analytics -->
+        <!-- Charts -->
         <div class="section-header">Аналітика за сьогодні</div>
         <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)">
-            <img id="main-chart" src="/static/chart.png" alt="Daily Status">
+            <img id="main-chart" src="/static/chart.png" alt="Daily">
         </div>
 
-        <!-- Weekly Analytics -->
         <div class="section-header">Тижневий звіт</div>
         <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)">
-            <img id="weekly-chart" src="/static/weekly.png" alt="Weekly Status">
+            <img id="weekly-chart" src="/static/weekly.png" alt="Weekly">
         </div>
 
-        <!-- Detailed Schedule Text -->
         <div class="section-header" id="group-schedule-header">Графік групи ...</div>
-        <div id="schedule-text" class="schedule-text">Завантаження розкладу...</div>
+        <div id="schedule-text" class="schedule-text">Завантаження...</div>
 
         <footer>
             Оновлено: <span id="last-update">--:--:--</span><br>
-            © 2026 Weby Homelab<br>
-            Made with ❤️ in Kyiv under air raid sirens and blackouts
+            © 2026 Weby Homelab
         </footer>
     </div>
 
-    <!-- Zoom Modal -->
-    <div id="modal" onclick="this.style.display='none'">
-        <img id="modal-img" src="" alt="Zoomed View">
-    </div>
+    <div id="modal" onclick="this.style.display='none'"><img id="modal-img" src=""></div>
 
     <script>
         let lastStatus = null;
@@ -312,11 +302,17 @@
             document.getElementById('weekly-chart').src = '/static/weekly.png?t=' + t;
         }
 
+        function updateMapTheme() {
+            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const map = document.getElementById('alert-map');
+            map.src = isDark ? "https://alerts.in.ua/widgets/map?dark=1" : "https://alerts.in.ua/widgets/map?light=1";
+        }
+
         function update() {
             fetch('/api/status')
                 .then(r => r.json())
                 .then(data => {
-                    // 1. Light Status
+                    // Light
                     const lCard = document.getElementById('light-card');
                     if (data.light === 'on') {
                         lCard.className = 'card status-on';
@@ -337,10 +333,7 @@
                     if (lastStatus && data.light !== lastStatus) refreshCharts();
                     lastStatus = data.light;
 
-                    // 2. Schedule Text
-                    document.getElementById('schedule-text').innerHTML = data.schedule_text;
-
-                    // 3. Air Raid Alert
+                    // Alert
                     const aCard = document.getElementById('alert-card');
                     if (data.alert.city) {
                         aCard.className = 'card alert-active';
@@ -354,7 +347,7 @@
                         document.getElementById('alert-status').innerText = 'Тривоги немає';
                     }
 
-                    // 4. AQI & Radiation
+                    // AQI & Rad
                     document.getElementById('aqi-num').innerText = data.aqi.aqi;
                     document.getElementById('aqi-text').innerText = data.aqi.text;
                     document.getElementById('aqi-num').style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
@@ -364,14 +357,16 @@
                     document.getElementById('temp').innerText = data.aqi.temp + '°C';
                     document.getElementById('hum').innerText = data.aqi.hum + '%';
                     document.getElementById('wind-status').innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
-                    document.getElementById('rad-status').innerText = 'Радіація: ' + data.radiation.level + ' мкЗв/год';
+                    document.getElementById('rad-status').innerHTML = '☢️ ' + data.radiation.level + ' мкЗв/год <span class="rad-status">(норма)</span>';
 
-                    // 5. Update Time
+                    // Schedule & Time
+                    document.getElementById('schedule-text').innerHTML = data.schedule_text;
                     document.getElementById('last-update').innerText = data.timestamp;
-                })
-                .catch(err => console.error("Update error:", err));
+                });
         }
 
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateMapTheme);
+        updateMapTheme();
         setInterval(update, 30000);
         update();
     </script>
