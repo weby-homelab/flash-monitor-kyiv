@@ -2,31 +2,27 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>СВІТЛО⚡БЕЗПЕКА (Київ) — Моніторинг світла та безпеки</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>СВІТЛО⚡БЕЗПЕКА (Київ)</title>
     
-    <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/static/icon-192.png">
     
-    <link rel="icon" type="image/png" href="/static/icon-192.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-color: #0d0d0d;
-            --surface: #1a1a1a;
-            --surface-hover: #222222;
-            --border: #2a2a2a;
-            --text-primary: #ffffff;
-            --text-secondary: #999999;
+            --bg-color: #0a0a0c;
+            --card-bg: rgba(30, 30, 35, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f0f0f5;
+            --text-secondary: #a0a0aa;
             --accent: #a78bfa; /* Amethyst */
-            --danger: #ef4444;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --card-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            --accent-glow: rgba(167, 139, 250, 0.25);
+            --success: #34d399;
+            --danger: #f87171;
+            --warning: #fbbf24;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -35,136 +31,159 @@
             background-color: var(--bg-color); 
             color: var(--text-primary); 
             font-family: 'Inter', sans-serif;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            padding: env(safe-area-inset-top) 16px 40px;
+            padding: 24px 16px 60px;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(167, 139, 250, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.05) 0%, transparent 40%);
         }
 
-        .container { width: 100%; max-width: 500px; }
+        .container { width: 100%; max-width: 480px; }
 
         header { 
             width: 100%; 
             display: flex; 
             justify-content: space-between; 
             align-items: center;
-            padding: 24px 0;
-            margin-bottom: 8px;
+            margin-bottom: 24px;
         }
 
-        .logo { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px; }
+        .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
         .logo span { color: var(--accent); }
 
-        .status-badge {
-            background: var(--surface);
-            border: 1px solid var(--border);
+        .time-badge {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
             padding: 6px 12px;
             border-radius: 100px;
             font-size: 0.75rem;
             font-family: 'JetBrains Mono', monospace;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
-        .status-dot.pulse { animation: pulse 2s infinite; }
-
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
+            backdrop-filter: blur(10px);
         }
 
         .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 24px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
             padding: 24px;
             margin-bottom: 16px;
-            box-shadow: var(--card-shadow);
-            transition: transform 0.2s, border-color 0.2s;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             position: relative;
             overflow: hidden;
         }
 
-        .card:active { transform: scale(0.98); }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+            pointer-events: none;
+        }
 
         .card-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.1em;
             color: var(--text-secondary);
             margin-bottom: 16px;
             display: block;
+            font-weight: 600;
         }
 
-        .status-val { font-size: 1.75rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
-        .status-desc { font-size: 0.95rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.4; }
+        .status-row { display: flex; align-items: center; gap: 16px; }
+        .status-icon { font-size: 2.2rem; }
+        .status-info { flex-grow: 1; }
+        .status-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+        .status-desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4; }
 
-        /* Power Specific */
-        .status-on { border-color: rgba(34, 197, 94, 0.3); }
-        .status-off { border-color: rgba(239, 68, 68, 0.3); }
-        .status-off .status-val { color: var(--danger); }
+        /* Color Variations */
+        .status-on { border-color: rgba(52, 211, 153, 0.2); box-shadow: 0 0 30px rgba(52, 211, 153, 0.05); }
+        .status-off { border-color: rgba(248, 113, 113, 0.2); box-shadow: 0 0 30px rgba(248, 113, 113, 0.05); }
+        .alert-active { border-color: var(--danger); background: rgba(248, 113, 113, 0.1); animation: pulse-danger 2s infinite; }
 
-        /* Alert Card */
-        .alert-active { background: rgba(239, 68, 68, 0.1); border-color: var(--danger); animation: danger-pulse 2s infinite; }
-        @keyframes danger-pulse {
-            0% { border-color: rgba(239, 68, 68, 0.3); }
-            50% { border-color: var(--danger); }
-            100% { border-color: rgba(239, 68, 68, 0.3); }
+        @keyframes pulse-danger {
+            0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(248, 113, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
         }
 
-        /* AQI Grid */
-        .aqi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-        .aqi-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; }
-        .aqi-label { font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 4px; }
-        .aqi-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+        /* AQI / Rad Grid */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .grid-item { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 20px; }
+        .grid-val { font-size: 1.25rem; font-weight: 700; margin-bottom: 2px; }
+        .grid-label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* Weather Section in AQI */
+        .weather-info { 
+            margin-top: 16px; 
+            padding-top: 16px; 
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
 
         /* Charts */
-        .chart-container { margin-top: 8px; border-radius: 20px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; }
-        .chart-container img { width: 100%; display: block; }
+        .chart-wrap { 
+            border-radius: 24px; 
+            overflow: hidden; 
+            border: 1px solid var(--card-border); 
+            margin-top: 12px;
+            background: #000;
+            cursor: pointer;
+        }
+        .chart-wrap img { width: 100%; display: block; opacity: 0.9; transition: opacity 0.3s; }
+        .chart-wrap:hover img { opacity: 1; }
 
-        .footer {
-            margin-top: 20px;
+        .section-header {
+            margin: 24px 0 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-header::after { content: ''; height: 1px; flex-grow: 1; background: var(--card-border); }
+
+        .schedule-text {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        footer {
+            margin-top: 40px;
             text-align: center;
             font-size: 0.75rem;
             color: var(--text-secondary);
-            line-height: 1.6;
+            opacity: 0.6;
         }
 
-        /* Modal / Zoom */
-        .modal {
+        /* Zoom */
+        #modal {
             display: none;
             position: fixed;
             z-index: 1000;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            padding: 20px;
-            display: flex;
+            background: rgba(0,0,0,0.98);
+            padding: 16px;
             align-items: center;
             justify-content: center;
         }
-        .modal img { max-width: 100%; max-height: 90vh; border-radius: 8px; }
-
-        /* Toast */
-        #toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--accent);
-            color: #000;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 2000;
-            white-space: nowrap;
-        }
-        #toast.show { transform: translateX(-50%) translateY(0); }
+        #modal img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
     </style>
 </head>
 <body>
@@ -172,98 +191,98 @@
     <div class="container">
         <header>
             <div class="logo">СВІТЛО<span>⚡</span>БЕЗПЕКА</div>
-            <div class="status-badge">
-                <div class="status-dot pulse"></div>
-                <div id="update-time">LIVE</div>
-            </div>
+            <div class="time-badge" id="live-clock">--:--:--</div>
         </header>
 
-        <!-- Power Card -->
+        <!-- Power -->
         <div id="light-card" class="card">
             <span class="card-label" id="group-title">Електропостачання (Група ...)</span>
-            <div class="card-content">
-                <div id="light-val" class="status-val">Завантаження...</div>
-                <div id="light-status" class="status-desc">Отримання даних...</div>
+            <div class="status-row">
+                <div class="status-icon" id="light-icon">⏳</div>
+                <div class="status-info">
+                    <div class="status-title" id="light-text">Завантаження</div>
+                    <div class="status-desc" id="light-event">Отримання статусу мережі...</div>
+                </div>
             </div>
         </div>
 
-        <!-- Alert Card -->
+        <!-- Air Raid -->
         <div id="alert-card" class="card">
             <span class="card-label">Повітряна тривога (Київ)</span>
-            <div class="status-val" id="alert-val">---</div>
-            <div class="status-desc" id="alert-status">Тривоги немає</div>
+            <div class="status-row">
+                <div class="status-icon" id="alert-icon">🛡️</div>
+                <div class="status-info">
+                    <div class="status-title" id="alert-val">---</div>
+                    <div class="status-desc" id="alert-status">Очікування даних...</div>
+                </div>
+            </div>
         </div>
 
-        <!-- AQI Card -->
+        <!-- AQI & Environment -->
         <div class="card">
-            <span class="card-label">Якість повітря</span>
-            <div style="display: flex; align-items: baseline; gap: 12px;">
-                <span id="aqi-num" style="font-size: 2.5rem; font-weight: 700;">--</span>
-                <span id="aqi-text" style="font-size: 1.1rem; font-weight: 500; color: var(--success);">---</span>
+            <span class="card-label" id="aqi-loc">Якість повітря</span>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px;">
+                <span id="aqi-num" style="font-size: 3rem; font-weight: 700; line-height: 1;">--</span>
+                <div>
+                    <div id="aqi-text" style="font-size: 1.1rem; font-weight: 600;">---</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">AQI Index</div>
+                </div>
             </div>
-            <div id="aqi-loc" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">---</div>
             
-            <div class="aqi-grid">
-                <div class="aqi-item"><span class="aqi-label">PM2.5</span><span class="aqi-val" id="pm25">--</span></div>
-                <div class="aqi-item"><span class="aqi-label">PM10</span><span class="aqi-val" id="pm10">--</span></div>
-                <div class="aqi-item"><span class="aqi-label">🌡️ Темп.</span><span class="aqi-val" id="temp">--</span></div>
-                <div class="aqi-item"><span class="aqi-label">💧 Вологість</span><span class="aqi-val" id="hum">--</span></div>
+            <div class="grid">
+                <div class="grid-item">
+                    <div class="grid-val" id="pm25">--</div>
+                    <div class="grid-label">PM2.5</div>
+                </div>
+                <div class="grid-item">
+                    <div class="grid-val" id="pm10">--</div>
+                    <div class="grid-label">PM10</div>
+                </div>
+                <div class="grid-item">
+                    <div class="grid-val" id="temp">--</div>
+                    <div class="grid-label">Температура</div>
+                </div>
+                <div class="grid-item">
+                    <div class="grid-val" id="hum">--</div>
+                    <div class="grid-label">Вологість</div>
+                </div>
             </div>
-            <div class="status-desc" id="wind-status" style="margin-top: 12px; font-size: 0.85rem;">---</div>
-        </div>
-
-        <!-- Radiation Card -->
-        <div class="card">
-            <span class="card-label">Радіаційний фон</span>
-            <div class="status-val" id="rad-val">-- мкЗв/год</div>
-            <div class="status-desc" id="rad-status">В нормі</div>
+            <div class="weather-info">
+                <span id="wind-status">---</span>
+                <span id="rad-status">Радіація: --</span>
+            </div>
         </div>
 
         <!-- Charts -->
-        <div style="margin-bottom: 12px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Графік за сьогодні</div>
-        <div class="chart-container" onclick="zoomImage(this.querySelector('img').src)">
-            <img id="main-chart" src="/static/chart.png?t=0" alt="Daily Chart">
+        <div class="section-header">Аналітика за сьогодні</div>
+        <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)">
+            <img id="main-chart" src="/static/chart.png" alt="Daily">
         </div>
 
-        <div style="margin: 20px 0 12px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Тижневий графік</div>
-        <div class="chart-container" onclick="zoomImage(this.querySelector('img').src)">
-            <img id="weekly-chart" src="/static/weekly.png?t=0" alt="Weekly Chart">
+        <div class="section-header">Тижневий звіт</div>
+        <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)">
+            <img id="weekly-chart" src="/static/weekly.png" alt="Weekly">
         </div>
 
-        <!-- Group Schedule Text -->
-        <div style="margin: 20px 0 12px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;" id="group-schedule-header">Графік групи ...</div>
-        <div id="schedule-text" style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.5; margin-bottom: 24px;">
-            Завантаження...
-        </div>
+        <div class="section-header" id="group-schedule-header">Графік групи ...</div>
+        <div id="schedule-text" class="schedule-text">Завантаження...</div>
 
-        <div class="footer">
-            Оновлено: <span id="last-update">---</span><br>
-            © 2026 Weby Homelab. Made with ❤️ in Kyiv under air raid sirens and blackouts
-        </div>
+        <footer>
+            © 2026 Weby Homelab<br>
+            Made with ❤️ in Kyiv under air raid sirens and blackouts
+        </footer>
     </div>
 
-    <div id="zoom-modal" class="modal" onclick="this.style.display='none'">
-        <img id="zoomed-img" src="" alt="Zoomed">
+    <div id="modal" onclick="this.style.display='none'">
+        <img id="modal-img" src="">
     </div>
-
-    <div id="toast">Повідомлення</div>
 
     <script>
-        let lastLightStatus = null;
-        let wasAlertActive = false;
-
-        function showToast(title, msg, type) {
-            const toast = document.getElementById('toast');
-            toast.innerText = title;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
+        let lastStatus = null;
 
         function zoomImage(src) {
-            const modal = document.getElementById('zoom-modal');
-            const img = document.getElementById('zoomed-img');
-            img.src = src;
-            modal.style.display = 'flex';
+            document.getElementById('modal-img').src = src;
+            document.getElementById('modal').style.display = 'flex';
         }
 
         function refreshCharts() {
@@ -272,81 +291,67 @@
             document.getElementById('weekly-chart').src = '/static/weekly.png?t=' + t;
         }
 
-        function updateStatus() {
+        function update() {
             fetch('/api/status')
                 .then(r => r.json())
                 .then(data => {
-                    // 1. Light Status
-                    const lightVal = document.getElementById('light-val');
-                    const lightCard = document.getElementById('light-card');
-                    const currentStatus = data.light;
-                    
-                    if (currentStatus === 'on') {
-                        lightVal.innerHTML = '<span>💡 Світло є</span>';
-                        lightCard.className = 'card status-on';
-                    } else if (currentStatus === 'off') {
-                        lightVal.innerHTML = '<span>✖️ Світло зникло</span>';
-                        lightCard.className = 'card status-off';
+                    // Time
+                    document.getElementById('live-clock').innerText = data.timestamp;
+
+                    // Light
+                    const lCard = document.getElementById('light-card');
+                    if (data.light === 'on') {
+                        lCard.className = 'card status-on';
+                        document.getElementById('light-icon').innerText = '💡';
+                        document.getElementById('light-text').innerText = 'Світло є';
+                    } else {
+                        lCard.className = 'card status-off';
+                        document.getElementById('light-icon').innerText = '✖️';
+                        document.getElementById('light-text').innerText = 'Світло зникло';
                     }
-                    document.getElementById('light-status').innerHTML = data.light_event;
+                    document.getElementById('light-event').innerHTML = data.light_event;
                     
-                    // Dynamic Group Name
                     if (data.group) {
                         document.getElementById('group-title').innerText = 'Електропостачання (Група ' + data.group + ')';
                         document.getElementById('group-schedule-header').innerText = 'Графік групи ' + data.group;
                     }
 
-                    if (lastLightStatus && currentStatus !== lastLightStatus) {
-                        refreshCharts();
-                    }
-                    lastLightStatus = currentStatus;
-
-                    // Schedule Text
-                    document.getElementById('schedule-text').innerHTML = data.schedule_text || 'Графік відсутній';
+                    if (lastStatus && data.light !== lastStatus) refreshCharts();
+                    lastStatus = data.light;
 
                     // Alert
-                    const alertCard = document.getElementById('alert-card');
-                    const alertVal = document.getElementById('alert-val');
-                    const alertStatus = document.getElementById('alert-status');
-                    
+                    const aCard = document.getElementById('alert-card');
                     if (data.alert.city) {
-                        alertCard.classList.add('alert-active');
-                        alertVal.innerText = '⚠️ ТРИВОГА';
-                        alertStatus.innerText = 'Пройдіть в укриття!';
+                        aCard.className = 'card alert-active';
+                        document.getElementById('alert-icon').innerText = '🚨';
+                        document.getElementById('alert-val').innerText = 'ТРИВОГА';
+                        document.getElementById('alert-status').innerText = 'Пройдіть в укриття!';
                     } else {
-                        alertCard.classList.remove('alert-active');
-                        alertVal.innerText = 'СПОКІЙНО';
-                        alertStatus.innerText = 'Тривоги немає';
+                        aCard.className = 'card';
+                        document.getElementById('alert-icon').innerText = '🛡️';
+                        document.getElementById('alert-val').innerText = 'СПОКІЙНО';
+                        document.getElementById('alert-status').innerText = 'Тривоги немає';
                     }
 
                     // AQI
                     document.getElementById('aqi-num').innerText = data.aqi.aqi;
                     document.getElementById('aqi-text').innerText = data.aqi.text;
+                    document.getElementById('aqi-num').style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
                     document.getElementById('aqi-loc').innerText = data.aqi.location;
                     document.getElementById('pm25').innerText = data.aqi.pm25;
                     document.getElementById('pm10').innerText = data.aqi.pm10;
-                    document.getElementById('temp').innerText = data.aqi.temp + ' °C';
-                    document.getElementById('hum').innerText = data.aqi.hum + ' %';
+                    document.getElementById('temp').innerText = data.aqi.temp + '°C';
+                    document.getElementById('hum').innerText = data.aqi.hum + '%';
                     document.getElementById('wind-status').innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
+                    document.getElementById('rad-status').innerText = 'Радіація: ' + data.radiation.level + ' мкЗв/год';
 
-                    // Radiation
-                    document.getElementById('rad-val').innerText = data.radiation.value + ' мкЗв/год';
-                    
-                    // Time
-                    document.getElementById('last-update').innerText = data.timestamp;
-                    document.getElementById('update-time').innerText = data.timestamp;
-                })
-                .catch(err => console.error("Update error:", err));
+                    // Schedule
+                    document.getElementById('schedule-text').innerHTML = data.schedule_text;
+                });
         }
 
-        setInterval(updateStatus, 30000);
-        updateStatus();
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js').then(reg => console.log('SW ok'));
-            });
-        }
+        setInterval(update, 30000);
+        update();
     </script>
 </body>
 </html>
