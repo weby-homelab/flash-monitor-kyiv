@@ -20,7 +20,18 @@ EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 REPORT_ID_FILE = os.path.join(DATA_DIR, "daily_report_id.json")
-KYIV_TZ = ZoneInfo("Europe/Kyiv")
+def get_timezone():
+    try:
+        config_path = os.path.join(DATA_DIR, "config.json")
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                cfg = json.load(f)
+                tz_name = cfg.get("settings", {}).get("timezone", "Europe/Kyiv")
+                return ZoneInfo(tz_name)
+    except: pass
+    return ZoneInfo("Europe/Kyiv")
+
+KYIV_TZ = get_timezone()
 
 def load_events():
     if not os.path.exists(EVENT_LOG_FILE):

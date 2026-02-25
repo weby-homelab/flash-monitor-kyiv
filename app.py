@@ -187,7 +187,8 @@ def get_today_schedule_text():
     try:
         from zoneinfo import ZoneInfo
         import datetime
-        KYIV_TZ = ZoneInfo("Europe/Kyiv")
+        from light_service import get_timezone
+        KYIV_TZ = get_timezone()
         DAYS_UA = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
         
         schedule_file = os.path.join(DATA_DIR, "last_schedules.json")
