@@ -3,18 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>СВІТЛО⚡БЕЗПЕКА (Київ)</title>
+    
+    <!-- SEO & Metadata -->
+    <title>СВІТЛО⚡БЕЗПЕКА (Київ) — Моніторинг світла та тривог</title>
+    <meta name="description" content="Автономний моніторинг електропостачання, повітряних тривог та якості повітря у Києві в реальному часі. Дані Yasno, ДТЕК та SaveEcoBot.">
+    <meta name="keywords" content="світло київ, графік відключень, повітряна тривога київ, якість повітря київ, радіація київ, моніторинг безпеки">
+    <meta name="author" content="Weby Homelab">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="СВІТЛО⚡БЕЗПЕКА (Київ)">
+    <meta property="og:description" content="Живий моніторинг світла та безпеки. Працює автономно.">
+    <meta property="og:image" content="/static/icon.svg">
+    <meta property="og:url" content="https://flash.srvrs.top">
+    
+    <!-- PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icon.svg">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --bg-color: #050505;
             --card-bg: rgba(25, 25, 30, 0.6);
             --card-border: rgba(255, 255, 255, 0.08);
+            --card-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
             --text-primary: #ffffff;
             --text-secondary: #94a3b8;
             --accent: #a78bfa;
             --success: #34d399;
             --danger: #f87171;
+            --warning: #fbbf24;
             --blur: 25px;
         }
         @media (prefers-color-scheme: light) {
@@ -22,6 +43,7 @@
                 --bg-color: #f3f4f6;
                 --card-bg: rgba(255, 255, 255, 0.7);
                 --card-border: rgba(0, 0, 0, 0.05);
+                --card-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
                 --text-primary: #111827;
                 --text-secondary: #4b5563;
                 --accent: #8b5cf6;
@@ -33,10 +55,31 @@
         body { background-color: var(--bg-color); color: var(--text-primary); font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 60px; background-attachment: fixed; transition: background-color 0.3s; }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 10% 10%, rgba(167, 139, 250, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.08) 0%, transparent 40%); z-index: -1; }
         .container { width: 100%; max-width: 480px; }
-        header { width: 100%; display: flex; justify-content: flex-start; margin-bottom: 24px; }
+        
+        header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .logo { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); }
         .logo span { color: var(--accent); }
-        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; margin-bottom: 16px; backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
+
+        /* Bell Icon Style */
+        .bell-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s;
+            box-shadow: var(--card-shadow);
+        }
+        .bell-btn.off { opacity: 0.5; grayscale: 1; }
+        .bell-btn:active { transform: scale(0.9); }
+
+        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; margin-bottom: 16px; backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); box-shadow: var(--card-shadow); position: relative; overflow: hidden; transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s; }
         .card-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-secondary); margin-bottom: 16px; display: block; font-weight: 700; }
         .status-row { display: flex; align-items: center; gap: 16px; width: 100%; }
         .status-icon { font-size: 2.2rem; }
@@ -46,78 +89,116 @@
         .status-off { border-color: rgba(248, 113, 113, 0.3); }
         .alert-active { border-color: var(--danger); background: rgba(248, 113, 113, 0.15); animation: pulse-danger 2s infinite; }
         @keyframes pulse-danger { 0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(248, 113, 113, 0); } 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); } }
+        
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .grid-item { background: rgba(0,0,0,0.03); padding: 16px; border-radius: 20px; border: 1px solid var(--card-border); }
         @media (prefers-color-scheme: dark) { .grid-item { background: rgba(255,255,255,0.03); } }
         .grid-val { font-size: 1.25rem; font-weight: 700; }
         .grid-label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
-        .weather-info { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary); }
+        
+        .weather-info { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-secondary); }
         .rad-norm { color: var(--success); font-weight: 700; }
+        
         .section-header { margin: 24px 0 12px; font-size: 0.7rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; display: flex; align-items: center; gap: 12px; }
         .section-header::after { content: ''; height: 1px; flex-grow: 1; background: var(--card-border); }
-        .chart-wrap { border-radius: 24px; overflow: hidden; border: 1px solid var(--card-border); margin-top: 12px; background: #000; cursor: pointer; }
+        
+        .chart-wrap { border-radius: 24px; overflow: hidden; border: 1px solid var(--card-border); margin-top: 12px; background: #000; cursor: pointer; box-shadow: var(--card-shadow); }
         .chart-wrap img { width: 100%; display: block; }
-        .schedule-text { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; padding: 24px; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; font-weight: 500; }
+        .schedule-text { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; padding: 24px; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; font-weight: 500; box-shadow: var(--card-shadow); }
+        
         footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
+        footer a { color: inherit; text-decoration: none; font-weight: 700; }
+        
         #modal { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); padding: 16px; align-items: center; justify-content: center; }
         #modal img { max-width: 100%; max-height: 90vh; border-radius: 16px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <header><div class="logo">СВІТЛО<span>⚡</span>БЕЗПЕКА</div></header>
-        <div id="light-card" class="card">
-            <span class="card-label" id="group-title">Електропостачання</span>
-            <div class="status-row">
-                <div class="status-icon" id="light-icon">⏳</div>
-                <div class="status-info">
-                    <div class="status-title" id="light-text">Завантаження</div>
-                    <div class="status-desc" id="light-event">...</div>
-                </div>
-            </div>
-        </div>
-        <div id="alert-card" class="card">
-            <span class="card-label">Повітряна тривога (Київ)</span>
-            <div class="status-row">
-                <div class="status-icon" id="alert-icon">🛡️</div>
-                <div class="status-info"><div class="status-title" id="alert-val">---</div><div class="status-desc" id="alert-status">...</div></div>
-            </div>
-        </div>
-        <div class="card" style="padding: 0; height: 320px; border: none; background: #000;">
-            <iframe id="alert-map" src="https://alerts.in.ua/?minimal=true" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen></iframe>
-        </div>
+        <header>
+            <div class="logo">СВІТЛО<span>⚡</span>БЕЗПЕКА</div>
+            <div id="bell-btn" class="bell-btn off" onclick="toggleNotifications()" title="Увімкнути сповіщення">🔕</div>
+        </header>
+        
+        <div id="light-card" class="card"><div class="status-row"><div class="status-icon" id="light-icon">⏳</div><div class="status-info"><div class="status-title" id="light-text">Завантаження</div><div class="status-desc" id="light-event">...</div></div></div></div>
+        
+        <div class="section-header">Повітряна тривога (Київ)</div>
+        <div id="alert-card" class="card"><div class="status-row"><div class="status-icon" id="alert-icon">🛡️</div><div class="status-info"><div class="status-title" id="alert-val">---</div><div class="status-desc" id="alert-status">...</div></div></div></div>
+        <div class="card" style="padding: 0; height: 320px; border: none; background: #000;"><iframe id="alert-map" src="https://alerts.in.ua/?minimal=true" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen></iframe></div>
+        
+        <div class="section-header" id="aqi-loc">Якість повітря</div>
         <div class="card">
-            <span class="card-label" id="aqi-loc">Якість повітря</span>
-            <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px;">
-                <span id="aqi-num" style="font-size: 3.5rem; font-weight: 800; line-height: 1;">--</span>
-                <div><div id="aqi-text" style="font-size: 1.2rem; font-weight: 700;">---</div><div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">AQI INDEX</div></div>
-            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px;"><span id="aqi-num" style="font-size: 3.5rem; font-weight: 800; line-height: 1;">--</span><div><div id="aqi-text" style="font-size: 1.2rem; font-weight: 700;">---</div><div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">AQI INDEX</div></div></div>
             <div class="grid">
                 <div class="grid-item"><div class="grid-val" id="pm25">--</div><div class="grid-label">PM2.5</div></div>
                 <div class="grid-item"><div class="grid-val" id="pm10">--</div><div class="grid-label">PM10</div></div>
                 <div class="grid-item"><div class="grid-val" id="temp">--</div><div class="grid-label">Температура</div></div>
                 <div class="grid-item"><div class="grid-val" id="hum">--</div><div class="grid-label">Вологість</div></div>
             </div>
-            <div class="weather-info">
-                <span id="wind-status">---</span>
-                <span id="rad-container">☢️ <span id="rad-val">--</span> мкЗв/год <span class="rad-norm">(норма)</span></span>
-            </div>
+            <div class="weather-info"><span id="wind-status">---</span><span id="rad-container">☢️ <span id="rad-val">--</span> мкЗв/год <span class="rad-norm">(норма)</span></span></div>
         </div>
+        
         <div class="section-header">Аналітика за сьогодні</div>
         <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)"><img id="main-chart" src="/static/chart.png"></div>
         <div class="section-header">Тижневий звіт</div>
         <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)"><img id="weekly-chart" src="/static/weekly.png"></div>
         <div class="section-header" id="group-schedule-header">Графік</div>
         <div id="schedule-text" class="schedule-text">...</div>
-        <footer>Оновлено: <span id="last-update">--:--:--</span><br>© 2026 Weby Homelab</footer>
+        
+        <footer>
+            Оновлено: <span id="last-update">--:--:--</span><br>
+            © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv" target="_blank">Weby Homelab</a>
+        </footer>
     </div>
     <div id="modal" onclick="this.style.display='none'"><img id="modal-img" src=""></div>
+    
     <script>
-        let lastStatus = null;
-        function zoomImage(src) { document.getElementById('modal-img').src = src; document.getElementById('modal').style.display = 'flex'; }
-        
-        function getTheme() { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+        let lastLightStatus = null;
+        let lastAlertStatus = null;
+        let notificationsEnabled = localStorage.getItem('notifications') === 'true';
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Light "ding"
 
+        function updateBellUI() {
+            const btn = document.getElementById('bell-btn');
+            btn.innerText = notificationsEnabled ? '🔔' : '🔕';
+            btn.className = notificationsEnabled ? 'bell-btn' : 'bell-btn off';
+        }
+
+        async function toggleNotifications() {
+            if (!notificationsEnabled) {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    notificationsEnabled = true;
+                    localStorage.setItem('notifications', 'true');
+                    showToast("Сповіщення увімкнено");
+                } else {
+                    alert("Будь ласка, дозвольте сповіщення у налаштуваннях браузера");
+                }
+            } else {
+                notificationsEnabled = false;
+                localStorage.setItem('notifications', 'false');
+            }
+            updateBellUI();
+        }
+
+        function showToast(text) {
+            console.log(text); // Placeholder for a toast if needed
+        }
+
+        function playDing() {
+            if (notificationsEnabled) {
+                audio.play().catch(e => console.log("Audio play failed:", e));
+            }
+        }
+
+        function sendPush(title, body) {
+            if (notificationsEnabled && Notification.permission === 'granted') {
+                new Notification(title, { body, icon: '/static/icon.svg' });
+            }
+        }
+
+        function zoomImage(src) { document.getElementById('modal-img').src = src; document.getElementById('modal').style.display = 'flex'; }
+        function getTheme() { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
         function refreshCharts() {
             const t = Date.now();
             const theme = getTheme();
@@ -125,7 +206,6 @@
             document.getElementById('main-chart').src = `/static/chart${suffix}.png?t=${t}`;
             document.getElementById('weekly-chart').src = `/static/weekly${suffix}.png?t=${t}`;
         }
-
         function updateMapTheme() {
             const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const map = document.getElementById('alert-map');
@@ -134,23 +214,57 @@
 
         function update() {
             fetch('/api/status').then(r => r.json()).then(data => {
+                // Light
                 const lCard = document.getElementById('light-card');
-                if (data.light === 'on') { lCard.className = 'card status-on'; document.getElementById('light-icon').innerText = '💡'; document.getElementById('light-text').innerText = 'Світло є'; }
-                else { lCard.className = 'card status-off'; document.getElementById('light-icon').innerText = '✖️'; document.getElementById('light-text').innerText = 'Світло зникло'; }
+                const currentLight = data.light;
+                if (currentLight === 'on') { 
+                    lCard.className = 'card status-on'; 
+                    document.getElementById('light-icon').innerText = '💡'; 
+                    document.getElementById('light-text').innerText = 'Світло є'; 
+                } else { 
+                    lCard.className = 'card status-off'; 
+                    document.getElementById('light-icon').innerText = '✖️'; 
+                    document.getElementById('light-text').innerText = 'Світло зникло'; 
+                }
                 document.getElementById('light-event').innerHTML = data.light_event;
-                if (data.group) { document.getElementById('group-title').innerText = 'Електропостачання (Група ' + data.group + ')'; document.getElementById('group-schedule-header').innerText = 'Графік групи ' + data.group; }
                 
-                if (lastStatus && data.light !== lastStatus) refreshCharts();
-                else if (!lastStatus) refreshCharts(); // Initial load
-                lastStatus = data.light;
+                if (lastLightStatus && currentLight !== lastLightStatus) {
+                    playDing();
+                    const statusText = currentLight === 'on' ? "Світло з'явилося!" : "Світло зникло!";
+                    sendPush("⚡ СВІТЛО⚡БЕЗПЕКА", statusText);
+                    refreshCharts();
+                }
+                lastLightStatus = currentLight;
 
+                // Group name
+                if (data.group) { document.getElementById('group-schedule-header').innerText = 'Графік групи ' + data.group; }
+
+                // Alert
                 const aCard = document.getElementById('alert-card');
-                if (data.alert.city) { aCard.className = 'card alert-active'; document.getElementById('alert-icon').innerText = '🚨'; document.getElementById('alert-val').innerText = 'ТРИВОГА'; document.getElementById('alert-status').innerText = 'Пройдіть в укриття!'; }
-                else { aCard.className = 'card'; document.getElementById('alert-icon').innerText = '🛡️'; document.getElementById('alert-val').innerText = 'СПОКІЙНО'; document.getElementById('alert-status').innerText = 'Тривоги немає'; }
+                const isAlert = !!data.alert.city;
+                if (isAlert) { 
+                    aCard.className = 'card alert-active'; 
+                    document.getElementById('alert-icon').innerText = '🚨'; 
+                    document.getElementById('alert-val').innerText = 'ТРИВОГА'; 
+                    document.getElementById('alert-status').innerText = 'Пройдіть в укриття!'; 
+                } else { 
+                    aCard.className = 'card'; 
+                    document.getElementById('alert-icon').innerText = '🛡️'; 
+                    document.getElementById('alert-val').innerText = 'СПОКІЙНО'; 
+                    document.getElementById('alert-status').innerText = 'Тривоги немає'; 
+                }
+
+                if (lastAlertStatus !== null && isAlert !== lastAlertStatus) {
+                    playDing();
+                    const alertMsg = isAlert ? "Початок повітряної тривоги!" : "Відбій тривоги";
+                    sendPush("🚨 ПОВІТРЯНА ТРИВОГА", alertMsg);
+                }
+                lastAlertStatus = isAlert;
                 
                 document.getElementById('aqi-num').innerText = data.aqi.aqi;
                 document.getElementById('aqi-text').innerText = data.aqi.text;
-                document.getElementById('aqi-loc').innerText = data.aqi.location;
+                document.getElementById('aqi-num').style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
+                if (data.aqi.location) { document.getElementById('aqi-loc').innerText = data.aqi.location; }
                 document.getElementById('pm25').innerText = data.aqi.pm25;
                 document.getElementById('pm10').innerText = data.aqi.pm10;
                 document.getElementById('temp').innerText = data.aqi.temp + '°C';
@@ -162,8 +276,17 @@
             });
         }
 
+        updateBellUI();
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { updateMapTheme(); refreshCharts(); });
-        updateMapTheme(); setInterval(update, 30000); update();
+        updateMapTheme(); 
+        setInterval(update, 30000); 
+        update();
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').then(reg => console.log('SW ok'));
+            });
+        }
     </script>
 </body>
 </html>
