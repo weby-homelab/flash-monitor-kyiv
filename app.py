@@ -136,11 +136,25 @@ def get_power_events_data(limit=5):
                         })
                     
                     # Construct current status text
-                    last = logs[-1]
-                    ts = last['timestamp']
-                    evt = last['event']
+                    load_state()
+                    with state_lock:
+                        status = state.get("status", "unknown")
                     
-                    verb = "Увімкнули" if evt == "up" else "Вимкнули"
+                    target_evt = "up" if status == "up" else "down"
+                    
+                    # Find the latest log entry that matches current status
+                    last_match = None
+                    for log in reversed(logs):
+                        if log.get('event') == target_evt:
+                            last_match = log
+                            break
+                    
+                    if not last_match:
+                        last_match = logs[-1]
+                        
+                    ts = last_match['timestamp']
+                    evt = last_match['event']
+                    
                     dev_msg = get_deviation_info(ts, evt == "up")
                     dev_html = ""
                     

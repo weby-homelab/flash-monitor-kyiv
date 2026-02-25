@@ -9,7 +9,7 @@
 
 <br>
 
-# FLASH MONITOR KYIV (v1.4.13 Autonomous Edition)
+# FLASH MONITOR KYIV (v1.4.14 Autonomous Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
@@ -18,9 +18,9 @@
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
 Recent fixes and improvements:
-- **UI/UX Fix:** Removed redundant "Turned on/off" verbs in status messages and dashboard.
-- **Telegram Notifications:** Updated accuracy format — now shows as "Turned on/off later/earlier by X hours Y minutes".
-- **Notification Context:** Expanded deviation analysis limit to 3 hours.
+- **Logic Fix:** Dashboard status now correctly matches actual power state (properly shows "Turned on" info when power is on).
+- **Algorithm Improvement:** More reliable nearest transition search for deviation calculation.
+- **Telegram Notifications:** Statistics format fixed to: "Turned on/off later/earlier by X hours Y minutes".
 - **Synchronization:** Enabled local host (`127.0.0.1`) sync for flexible setup in multi-service environments.
 - **Stability:** Added `shutil` in `generate_weekly_report.py` and improved resilience to different history data formats.
 - **Optimization:** Fixed duplicate background process issue upon restart.
