@@ -2,378 +2,274 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>СВІТЛО⚡БЕЗПЕКА (Київ) — Моніторинг світла та безпеки</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Моніторинг світла, повітряних тривог, радіаційного фону та якості повітря у Києві. Дані в реальному часі.">
     
-    <!-- PWA Settings -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#1E122A">
-    <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
-    <link rel="apple-touch-icon" href="/static/icon.svg">
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    
+    <link rel="icon" type="image/png" href="/static/icon-192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            /* Default to Amethyst Mist Dark */
-            --bg-main: #120B1F;
-            --bg-card: #1E1633;
-            --border-color: #2C1F4A;
-            --text-primary: #F0E6FF;
-            --text-deep: #1a0933;
-            --accent-deep: #30106b;
-            --accent-lavender: #E6E6FA;
-            --accent-mint: #AAF0D1;
-            --accent-danger: #FF6B81;
-            --accent-electric: linear-gradient(135deg, #30106b, #67E8F9);
-            --box-shadow: 0 8px 32px rgba(230, 230, 250, 0.05); /* тонкая лавандовая тінь */
-            --bg-stats-item: rgba(230, 230, 250, 0.1);
+            --bg-color: #0d0d0d;
+            --surface: #1a1a1a;
+            --surface-hover: #222222;
+            --border: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #999999;
+            --accent: #a78bfa; /* Amethyst */
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --card-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        @media (prefers-color-scheme: light) {
-            :root {
-                /* Amethyst Mist Light */
-                --bg-main: #F7F4FF;
-                --bg-card: #FFFFFF;
-                --border-color: #D8B4FE;
-                --text-primary: #1a0933;
-                --text-deep: #1a0933;
-                --accent-deep: #30106b;
-                --accent-lavender: #E6E6FA;
-                --accent-mint: #88E8C8;
-                --accent-danger: #FF6B81;
-                --accent-electric: linear-gradient(135deg, #30106b, #22D3EE);
-                --box-shadow: 0 8px 32px rgba(48, 16, 107, 0.1);
-                --bg-stats-item: rgba(48, 16, 107, 0.05);
-            }
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            background: var(--bg-main); 
-            background-attachment: fixed;
+            background-color: var(--bg-color); 
             color: var(--text-primary); 
-            text-align: center; 
-            padding: 20px; 
-            margin: 0; 
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             min-height: 100vh;
+            padding: env(safe-area-inset-top) 16px 40px;
         }
 
-        .container { max-width: 600px; margin: 0 auto; }
-        
-        h1 { font-weight: 500; letter-spacing: 0.5px; color: var(--text-primary); margin-bottom: 30px; }
+        .container { width: 100%; max-width: 500px; }
 
-        .card { 
-            background: var(--bg-card); 
-            border-radius: 16px; 
-            padding: 20px; 
-            margin-bottom: 20px; 
-            box-shadow: var(--box-shadow);
-            border: 1px solid var(--border-color);
-            text-align: center;
-            transition: transform 0.3s ease, background 0.5s ease;
+        header { 
+            width: 100%; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            padding: 24px 0;
+            margin-bottom: 8px;
         }
-        
-        .card:hover { transform: translateY(-2px); }
 
-        .card.status-on { 
-            background: var(--accent-electric) !important; 
-            border: 1px solid var(--accent-deep);
-            box-shadow: 0 0 15px var(--accent-deep);
+        .logo { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px; }
+        .logo span { color: var(--accent); }
+
+        .status-badge {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .card.status-on .title, .card.status-on .value, .card.status-on .status-text, .card.status-on span {
-            color: #FFFFFF !important;
-        }
-        .card.status-off { 
-            background: rgba(255, 107, 129, 0.1) !important; 
-            border: 1px solid var(--accent-danger);
-        }
-        
-        .title { color: var(--text-primary); opacity: 0.7; font-size: 14px; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
-        .value { font-size: 28px; font-weight: bold; color: var(--text-primary); }
-        .status-text { font-size: 16px; margin-top: 5px; color: var(--text-primary); opacity: 0.8; }
-        
-        /* Alerts */
-        .alert-card.active { 
-            background: var(--accent-danger) !important; 
-            border: none; 
-            animation: pulse 2s infinite; 
-        }
-        .alert-card.clear { 
-            background: var(--accent-mint) !important; 
-            border: none; 
-        }
-        .alert-card .title, .alert-card .status-text { color: var(--text-deep); opacity: 0.9; }
-        .alert-card .value { color: var(--text-deep) !important; text-shadow: none !important; }
-        
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+        .status-dot.pulse { animation: pulse 2s infinite; }
+
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 107, 129, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(255, 107, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 107, 129, 0); }
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
-        /* Chart adaptability */
-        .chart-dark { display: block !important; }
-        .chart-light { display: none !important; }
-
-        @media (prefers-color-scheme: light) {
-            .chart-dark { display: none !important; }
-            .chart-light { display: block !important; }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
+            overflow: hidden;
         }
 
-        .chart { width: 100%; border-radius: 12px; margin-top: 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)); }
+        .card:active { transform: scale(0.98); }
 
-        .footer { margin-top: 40px; font-size: 13px; color: var(--text-primary); opacity: 0.6; text-align: center; }
-        .footer a { color: var(--text-primary); text-decoration: none; font-weight: bold; }
-        .footer a:hover { opacity: 1; text-decoration: underline; }
+        .card-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            display: block;
+        }
 
-        /* Toast Styles */
-        #toast-container {
+        .status-val { font-size: 1.75rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+        .status-desc { font-size: 0.95rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.4; }
+
+        /* Power Specific */
+        .status-on { border-color: rgba(34, 197, 94, 0.3); }
+        .status-off { border-color: rgba(239, 68, 68, 0.3); }
+        .status-off .status-val { color: var(--danger); }
+
+        /* Alert Card */
+        .alert-active { background: rgba(239, 68, 68, 0.1); border-color: var(--danger); animation: danger-pulse 2s infinite; }
+        @keyframes danger-pulse {
+            0% { border-color: rgba(239, 68, 68, 0.3); }
+            50% { border-color: var(--danger); }
+            100% { border-color: rgba(239, 68, 68, 0.3); }
+        }
+
+        /* AQI Grid */
+        .aqi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+        .aqi-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; }
+        .aqi-label { font-size: 0.7rem; color: var(--text-secondary); display: block; margin-bottom: 4px; }
+        .aqi-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+        /* Charts */
+        .chart-container { margin-top: 8px; border-radius: 20px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; }
+        .chart-container img { width: 100%; display: block; }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Modal / Zoom */
+        .modal {
+            display: none;
             position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
+            z-index: 1000;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            padding: 20px;
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: none;
+            align-items: center;
+            justify-content: center;
         }
-        .toast {
-            background: var(--bg-card);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
-            border-left: 5px solid var(--accent-mint);
-            color: var(--text-primary);
-            padding: 15px 20px;
+        .modal img { max-width: 100%; max-height: 90vh; border-radius: 8px; }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--accent);
+            color: #000;
+            padding: 12px 24px;
             border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            font-size: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            opacity: 0;
-            transform: translateX(50px);
-            transition: opacity 0.3s, transform 0.3s;
-            text-align: left;
-            max-width: 300px;
+            font-weight: 600;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2000;
+            white-space: nowrap;
         }
-        .toast.show { opacity: 1; transform: translateX(0); }
-        .toast.down { border-left-color: var(--accent-danger); }
-        .toast.alert { border-left-color: #ff5252; }
-        .toast-title { font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 8px; }
-
-        /* Stats grid */
-        .stats-grid { font-size: 14px; margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-        .stats-item { 
-            background: var(--bg-stats-item); 
-            padding: 6px 12px; 
-            border-radius: 8px; 
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-        }
-        .stats-item b { color: var(--accent-mint); }
-
-        /* Table Styles */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
-        td { padding: 12px 8px; border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-primary); }
-        tr:last-child td { border-bottom: none; }
-        .td-time { white-space: nowrap; width: 100px; opacity: 0.7; }
-        .td-event { font-weight: bold; }
-        .td-event span { display: block; font-weight: normal; font-size: 0.9em; opacity: 0.6; text-align: right; }
-
+        #toast.show { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
-    <div id="toast-container"></div>
+
     <div class="container">
-        <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            СВІТЛО⚡БЕЗПЕКА
-            <span id="audio-toggle" style="cursor:pointer; font-size:24px; opacity:0.5;" title="Увімкнути звукові сповіщення">🔕</span>
-        </h1>
+        <header>
+            <div class="logo">СВІТЛО<span>⚡</span>БЕЗПЕКА</div>
+            <div class="status-badge">
+                <div class="status-dot pulse"></div>
+                <div id="update-time">LIVE</div>
+            </div>
+        </header>
 
-        <!-- Light Status (MOVED TO TOP) -->
+        <!-- Power Card -->
         <div id="light-card" class="card">
-            <div class="title">Електропостачання (Група 36.1)</div>
-            <div class="value" id="light-val">Завантаження...</div>
-            <div class="status-text" id="light-status">Отримання даних...</div>
-        </div>
-
-        <!-- Air Raid Alert -->
-        <div id="alert-card" class="card alert-card clear">
-            <div class="title">Повітряна тривога (Київ)</div>
-            <div class="value" id="alert-status">--</div>
-            <div class="status-text" id="alert-location">--</div>
-        </div>
-
-        <!-- Alerts Map Iframe -->
-        <div class="card" style="padding: 0; overflow: hidden; height: 400px;">
-            <iframe src="https://alerts.in.ua/?minimal=true" width="100%" height="100%" frameborder="0" style="border:0;"></iframe>
-        </div>
-
-        <!-- Air Quality (Moved up) -->
-        <div class="card">
-            <div class="title" id="aqi-title">Якість повітря</div>
-            <div class="value" id="aqi-val">--</div>
-            <div class="status-text" id="aqi-status">Завантаження...</div>
-            <div class="stats-grid">
-                <div class="stats-item">PM2.5: <b id="aqi-pm25">--</b></div>
-                <div class="stats-item">PM10: <b id="aqi-pm10">--</b></div>
-                <div class="stats-item">🌡️ <b id="aqi-temp">--</b> °C</div>
-                <div class="stats-item">💧 <b id="aqi-hum">--</b> %</div>
-                <div class="stats-item">💨 <b id="aqi-wind">--</b></div>
+            <span class="card-label" id="group-title">Електропостачання (Група ...)</span>
+            <div class="card-content">
+                <div id="light-val" class="status-val">Завантаження...</div>
+                <div id="light-status" class="status-desc">Отримання даних...</div>
             </div>
         </div>
 
-        <!-- Radiation background (Moved up) -->
+        <!-- Alert Card -->
+        <div id="alert-card" class="card">
+            <span class="card-label">Повітряна тривога (Київ)</span>
+            <div class="status-val" id="alert-val">---</div>
+            <div class="status-desc" id="alert-status">Тривоги немає</div>
+        </div>
+
+        <!-- AQI Card -->
         <div class="card">
-            <div class="title">Радіаційний фон</div>
-            <div class="value">
-                <span id="rad-val">--</span> <span style="font-size: 16px; opacity: 0.6;">мкЗв/год</span>
+            <span class="card-label">Якість повітря</span>
+            <div style="display: flex; align-items: baseline; gap: 12px;">
+                <span id="aqi-num" style="font-size: 2.5rem; font-weight: 700;">--</span>
+                <span id="aqi-text" style="font-size: 1.1rem; font-weight: 500; color: var(--success);">---</span>
             </div>
-            <div class="status-text" style="color: var(--accent-mint);">В нормі</div>
-        </div>
-
-        <!-- Light Chart -->
-        <div class="card">
-            <div class="title">Графік за сьогодні</div>
-            <img src="/static/chart.png?v={{ ts }}" id="daily-chart" class="chart chart-dark" alt="">
-            <img src="/static/chart_light.png?v={{ ts }}" id="daily-chart-light" class="chart chart-light" alt="">
-        </div>
-
-        <!-- Plan vs Fact Analytics -->
-        <div id="stats-card" class="card" style="display: none;">
-            <div class="title">План vs Факт (Сьогодні)</div>
-            <div style="font-size: 16px; margin-bottom: 5px;">• За планом: <b id="stats-plan">--</b></div>
-            <div style="font-size: 16px; margin-bottom: 5px;">• Реально: <b id="stats-fact">--</b></div>
-            <div style="font-size: 16px;">• Відхилення: <b id="stats-diff">--</b> (<span id="stats-pct">--</span>% від плану)</div>
-        </div>
-
-        <!-- Weekly Chart -->
-        <div class="card">
-            <div class="title">Тижневий графік</div>
-            <img src="/static/weekly.png?v={{ ts }}" id="weekly-chart" class="chart chart-dark" alt="">
-            <img src="/static/weekly_light.png?v={{ ts }}" id="weekly-chart-light" class="chart chart-light" alt="">
-        </div>
-
-        <!-- Group Schedule -->
-        <div class="card">
-            <div class="title">Графік групи 36.1</div>
-            <div id="schedule-text" style="text-align: left; padding: 10px; line-height: 1.4;">
-                Завантаження...
+            <div id="aqi-loc" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">---</div>
+            
+            <div class="aqi-grid">
+                <div class="aqi-item"><span class="aqi-label">PM2.5</span><span class="aqi-val" id="pm25">--</span></div>
+                <div class="aqi-item"><span class="aqi-label">PM10</span><span class="aqi-val" id="pm10">--</span></div>
+                <div class="aqi-item"><span class="aqi-label">🌡️ Темп.</span><span class="aqi-val" id="temp">--</span></div>
+                <div class="aqi-item"><span class="aqi-label">💧 Вологість</span><span class="aqi-val" id="hum">--</span></div>
             </div>
+            <div class="status-desc" id="wind-status" style="margin-top: 12px; font-size: 0.85rem;">---</div>
+        </div>
+
+        <!-- Radiation Card -->
+        <div class="card">
+            <span class="card-label">Радіаційний фон</span>
+            <div class="status-val" id="rad-val">-- мкЗв/год</div>
+            <div class="status-desc" id="rad-status">В нормі</div>
+        </div>
+
+        <!-- Charts -->
+        <div style="margin-bottom: 12px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Графік за сьогодні</div>
+        <div class="chart-container" onclick="zoomImage(this.querySelector('img').src)">
+            <img id="main-chart" src="/static/chart.png?t=0" alt="Daily Chart">
+        </div>
+
+        <div style="margin: 20px 0 12px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Тижневий графік</div>
+        <div class="chart-container" onclick="zoomImage(this.querySelector('img').src)">
+            <img id="weekly-chart" src="/static/weekly.png?t=0" alt="Weekly Chart">
+        </div>
+
+        <!-- Group Schedule Text -->
+        <div style="margin: 20px 0 12px; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;" id="group-schedule-header">Графік групи ...</div>
+        <div id="schedule-text" style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; line-height: 1.5; margin-bottom: 24px;">
+            Завантаження...
         </div>
 
         <div class="footer">
-            Оновлено: <span id="last-updated">--:--:--</span><br>
-            © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv" target="_blank" style="color: inherit; text-decoration: none;">Weby Homelab</a>. Made with ❤️ in Kyiv under air raid sirens and blackouts
+            Оновлено: <span id="last-update">---</span><br>
+            © 2026 Weby Homelab. Made with ❤️ in Kyiv under air raid sirens and blackouts
         </div>
     </div>
+
+    <div id="zoom-modal" class="modal" onclick="this.style.display='none'">
+        <img id="zoomed-img" src="" alt="Zoomed">
+    </div>
+
+    <div id="toast">Повідомлення</div>
 
     <script>
         let lastLightStatus = null;
         let wasAlertActive = false;
-        let audioCtx = null;
-        let audioEnabled = localStorage.getItem('audioEnabled_flash') === 'true';
 
-        const audioToggle = document.getElementById('audio-toggle');
-        if (audioEnabled) {
-            audioToggle.innerText = "🔔";
-            audioToggle.style.opacity = "1";
-        }
-
-        audioToggle.addEventListener('click', function() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            audioEnabled = !audioEnabled;
-            localStorage.setItem('audioEnabled_flash', audioEnabled);
-            this.innerText = audioEnabled ? "🔔" : "🔕";
-            this.style.opacity = audioEnabled ? "1" : "0.5";
-            
-            if (audioEnabled && "Notification" in window) {
-                if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-                    Notification.requestPermission();
-                }
-            }
-            
-            if (audioEnabled) {
-                playDing(); 
-            }
-        });
-
-        function playDing() {
-            if (!audioCtx || !audioEnabled) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.5);
-            
-            gainNode.gain.setValueAtTime(0.02, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
-            
-            osc.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
-        }
-
-        function showToast(title, body, type) {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
-            
-            const toast = document.createElement('div');
-            toast.className = 'toast ' + type;
-            
-            let icon = '💡';
-            if (type === 'down') icon = '🔴';
-            if (type === 'alert') icon = '🚨';
-            
-            toast.innerHTML = `
-                <div class="toast-title"><span>${icon}</span> ${title}</div>
-                <div>${body}</div>
-            `;
-            
-            container.appendChild(toast);
-            void toast.offsetWidth;
+        function showToast(title, msg, type) {
+            const toast = document.getElementById('toast');
+            toast.innerText = title;
             toast.classList.add('show');
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 6000);
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        function showNotification(title, body, iconUrl) {
-            if (audioEnabled && "Notification" in window && Notification.permission === "granted") {
-                new Notification(title, {
-                    body: body,
-                    icon: iconUrl || "/static/icon.svg"
-                });
-            }
+        function zoomImage(src) {
+            const modal = document.getElementById('zoom-modal');
+            const img = document.getElementById('zoomed-img');
+            img.src = src;
+            modal.style.display = 'flex';
         }
 
         function refreshCharts() {
-            const ts = Date.now();
-            const dailyChart = document.getElementById('daily-chart');
-            if (dailyChart) dailyChart.src = "/static/chart.png?v=" + ts;
-            const dailyChartLight = document.getElementById('daily-chart-light');
-            if (dailyChartLight) dailyChartLight.src = "/static/chart_light.png?v=" + ts;
-            
-            const weeklyChart = document.getElementById('weekly-chart');
-            if (weeklyChart) weeklyChart.src = "/static/weekly.png?v=" + ts;
-            const weeklyChartLight = document.getElementById('weekly-chart-light');
-            if (weeklyChartLight) weeklyChartLight.src = "/static/weekly_light.png?v=" + ts;
-            
-            console.log('Charts refreshed at ' + new Date().toLocaleTimeString());
+            const t = Date.now();
+            document.getElementById('main-chart').src = '/static/chart.png?t=' + t;
+            document.getElementById('weekly-chart').src = '/static/weekly.png?t=' + t;
         }
 
         function updateStatus() {
@@ -387,109 +283,64 @@
                     
                     if (currentStatus === 'on') {
                         lightVal.innerHTML = '<span>💡 Світло є</span>';
-                        if (lightCard) {
-                            lightCard.classList.add('status-on');
-                            lightCard.classList.remove('status-off');
-                        }
+                        lightCard.className = 'card status-on';
                     } else if (currentStatus === 'off') {
                         lightVal.innerHTML = '<span>✖️ Світло зникло</span>';
-                        if (lightCard) {
-                            lightCard.classList.add('status-off');
-                            lightCard.classList.remove('status-on');
-                        }
+                        lightCard.className = 'card status-off';
                     }
                     document.getElementById('light-status').innerHTML = data.light_event;
+                    
+                    // Dynamic Group Name
+                    if (data.group) {
+                        document.getElementById('group-title').innerText = 'Електропостачання (Група ' + data.group + ')';
+                        document.getElementById('group-schedule-header').innerText = 'Графік групи ' + data.group;
+                    }
 
                     if (lastLightStatus && currentStatus !== lastLightStatus) {
-                        playDing();
-                        if (currentStatus === 'on') {
-                            showToast("Світло з'явилося!", "Електропостачання відновлено.", "up");
-                            showNotification("💡 Світло з'явилося!", "Електропостачання відновлено.");
-                        } else {
-                            showToast("Світло зникло!", "Зафіксовано відключення.", "down");
-                            showNotification("🔴 Світло зникло!", "Зафіксовано відключення.");
-                        }
-                        // Refresh charts immediately on status change
                         refreshCharts();
                     }
                     lastLightStatus = currentStatus;
 
-                    // 1.5 Schedule Text
-                    const scheduleTextDiv = document.getElementById('schedule-text');
-                    if (data.schedule_text) {
-                        scheduleTextDiv.innerHTML = data.schedule_text;
-                    } else {
-                        scheduleTextDiv.innerHTML = 'Немає даних про графік';
-                    }
+                    // Schedule Text
+                    document.getElementById('schedule-text').innerHTML = data.schedule_text || 'Графік відсутній';
 
-                    // 2. Air Raid Alert
-                    const isCityAlert = !!data.alert.city;
-                    if (isCityAlert && !wasAlertActive) {
-                        playDing(); setTimeout(playDing, 300);
-                        showToast("ПОВІТРЯНА ТРИВОГА!", "Пройдіть в укриття!", "alert");
-                        showNotification("🚨 ТРИВОГА (КИЇВ)!", "Пройдіть в укриття!");
-                    }
-                    wasAlertActive = isCityAlert;
-
+                    // Alert
                     const alertCard = document.getElementById('alert-card');
+                    const alertVal = document.getElementById('alert-val');
+                    const alertStatus = document.getElementById('alert-status');
+                    
                     if (data.alert.city) {
-                        alertCard.className = 'card alert-card active';
-                        document.getElementById('alert-status').innerText = 'ТРИВОГА (КИЇВ)!';
-                        document.getElementById('alert-location').innerText = 'Пройдіть в укриття!';
-                    } else if (data.alert.region) {
-                        alertCard.className = 'card alert-card active';
-                        document.getElementById('alert-status').innerText = 'ТРИВОГА (ОБЛАСТЬ)';
-                        document.getElementById('alert-location').innerText = 'Київська область';
+                        alertCard.classList.add('alert-active');
+                        alertVal.innerText = '⚠️ ТРИВОГА';
+                        alertStatus.innerText = 'Пройдіть в укриття!';
                     } else {
-                        alertCard.className = 'card alert-card clear';
-                        document.getElementById('alert-status').innerText = 'СПОКІЙНО';
-                        document.getElementById('alert-location').innerText = 'Тривоги немає';
+                        alertCard.classList.remove('alert-active');
+                        alertVal.innerText = 'СПОКІЙНО';
+                        alertStatus.innerText = 'Тривоги немає';
                     }
 
-                    // 3. AQI
-                    if (data.aqi) {
-                        const val = data.aqi.aqi;
-                        const aqiVal = document.getElementById('aqi-val');
-                        aqiVal.innerText = val;
-                        document.getElementById('aqi-status').innerText = data.aqi.text;
-                        document.getElementById('aqi-title').innerHTML = "Якість повітря:<br><span style='font-size: 0.8em; font-weight: normal; color: #888;'>" + data.aqi.location + "</span>";
-                        document.getElementById('aqi-pm25').innerText = data.aqi.pm25;
-                        document.getElementById('aqi-pm10').innerText = data.aqi.pm10;
-                        document.getElementById('aqi-temp').innerText = data.aqi.temp;
-                        document.getElementById('aqi-hum').innerText = data.aqi.hum;
-                        document.getElementById('aqi-wind').innerText = data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
+                    // AQI
+                    document.getElementById('aqi-num').innerText = data.aqi.aqi;
+                    document.getElementById('aqi-text').innerText = data.aqi.text;
+                    document.getElementById('aqi-loc').innerText = data.aqi.location;
+                    document.getElementById('pm25').innerText = data.aqi.pm25;
+                    document.getElementById('pm10').innerText = data.aqi.pm10;
+                    document.getElementById('temp').innerText = data.aqi.temp + ' °C';
+                    document.getElementById('hum').innerText = data.aqi.hum + ' %';
+                    document.getElementById('wind-status').innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
 
-                        if (val <= 50) aqiVal.style.color = '#4caf50'; // Green
-                        else if (val <= 100) aqiVal.style.color = '#ffeb3b'; // Yellow
-                        else if (val <= 150) aqiVal.style.color = '#ff9800'; // Orange
-                        else aqiVal.style.color = '#f44336'; // Red
-                    }
-
-                    // 4. Stats (Plan vs Fact)
-                    const statsCard = document.getElementById('stats-card');
-                    if (data.stats) {
-                        statsCard.style.display = 'block';
-                        document.getElementById('stats-plan').innerText = data.stats.plan_up;
-                        document.getElementById('stats-fact').innerText = data.stats.fact_up;
-                        
-                        const sign = data.stats.diff > 0 ? "+" : "";
-                        document.getElementById('stats-diff').innerText = sign + data.stats.diff.toFixed(1) + " год";
-                        document.getElementById('stats-pct').innerText = data.stats.pct;
-                    } else {
-                        statsCard.style.display = 'none';
-                    }
-
-                    // 5. Radiation
-                    document.getElementById('rad-val').innerText = data.radiation.level;
-
-                    document.getElementById('last-updated').innerText = data.timestamp;
-                });
+                    // Radiation
+                    document.getElementById('rad-val').innerText = data.radiation.value + ' мкЗв/год';
+                    
+                    // Time
+                    document.getElementById('last-update').innerText = data.timestamp;
+                    document.getElementById('update-time').innerText = data.timestamp;
+                })
+                .catch(err => console.error("Update error:", err));
         }
 
-        setInterval(updateStatus, 60000);
-        setInterval(refreshCharts, 300000); // 5 minutes periodic refresh
-        setTimeout(updateStatus, 200);
-        setTimeout(refreshCharts, 500); // Initial refresh after load
+        setInterval(updateStatus, 30000);
+        updateStatus();
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
