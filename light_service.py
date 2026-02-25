@@ -338,14 +338,22 @@ def get_deviation_info(event_time, is_up):
         if transition_type != expected_type:
             return "" 
 
+        abs_diff = abs(best_diff)
+        h = abs_diff // 60
+        m = abs_diff % 60
+        
+        dur_parts = []
+        if h > 0: dur_parts.append(f"{h} год")
+        if m > 0: dur_parts.append(f"{m} хв")
+        dur_str = " ".join(dur_parts) if dur_parts else "0 хв"
+        
+        action = "Увімкнули" if is_up else "Вимкнули"
+        timing = "пізніше" if best_diff > 0 else "раніше"
+        
         if best_diff == 0:
-            return "• Точність: 0 хв (точно за графіком)"
-
-        sign = "+" if best_diff > 0 else "−"
-        action = "увімкнення" if is_up else "вимкнення"
-        label = f"запізнення {action}" if best_diff > 0 else f"раніше {action}"
+            return f"• {action} точно за графіком"
             
-        return f"• Точність: {sign}{abs(best_diff)} хв ({label})"
+        return f"• {action} {timing} на {dur_str}"
 
     except Exception as e:
         print(f"Error in deviation calc: {e}")
