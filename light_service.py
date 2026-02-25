@@ -172,7 +172,10 @@ def get_current_time():
 def format_duration(seconds):
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
-    return f"{h} год {m} хв"
+    parts = []
+    if h > 0: parts.append(f"{h} год")
+    if m > 0: parts.append(f"{m} хв")
+    return " ".join(parts) if parts else "0 хв"
 
 def get_schedule_context():
     try:
@@ -336,8 +339,11 @@ def get_deviation_info(event_time, is_up):
         m = abs_diff % 60
         
         dur_parts = []
-        if h > 0: dur_parts.append(f"{h} год")
-        if m > 0: dur_parts.append(f"{m} хв")
+        if h > 0:
+            dur_parts.append(f"{h} год")
+        if m > 0:
+            dur_parts.append(f"{m} хв")
+        
         dur_str = " ".join(dur_parts) if dur_parts else "0 хв"
         
         action = "Увімкнули" if is_up else "Вимкнули"
