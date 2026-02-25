@@ -297,7 +297,7 @@ if __name__ == "__main__":
         if os.path.exists(temp_filename):
             if os.path.exists(args.output):
                 os.remove(args.output)
-            os.rename(temp_filename, args.output)
+            shutil.move(temp_filename, args.output)
             print(f"Chart saved to {args.output}")
             
         base, ext = os.path.splitext(args.output)
@@ -306,7 +306,7 @@ if __name__ == "__main__":
         if os.path.exists(temp_light):
             if os.path.exists(light_output):
                 os.remove(light_output)
-            os.rename(temp_light, light_output)
+            shutil.move(temp_light, light_output)
             print(f"Light chart saved to {light_output}")
             
         sys.exit(0)

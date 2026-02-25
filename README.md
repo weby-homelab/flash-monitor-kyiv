@@ -9,7 +9,7 @@
 
 <br>
 
-# СВІТЛО⚡БЕЗПЕКА (v1.4.9 Autonomous Edition)
+# СВІТЛО⚡БЕЗПЕКА (v1.4.10 Autonomous Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡БЕЗПЕКА Dashboard Preview" width="100%">
@@ -18,6 +18,7 @@
 **Автономна Docker-система моніторингу електропостачання та безпеки Києва.**
 
 Останні виправлення та покращення:
+- **Docker Fix:** Виправлено помилку `Invalid cross-device link` при генерації графіків (заміна `os.rename` на `shutil.move`).
 - **Тижневі графіки:** Виправлено логіку відображення планів (тепер використовується `last_schedules.json` для актуальних днів).
 - **Синхронізація:** Дозволено синхронізацію з локальним хостом (`127.0.0.1`) для гнучкого налаштування в оточенні з кількома сервісами.
 - **Стабільність:** Додано `shutil` у `generate_weekly_report.py` та підвищено стійкість до різних форматів даних історії.
