@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import os
 import time
+import re
 from bs4 import BeautifulSoup
 import threading
 from light_service import (
@@ -95,7 +96,10 @@ def format_duration(seconds):
 
 def get_power_events_data(limit=5):
     recent_events = []
-    latest_event_text = "Немає даних про події"
+    
+    # Default schedule info
+    sched_light_now, current_end, next_range, next_duration = get_schedule_context()
+    latest_event_text = f"Наступне планове: {next_range}"
     
     try:
         if os.path.exists(EVENT_LOG_FILE):
@@ -131,36 +135,37 @@ def get_power_events_data(limit=5):
                             "desc": f"({pre_text} {dur_str})" if dur_str else ""
                         })
                     
-                    # For backward compatibility with light_event
-                    if len(logs) >= 2:
-                        last = logs[-1]
-                        prev = logs[-2]
-                        ts = last['timestamp']
-                        dt_str = datetime.fromtimestamp(ts).strftime("%d.%m %H:%M")
-                        evt = last['event']
-                        dur_sec = ts - prev['timestamp']
-                        dur_str = format_duration(dur_sec)
-                        icon = "🟢" if evt == "up" else "🔴"
-                        text = "Світло з'явилося" if evt == "up" else "Світло зникло"
-                        pre_text = "не було" if evt == "up" else "було"
-                        
-                        sched_light_now, current_end, next_range, next_duration = get_schedule_context()
-                        next_sched_text = f"Наступне планове за графіком: {next_range}"
-                        
-                        dev_msg = get_deviation_info(ts, evt == "up")
-                        dev_html = ""
-                        if dev_msg and "точно за графіком" not in dev_msg:
-                            import re
-                            m = re.search(r"(\d+)\s*хв\s*\((запізнення|раніше)", dev_msg)
+                    # Construct current status text
+                    last = logs[-1]
+                    ts = last['timestamp']
+                    evt = last['event']
+                    
+                    verb = "Увімкнули" if evt == "up" else "Вимкнули"
+                    dev_msg = get_deviation_info(ts, evt == "up")
+                    dev_html = ""
+                    
+                    if dev_msg:
+                        if "точно за графіком" in dev_msg:
+                            dev_html = f"{verb}: точно за графіком"
+                        else:
+                            # Match sign, minutes and the label (запізнення/раніше)
+                            m = re.search(r"([+−])(\d+)\s*хв\s*\((запізнення|раніше)", dev_msg)
                             if m:
-                                mins = m.group(1)
-                                kind = m.group(2).capitalize()
-                                dev_str = f"{kind} {mins} хв"
-                                dev_html = f"<br><span style='font-size: 0.9em; color: #ff9800;'>Відхилення: {dev_str}</span>"
+                                mins = int(m.group(2))
+                                kind_raw = m.group(3)
+                                kind = "пізніше" if kind_raw == "запізнення" else "раніше"
+                                if evt == "up":
+                                    kind = kind.capitalize()
+                                dur_str = format_duration(mins * 60)
+                                dev_html = f"{verb}: {kind} на {dur_str}"
                             else:
-                                dev_html = f"<br><span style='font-size: 0.9em; color: #ff9800;'>{dev_msg.replace('• Точність: ', '')}</span>"
-                                
-                        latest_event_text = f"{next_sched_text}{dev_html}"
+                                dev_html = f"{verb}: {dev_msg.replace('• Точність: ', '')}"
+                    
+                    next_line = f"Наступне планове: {next_range}"
+                    if dev_html:
+                        latest_event_text = f"{dev_html}<br>{next_line}"
+                    else:
+                        latest_event_text = next_line
     except Exception as e:
         print(f"Error reading events: {e}")
         pass
@@ -175,6 +180,113 @@ def get_light_status_api():
     event_text, recent_events = get_power_events_data()
     res = "on" if status == "up" else "off" if status == "down" else "unknown"
     return {"status": res, "event": event_text, "history": recent_events}
+
+def get_today_schedule_text():
+    try:
+        from zoneinfo import ZoneInfo
+        import datetime
+        KYIV_TZ = ZoneInfo("Europe/Kyiv")
+        DAYS_UA = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
+        
+        schedule_file = os.path.join(DATA_DIR, "last_schedules.json")
+        if not os.path.exists(schedule_file):
+            return "Немає даних"
+            
+        with open(schedule_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            
+        now = datetime.datetime.now(KYIV_TZ)
+        today_str = now.strftime("%Y-%m-%d")
+        
+        source_name = ""
+        source_data = None
+        if data.get('yasno'):
+            source_data = data['yasno']
+            source_name = "ДТЕК, Yasno"
+        elif data.get('github'):
+            source_data = data['github']
+            source_name = "ДТЕК"
+            
+        if not source_data:
+            return "Немає даних"
+            
+        group_key = list(source_data.keys())[0]
+        schedule = source_data[group_key]
+        
+        if today_str not in schedule or not schedule[today_str].get('slots'):
+            return "Графік відсутній"
+            
+        slots = schedule[today_str]['slots']
+        
+        intervals = []
+        current_state = slots[0]
+        start_idx = 0
+        
+        def format_slot_time(idx):
+            mins = idx * 30
+            return f"{mins // 60:02d}:{mins % 60:02d}"
+            
+        for i in range(1, 48):
+            if slots[i] != current_state:
+                intervals.append({
+                    "state": current_state, 
+                    "start": format_slot_time(start_idx), 
+                    "end": format_slot_time(i), 
+                    "duration": (i - start_idx) * 0.5
+                })
+                start_idx = i
+                current_state = slots[i]
+        
+        intervals.append({
+            "state": current_state, 
+            "start": format_slot_time(start_idx), 
+            "end": "24:00", 
+            "duration": (48 - start_idx) * 0.5
+        })
+
+        # Merge with tomorrow if continues
+        tomorrow_str = (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        if tomorrow_str in schedule and schedule[tomorrow_str].get('slots'):
+            tomorrow_slots = schedule[tomorrow_str]['slots']
+            if tomorrow_slots[0] == current_state:
+                tom_end_idx = 48
+                for i in range(1, 48):
+                    if tomorrow_slots[i] != current_state:
+                        tom_end_idx = i
+                        break
+                tom_dur = tom_end_idx * 0.5
+                intervals[-1]['end'] = format_slot_time(tom_end_idx)
+                intervals[-1]['duration'] += tom_dur
+        else:
+             intervals[-1]['end'] = "24:00"
+
+        # Totals for TODAY only
+        total_on = sum(1 for s in slots if s) * 0.5
+        total_off = 24.0 - total_on
+        
+        def fmt_dur(hours):
+            return f"{hours:g}".replace('.', ',')
+
+        lines = []
+        day_str = f"📆  {now.strftime('%d.%m')} ({DAYS_UA[now.weekday()]}) [{source_name}]:"
+        lines.append(f"<div style='font-weight:bold; margin-bottom:10px; color: var(--text-primary);'>{day_str}</div>")
+        
+        for inv in intervals:
+            icon = "🔆" if inv['state'] else "✖️"
+            lines.append(f"<div style='margin-bottom: 5px; font-size: 15px;'>{icon} {inv['start']} - {inv['end']} … ({fmt_dur(inv['duration'])} год.)</div>")
+            
+        lines.append("<div style='margin-top:15px; margin-bottom:10px; border-top: 1px dashed var(--border-color); padding-top: 5px;'></div>")
+        lines.append(f"<div style='font-size: 15px; margin-bottom: 5px;'>🔆 Світло є: {fmt_dur(total_on)} год.</div>")
+        lines.append(f"<div style='font-size: 15px; margin-bottom: 10px;'>✖️ Світла нема: {fmt_dur(total_off)} год.</div>")
+        
+        file_mtime = os.path.getmtime(schedule_file)
+        dt_mtime = datetime.datetime.fromtimestamp(file_mtime, KYIV_TZ)
+        lines.append(f"<div style='font-size: 14px; opacity: 0.8;'>🕐 Оновлено: {dt_mtime.strftime('%H:%M')}</div>")
+        
+        return "".join(lines)
+    except Exception as e:
+        print(f"Error building schedule text: {e}")
+        return "Помилка завантаження графіка"
 
 def get_air_quality():
     try:
@@ -337,13 +449,14 @@ def api_status():
     radiation = cached_fetch('radiation', get_radiation)
     light_info = cached_fetch('light', get_light_status_api)
     aqi = cached_fetch('aqi', get_air_quality)
+    schedule_text = cached_fetch('schedule_text', get_today_schedule_text)
     
     return jsonify({
         "alert": alert,
         "radiation": radiation,
         "light": light_info["status"],
         "light_event": light_info["event"],
-        "light_history": light_info.get("history", []),
+        "schedule_text": schedule_text,
         "aqi": aqi,
         "timestamp": datetime.now().strftime("%H:%M:%S")
     })
