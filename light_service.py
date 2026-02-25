@@ -543,8 +543,9 @@ def sync_schedules():
     """
     sync_success = False
     
-    if SCHEDULE_API_URL and "127.0.0.1" not in SCHEDULE_API_URL:
+    if SCHEDULE_API_URL:
         try:
+            print(f"Syncing schedules from {SCHEDULE_API_URL}...")
             urls = {
                 SCHEDULE_FILE: f"{SCHEDULE_API_URL}/last_schedules.json",
                 HISTORY_FILE: f"{SCHEDULE_API_URL}/schedule_history.json"
@@ -555,7 +556,7 @@ def sync_schedules():
                     with open(local_file, "wb") as f:
                         f.write(r.content)
             sync_success = True
-            print("Schedules synced from remote API.")
+            print("Schedules synced successfully.")
         except Exception as e:
             print(f"Failed to sync schedules from API: {e}")
 

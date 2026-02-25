@@ -61,7 +61,10 @@ def load_schedule_slots(target_date):
             with open(HISTORY_FILE, 'r') as f:
                 history = json.load(f)
                 if date_str in history:
-                    return history[date_str]
+                    res = history[date_str]
+                    if isinstance(res, dict):
+                        return res.get('slots', [True] * 48)
+                    return res
         except Exception as e:
             print(f"Error loading history: {e}")
             

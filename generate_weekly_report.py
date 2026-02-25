@@ -1,6 +1,7 @@
 import json
 import os
 import datetime
+import shutil
 from zoneinfo import ZoneInfo
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -12,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import necessary functions from the daily report script to reuse logic
-from generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ
+from generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ, load_schedule_slots
 
 # --- Configuration ---
 DATA_DIR = os.environ.get("DATA_DIR", ".")
@@ -22,13 +23,12 @@ EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 
 def get_schedule_slots(date_obj):
+    """
+    Wrapper around load_schedule_slots from daily report to ensure consistent logic.
+    """
     try:
-        if not os.path.exists(HISTORY_FILE):
-            return None
-        with open(HISTORY_FILE, "r") as f:
-            history = json.load(f)
-        date_str = date_obj.strftime("%Y-%m-%d")
-        return history.get(date_str, [True]*48)
+        slots = load_schedule_slots(date_obj)
+        return slots
     except:
         return [True] * 48
 
