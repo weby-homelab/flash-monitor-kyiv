@@ -180,8 +180,19 @@ def get_light_status_api():
         status = state.get("status", "unknown")
     
     event_text, recent_events = get_power_events_data()
+    
+    config_path = os.path.join(DATA_DIR, "config.json")
+    group_name = "36.1"
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r') as f:
+                cfg = json.load(f)
+                groups = cfg.get("settings", {}).get("groups", [])
+                if groups: group_name = groups[0].replace("GPV", "")
+        except: pass
+
     res = "on" if status == "up" else "off" if status == "down" else "unknown"
-    return {"status": res, "event": event_text, "history": recent_events}
+    return {"status": res, "event": event_text, "history": recent_events, "group": group_name}
 
 def get_today_schedule_text():
     try:
@@ -191,6 +202,14 @@ def get_today_schedule_text():
         KYIV_TZ = get_timezone()
         DAYS_UA = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
         
+        config_path = os.path.join(DATA_DIR, "config.json")
+        target_group = "GPV36.1" # Default
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                cfg = json.load(f)
+                groups = cfg.get("settings", {}).get("groups", [])
+                if groups: target_group = groups[0]
+
         schedule_file = os.path.join(DATA_DIR, "last_schedules.json")
         if not os.path.exists(schedule_file):
             return "Немає даних"
@@ -213,7 +232,12 @@ def get_today_schedule_text():
         if not source_data:
             return "Немає даних"
             
-        group_key = list(source_data.keys())[0]
+        # Prioritize target_group, fallback to first available
+        if target_group in source_data:
+            group_key = target_group
+        else:
+            group_key = list(source_data.keys())[0]
+            
         schedule = source_data[group_key]
         
         if today_str not in schedule or not schedule[today_str].get('slots'):
@@ -466,6 +490,9 @@ def push_api(secret_key):
 
 @app.route('/api/status')
 def api_status():
+    from light_service import get_timezone
+    KYIV_TZ = get_timezone()
+    
     alert = cached_fetch('alert', get_air_raid_alert)
     radiation = cached_fetch('radiation', get_radiation)
     light_info = cached_fetch('light', get_light_status_api)
@@ -477,9 +504,10 @@ def api_status():
         "radiation": radiation,
         "light": light_info["status"],
         "light_event": light_info["event"],
+        "group": light_info.get("group", "unknown"),
         "schedule_text": schedule_text,
         "aqi": aqi,
-        "timestamp": datetime.now().strftime("%H:%M:%S")
+        "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
     })
 
 # Initialize State
