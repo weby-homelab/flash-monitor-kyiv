@@ -1,6 +1,7 @@
 {
   "settings": {
     "region": "kyiv",
+    "timezone": "Europe/Kyiv",
     "groups": ["GPV36.1"],
     "style": "list",
     "table_format": "code_lines",
