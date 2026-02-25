@@ -145,19 +145,9 @@ def get_power_events_data(limit=5):
                     dev_html = ""
                     
                     if dev_msg:
-                        if "точно за графіком" in dev_msg:
-                            dev_html = f"{verb} точно за графіком"
-                        else:
-                            # Match sign, minutes and the label (запізнення/раніше)
-                            m = re.search(r"([+−])(\d+)\s*хв\s*\((запізнення|раніше)", dev_msg)
-                            if m:
-                                mins = int(m.group(2))
-                                kind_raw = m.group(3)
-                                kind = "пізніше" if kind_raw == "запізнення" else "раніше"
-                                dur_str = format_duration(mins * 60)
-                                dev_html = f"{verb} {kind} на {dur_str}"
-                            else:
-                                dev_html = f"{verb} {dev_msg.replace('• Точність: ', '')}"
+                        # dev_msg already contains the verb and timing info
+                        # format: "• Увімкнули пізніше на 10 хв"
+                        dev_html = dev_msg.replace("• ", "").strip()
                     
                     next_line = f"Наступне планове: {next_range}"
                     if dev_html:
@@ -413,7 +403,7 @@ def push_api(secret_key):
             dev_msg = get_deviation_info(current_time, True)
             
             # Header
-            msg = f"🟢 <b>{time_str} Світло з'явилося</b>\n\n"
+            msg = f"🟢 <b>{time_str} Світло є!</b>\n\n"
             
             # Stats Block
             msg += "📊 <b>Статистика відключення:</b>\n"
@@ -426,7 +416,7 @@ def push_api(secret_key):
             
             sched_on_time = get_nearest_schedule_switch(current_time, True)
             if sched_on_time:
-                msg += f"• За графіком світло мала з'явитися о: <b>{sched_on_time}</b>\n"
+                msg += f"• За графіком світло мало з'явитися о: <b>{sched_on_time}</b>\n"
             
             if sched_light_now is False: # It appeared while it should be dark
                 next_off_time = next_range.split(' - ')[1] if ' - ' in next_range else "час очікується"
