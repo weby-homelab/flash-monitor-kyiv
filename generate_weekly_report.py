@@ -125,22 +125,22 @@ def get_weekly_stats(start_date, end_date, events):
     }
 
 def generate_weekly_chart(end_date, daily_data, theme='dark'):
-    # Professional Muted Palette
+    # Professional Muted Palette - Updated to Teal/Rose
     if theme == 'dark':
         bg_color = '#0f172a'
         text_color = '#f8fafc'
-        fact_on_color = '#14b8a6'
-        fact_off_color = '#f43f5e'
-        plan_on_color = '#818cf8'
-        plan_off_color = '#64748b'
+        fact_on_color = '#14b8a6' # Teal
+        fact_off_color = '#f43f5e' # Rose
+        plan_on_color = '#0d9488'
+        plan_off_color = '#be123c'
         plt_style = 'dark_background'
     else:
         bg_color = '#f8fafc'
         text_color = '#0f172a'
         fact_on_color = '#14b8a6'
         fact_off_color = '#f43f5e'
-        plan_on_color = '#818cf8'
-        plan_off_color = '#64748b'
+        plan_on_color = '#0d9488'
+        plan_off_color = '#be123c'
         plt_style = 'default'
 
     with plt.style.context(plt_style):
@@ -351,23 +351,23 @@ if __name__ == "__main__":
         
         plan_section = f"""
 📉 <b>План vs Факт:</b>
- • За планом світло: <b>{int(plan_up_h)}год</b>
- • Реально світло: <b>{int(up_h)}год</b>
- • Відхилення: <b>{sign}{diff_total:.1f}год</b> (Світла {compliance_pct:.0f}% від плану)
+ • За планом 🔆 <b>{int(plan_up_h)}г</b>
+ • Реально 🔆 <b>{int(up_h)}г</b>
+ • Відхилення: <b>{sign}{diff_total:.1f}г</b> (Світла {compliance_pct:.0f}% від плану)
 """
         if easiest and hardest and easiest != hardest:
              e_name = day_names[easiest['date'].weekday()]
              h_name = day_names[hardest['date'].weekday()]
              e_diff = easiest['diff']
              h_diff = hardest['diff']
-             plan_section += f"\n🌤 <b>Легше ніж очікувалось:</b> {e_name} (+{e_diff:.1f}год понад план)\n🌩 <b>Важче ніж очікувалось:</b> {h_name} ({h_diff:.1f}год від плану)"
+             plan_section += f"\n🌤 <b>Легше ніж очікувалось:</b> {e_name} (+{e_diff:.1f}г понад план)\n🌩 <b>Важче ніж очікувалось:</b> {h_name} ({h_diff:.1f}г від плану)"
 
     caption = f"""📅 <b>Енергетичний тиждень ({monday.strftime('%d.%m')} - {sunday.strftime('%d.%m')})</b>
 
 📊 <b>Загальні підсумки:</b>
- • Світло було: <b>{int(up_h)}год {int((up_h%1)*60)}хв</b> ({int(up_pct)}%)
- • Відключення: <b>{int(down_h)}год {int((down_h%1)*60)}хв</b>
- • В середньому без світла: <b>{int(down_h/7)}год {int(((down_h/7)%1)*60)}хв</b> на добу
+ • Світло було 🔆 <b>{int(up_h)}г {int((up_h%1)*60)}хв</b> ({int(up_pct)}%)
+ • Відключення ✖️ <b>{int(down_h)}г {int((down_h%1)*60)}хв</b>
+ • В середньому без світла: <b>{int(down_h/7)}г {int(((down_h/7)%1)*60)}хв</b> на добу
 {plan_section}
 
 🏆 <b>Найменше відключень:</b> {day_names[best_day['date'].weekday()]}

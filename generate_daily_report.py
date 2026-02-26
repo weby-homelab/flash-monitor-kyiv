@@ -177,25 +177,28 @@ def format_duration(seconds):
     total_minutes = round(seconds / 60)
     h = total_minutes // 60
     m = total_minutes % 60
-    return f"{h} год {m} хв"
+    parts = []
+    if h > 0: parts.append(f"{h} г")
+    if m > 0: parts.append(f"{m} хв")
+    return " ".join(parts) if parts else "0 хв"
 
 def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
-    # Professional Muted Palette
+    # Professional Muted Palette - Updated to Teal/Rose
     if theme == 'dark':
         bg_color = '#0f172a'
         text_color = '#f8fafc'
-        fact_on_color = '#14b8a6'
-        fact_off_color = '#f43f5e'
-        plan_on_color = '#818cf8'
-        plan_off_color = '#64748b'
+        fact_on_color = '#14b8a6' # Teal
+        fact_off_color = '#f43f5e' # Rose
+        plan_on_color = '#0d9488' # Darker Teal for plan
+        plan_off_color = '#be123c' # Darker Rose for plan
         plt_style = 'dark_background'
     else:
         bg_color = '#f8fafc'
         text_color = '#0f172a'
         fact_on_color = '#14b8a6'
         fact_off_color = '#f43f5e'
-        plan_on_color = '#818cf8'
-        plan_off_color = '#64748b'
+        plan_on_color = '#0d9488'
+        plan_off_color = '#be123c'
         plt_style = 'default'
 
     with plt.style.context(plt_style):
@@ -434,8 +437,8 @@ if __name__ == "__main__":
     shutil.copy(filename_light, os.path.join(web_dir, "chart_light.png"))
     
     caption = (f"📊 <b>Звіт за {target_date.strftime('%d.%m.%Y')}</b>\n\n"
-               f"💡 Світло було: <b>{format_duration(t_up)}</b>\n"
-               f"❌ Світла не було: <b>{format_duration(t_down)}</b>")
+               f"💡 Світло було 🔆 <b>{format_duration(t_up)}</b>\n"
+               f"✖️ Світла не було ✖️ <b>{format_duration(t_down)}</b>")
 
     if slots:
         plan_up_cnt = sum(1 for s in slots if s)
@@ -462,9 +465,9 @@ if __name__ == "__main__":
             print(f"Error saving stats json: {e}")
         
         caption += f"\n\n📉 <b>План vs Факт:</b>\n"
-        caption += f" • За планом світло: <b>{format_duration(plan_up_sec)}</b>\n"
-        caption += f" • Реально світло: <b>{format_duration(t_up)}</b>\n"
-        caption += f" • Відхилення: <b>{sign}{diff_hours:.1f}год</b> (Світла {compliance_pct:.0f}% від плану)"
+        caption += f" • За планом 🔆 <b>{format_duration(plan_up_sec)}</b>\n"
+        caption += f" • Реально 🔆 <b>{format_duration(t_up)}</b>\n"
+        caption += f" • Відхилення: <b>{sign}{diff_hours:.1f}г</b> (Світла {compliance_pct:.0f}% від плану)"
                
     if "--no-send" not in sys.argv:
         # Check if we can update an existing message
