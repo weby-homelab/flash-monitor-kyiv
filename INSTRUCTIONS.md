@@ -87,7 +87,11 @@ void loop() {
 ### Бот не надсилає повідомлення?
 1.  Перевірте правильність `TELEGRAM_BOT_TOKEN`.
 2.  Переконайтеся, що бот є адміном у каналі.
+<<<<<<< HEAD
 3.  Перевірте логи: `tail -f event_log.json` або `journalctl -u flash-*`.
+=======
+3.  Перевірте логи: `docker logs flash-monitor-worker` або `journalctl -u flash-background`.
+>>>>>>> origin/main
 
 ---
 
@@ -100,5 +104,10 @@ void loop() {
 | Оновлення | `docker compose pull` | `git pull && pip install -r ...` |
 
 ---
+<<<<<<< HEAD
 © 2026 Weby Homelab — infrastructure that doesn’t give up.  
 Made with ❤️ in Kyiv under air raid sirens and blackouts...
+=======
+© 2026 Weby Homelab  
+Built to survive 12h+ blackouts & grid attacks since 2022
+>>>>>>> origin/main
