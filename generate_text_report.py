@@ -94,12 +94,6 @@ def generate_day_block(is_today, intervals, cfg):
         start_str = format_slot_time(disp_start_idx)
         end_str = format_slot_time(disp_end_idx)
         
-        marker = ""
-        if is_today and inv['end_idx'] > 48:
-             marker = " →" # Continues tomorrow
-        elif not is_today and inv['start_idx'] < 48:
-             marker = " ↩" # Continued from yesterday
-             
         # Use fallback icons if ui section or icons are missing
         ui_cfg = cfg.get('ui', {})
         icons = ui_cfg.get('icons', {'on': '🔆', 'off': '✖️'})
@@ -108,9 +102,11 @@ def generate_day_block(is_today, intervals, cfg):
         # Format duration for this day part only
         dur_val = format_duration(disp_dur)
         
-        # Beautifully aligned line: Icon Start-End (Duration)
-        time_range = f"{start_str}-{end_str}"
-        line = f"{icon} {time_range:<11} ({dur_val:>3}){marker}"
+        # Padded duration: content inside () is 3 chars wide
+        dur_padded = f"{dur_val:>3}"
+        
+        # Exact format: {icon} {start}-{end} ({dur})
+        line = f"{icon} {start_str}-{end_str} ({dur_padded})"
         day_intervals.append(line)
     
     lines.append("<code>")
@@ -200,18 +196,19 @@ def main():
         if not source_blocks: continue
 
         day_title = f"{icons.get('calendar', '📆')}  <b>{dt.strftime('%d.%m')} ({DAYS_UA[dt.weekday()]})</b>"
+        group_display = group.replace('GPV', '')
         if len(source_blocks) == 2 and source_blocks[0][1] == source_blocks[1][1]:
             sources_label = f"<i>[{source_blocks[0][0]}, {source_blocks[1][0]}]</i>"
             content = f"{day_title}\n{sources_label}\n\n{source_blocks[0][1]}"
         else:
             blocks = [day_title]
             for name, txt in source_blocks:
-                blocks.append(f"<i>[{name}]</i>\n{txt}")
+                blocks.append(f"<i>[{name}]</i>\n\n{txt}")
             content = "\n\n".join(blocks)
 
         updated_text = ui_cfg.get('text', {}).get('updated', 'Оновлено')
         footer = f"<i>{icons.get('clock', '🕐')} {updated_text}: {now.strftime('%H:%M')}</i>"
-        full_text = f"📈 <b>Графік групи {group.replace('GPV', '')}</b>\n\n{content}\n\n{footer}"
+        full_text = f"📈 <b>Графік групи {group_display}</b>\n\n{content}\n\n{footer}"
         
         content_hash = hashlib.md5(full_text.encode()).hexdigest()
         
