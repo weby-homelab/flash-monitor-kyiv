@@ -246,11 +246,18 @@ def get_today_schedule_text():
             
         schedule = source_data[group_key]
         
-        if today_str not in schedule or not schedule[today_str].get('slots'):
+        if today_str not in schedule:
             return "Графік відсутній"
             
-        slots = schedule[today_str]['slots']
-        
+        day_data = schedule[today_str]
+        if isinstance(day_data, dict):
+            slots = day_data.get('slots', [])
+        else:
+            slots = day_data # Handle list format if present
+            
+        if not slots or len(slots) < 48:
+            return "Графік відсутній або некоректний"
+            
         intervals = []
         current_state = slots[0]
         start_idx = 0
@@ -270,6 +277,7 @@ def get_today_schedule_text():
                 start_idx = i
                 current_state = slots[i]
         
+        # Last interval of the day
         intervals.append({
             "state": current_state, 
             "start": format_slot_time(start_idx), 
@@ -277,44 +285,37 @@ def get_today_schedule_text():
             "duration": (48 - start_idx) * 0.5
         })
 
-        # Merge with tomorrow if continues
-        tomorrow_str = (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        if tomorrow_str in schedule and schedule[tomorrow_str].get('slots'):
-            tomorrow_slots = schedule[tomorrow_str]['slots']
-            if tomorrow_slots[0] == current_state:
-                tom_end_idx = 48
-                for i in range(1, 48):
-                    if tomorrow_slots[i] != current_state:
-                        tom_end_idx = i
-                        break
-                tom_dur = tom_end_idx * 0.5
-                intervals[-1]['end'] = format_slot_time(tom_end_idx)
-                intervals[-1]['duration'] += tom_dur
-        else:
-             intervals[-1]['end'] = "24:00"
-
-        # Totals for TODAY only
+        # Totals for TODAY only (before merging with tomorrow)
         total_on = sum(1 for s in slots if s) * 0.5
         total_off = 24.0 - total_on
+
+        MONTHS_UA = {1: "Січня", 2: "Лютого", 3: "Березня", 4: "Квітня", 5: "Травня", 6: "Червня", 7: "Липня", 8: "Серпня", 9: "Вересня", 10: "Жовтня", 11: "Листопада", 12: "Грудня"}
+        day_title = f"{now.day} {MONTHS_UA[now.month]} ({DAYS_UA[now.weekday()]})"
+
+        lines = []
+        lines.append(f"<div class='schedule-title'>{day_title}</div>")
         
         def fmt_dur(hours):
             return f"{hours:g}".replace('.', ',')
 
-        lines = []
-        day_str = f"📆  {now.strftime('%d.%m')} ({DAYS_UA[now.weekday()]}) [{source_name}]:"
-        lines.append(f"<div style='font-weight:bold; margin-bottom:10px; color: var(--text-primary);'>{day_str}</div>")
-        
         for inv in intervals:
-            icon = "🔆" if inv['state'] else "✖️"
-            lines.append(f"<div style='margin-bottom: 5px; font-size: 15px;'>{icon} {inv['start']} - {inv['end']} … ({fmt_dur(inv['duration'])} год.)</div>")
+            cls = "on" if inv['state'] else "off"
+            # Separate spans for each part of the time range for pixel-perfect alignment
+            line_html = (
+                f"<div class='schedule-line {cls}'>"
+                f"<span class='time-s'>{inv['start']}</span>"
+                f"<span class='time-sep'>-</span>"
+                f"<span class='time-e'>{inv['end']}</span>"
+                f"<span class='dur'>({fmt_dur(inv['duration'])})</span>"
+                f"</div>"
+            )
+            lines.append(line_html)
             
-        lines.append("<div style='margin-top:15px; margin-bottom:10px; border-top: 1px dashed var(--border-color); padding-top: 5px;'></div>")
-        lines.append(f"<div style='font-size: 15px; margin-bottom: 5px;'>🔆 Світло є: {fmt_dur(total_on)} год.</div>")
-        lines.append(f"<div style='font-size: 15px; margin-bottom: 10px;'>✖️ Світла нема: {fmt_dur(total_off)} год.</div>")
+        lines.append(f"<div class='schedule-summary'><span>🔆{int(total_on)}</span><span>✖️{int(total_off)}</span></div>")
         
         file_mtime = os.path.getmtime(schedule_file)
         dt_mtime = datetime.datetime.fromtimestamp(file_mtime, KYIV_TZ)
-        lines.append(f"<div style='font-size: 14px; opacity: 0.8;'>🕐 Оновлено: {dt_mtime.strftime('%H:%M')}</div>")
+        lines.append(f"<div class='schedule-updated'>Оновлено: {dt_mtime.strftime('%H:%M')}</div>")
         
         return "".join(lines)
     except Exception as e:
