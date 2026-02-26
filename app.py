@@ -12,6 +12,7 @@ from light_service import (
     monitor_loop, schedule_loop, get_current_time, format_duration, 
     log_event, get_schedule_context, send_telegram, 
     get_deviation_info, get_nearest_schedule_switch,
+    format_event_message,
     trigger_daily_report_update, trigger_weekly_report_update,
     get_air_raid_alert,
     KYIV_TZ
@@ -88,11 +89,6 @@ def get_radiation():
 
 LIGHT_STATE_FILE = "power_monitor_state.json"
 EVENT_LOG_FILE = "event_log.json"
-
-def format_duration(seconds):
-    h = int(seconds // 3600)
-    m = int((seconds % 3600) // 60)
-    return f"{h} год {m} хв"
 
 def get_power_events_data(limit=5):
     recent_events = []
@@ -258,38 +254,45 @@ def get_today_schedule_text():
         if not slots or len(slots) < 48:
             return "Графік відсутній або некоректний"
             
-        intervals = []
+        intervals_on = []
+        intervals_off = []
         current_state = slots[0]
         start_idx = 0
         
         def format_slot_time(idx):
             mins = idx * 30
-            return f"{mins // 60:02d}:{mins % 60:02d}"
+            h = mins // 60
+            m = mins % 60
+            return f"{h:02d}:{m:02d}"
             
         for i in range(1, 48):
             if slots[i] != current_state:
-                intervals.append({
+                inv = {
                     "state": current_state, 
                     "start": format_slot_time(start_idx), 
                     "end": format_slot_time(i), 
                     "duration": (i - start_idx) * 0.5
-                })
+                }
+                if current_state: intervals_on.append(inv)
+                else: intervals_off.append(inv)
                 start_idx = i
                 current_state = slots[i]
         
         # Last interval of the day
-        intervals.append({
+        inv = {
             "state": current_state, 
             "start": format_slot_time(start_idx), 
             "end": "24:00", 
             "duration": (48 - start_idx) * 0.5
-        })
+        }
+        if current_state: intervals_on.append(inv)
+        else: intervals_off.append(inv)
 
         # Totals for TODAY only (before merging with tomorrow)
         total_on = sum(1 for s in slots if s) * 0.5
         total_off = 24.0 - total_on
 
-        MONTHS_UA = {1: "Січня", 2: "Лютого", 3: "Березня", 4: "Квітня", 5: "Травня", 6: "Червня", 7: "Липня", 8: "Серпня", 9: "Вересня", 10: "Жовтня", 11: "Листопада", 12: "Грудня"}
+        MONTHS_UA = {1: "Січня", 2: "Лютого", 3: "Березня", 4: "Квітня", 5: "Травня", 6: "Червня", 7: "Липня", 8: "Середня", 9: "Вересня", 10: "Жовтня", 11: "Листопада", 12: "Грудня"}
         day_title = f"{now.day} {MONTHS_UA[now.month]} ({DAYS_UA[now.weekday()]})"
 
         lines = []
@@ -298,11 +301,14 @@ def get_today_schedule_text():
         def fmt_dur(hours):
             return f"{hours:g}".replace('.', ',')
 
-        for inv in intervals:
-            cls = "on" if inv['state'] else "off"
-            # Separate spans for each part of the time range for pixel-perfect alignment
+        lines.append("<div class='schedule-columns'>")
+        
+        # Column ON
+        lines.append("<div class='schedule-col'>")
+        lines.append("<div class='col-header on'>Увімкнення</div>")
+        for inv in intervals_on:
             line_html = (
-                f"<div class='schedule-line {cls}'>"
+                f"<div class='schedule-line on'>"
                 f"<span class='schedule-time'>{inv['start']}</span>"
                 f"<span class='time-sep'>-</span>"
                 f"<span class='schedule-time'>{inv['end']}</span>"
@@ -310,6 +316,24 @@ def get_today_schedule_text():
                 f"</div>"
             )
             lines.append(line_html)
+        lines.append("</div>")
+
+        # Column OFF
+        lines.append("<div class='schedule-col'>")
+        lines.append("<div class='col-header off'>Вимкнення</div>")
+        for inv in intervals_off:
+            line_html = (
+                f"<div class='schedule-line off'>"
+                f"<span class='schedule-time'>{inv['start']}</span>"
+                f"<span class='time-sep'>-</span>"
+                f"<span class='schedule-time'>{inv['end']}</span>"
+                f"<span class='schedule-duration'>({fmt_dur(inv['duration'])})</span>"
+                f"</div>"
+            )
+            lines.append(line_html)
+        lines.append("</div>")
+        
+        lines.append("</div>") # End columns
             
         lines.append(f"<div class='schedule-summary'><span class='light-hours'>🔆 {int(total_on)}</span><span class='no-light-hours'>✖️ {int(total_off)}</span></div>")
         
@@ -466,38 +490,8 @@ def push_api(secret_key):
             state["came_up_at"] = current_time
             log_event("up", current_time)
             
-            # Calculate outage duration
-            if state["went_down_at"] > 0:
-                duration = format_duration(current_time - state["went_down_at"])
-            else:
-                duration = "невідомо"
-            
-            sched_light_now, current_end, next_range, next_duration = get_schedule_context()
-            
-            time_str = datetime.fromtimestamp(current_time, KYIV_TZ).strftime("%H:%M")
-            dev_msg = get_deviation_info(current_time, True)
-            
-            # Header
-            msg = f"🟢 <b>{time_str} Світло є!</b>\n\n"
-            
-            # Stats Block
-            msg += "📊 <b>Статистика відключення:</b>\n"
-            msg += f"• Світла не було: <b>{duration}</b>\n"
-            if dev_msg:
-                msg += f"{dev_msg}\n"
-            
-            # Schedule Block
-            msg += "\n🗓 <b>Аналіз:</b>\n"
-            
-            sched_on_time = get_nearest_schedule_switch(current_time, True)
-            if sched_on_time:
-                msg += f"• За графіком світло мало з'явитися о: <b>{sched_on_time}</b>\n"
-            
-            if sched_light_now is False: # It appeared while it should be dark
-                next_off_time = next_range.split(' - ')[1] if ' - ' in next_range else "час очікується"
-                msg += f"• Наступне вимкнення: <b>{next_off_time}</b>"
-            else: # It appeared while it should be light
-                msg += f"• Наступне вимкнення: <b>{current_end}</b>"
+            # New compact message format
+            msg = format_event_message(True, current_time, state.get("went_down_at", 0))
             
             threading.Thread(target=send_telegram, args=(msg,)).start()
             # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
