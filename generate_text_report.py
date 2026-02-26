@@ -78,33 +78,39 @@ def generate_day_block(is_today, intervals, cfg):
     
     day_intervals = []
     for inv in intervals:
+        # Check if interval overlaps with the day we are displaying
         if inv['end_idx'] <= day_start or inv['start_idx'] >= day_end:
             continue
         
-        disp_start = max(inv['start_idx'], day_start)
-        disp_end = min(inv['end_idx'], day_end)
-        disp_dur = (disp_end - disp_start) * 0.5
+        # Clip interval to day boundaries for stats and display
+        disp_start_idx = max(inv['start_idx'], day_start)
+        disp_end_idx = min(inv['end_idx'], day_end)
+        disp_dur = (disp_end_idx - disp_start_idx) * 0.5
         
         if inv['state']: total_on += disp_dur
         else: total_off += disp_dur
         
-        start_str = format_slot_time(inv['start_idx'])
-        end_str = format_slot_time(inv['end_idx'])
+        # We display the CLIPPED time for the range
+        start_str = format_slot_time(disp_start_idx)
+        end_str = format_slot_time(disp_end_idx)
         
         marker = ""
         if is_today and inv['end_idx'] > 48:
-             marker = " (далі)"
+             marker = " →" # Continues tomorrow
         elif not is_today and inv['start_idx'] < 48:
-             marker = " (прод.)"
+             marker = " ↩" # Continued from yesterday
              
         # Use fallback icons if ui section or icons are missing
         ui_cfg = cfg.get('ui', {})
         icons = ui_cfg.get('icons', {'on': '🔆', 'off': '✖️'})
         icon = icons.get('on', '🔆') if inv['state'] else icons.get('off', '✖️')
         
-        duration_text = f"({format_duration(inv['duration'])})"
+        # Format duration for this day part only
+        dur_val = format_duration(disp_dur)
         
-        line = f"{icon} {start_str}-{end_str:<5} {duration_text:>5}{marker}"
+        # Beautifully aligned line: Icon Start-End (Duration)
+        time_range = f"{start_str}-{end_str}"
+        line = f"{icon} {time_range:<11} ({dur_val:>3}){marker}"
         day_intervals.append(line)
     
     lines.append("<code>")
