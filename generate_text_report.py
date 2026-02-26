@@ -15,7 +15,6 @@ TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 CONFIG_FILE = "config.json"
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
-# State file for message tracking
 TEXT_REPORT_STATE_FILE = os.path.join(DATA_DIR, "text_report_v2_state.json")
 
 def get_timezone():
@@ -71,7 +70,7 @@ def format_duration(hours):
     if hours == int(hours): return str(int(hours))
     return f"{hours:g}".replace('.', ',')
 
-def generate_day_block(is_today, intervals, cfg, is_pending=False):
+def generate_day_block_content(is_today, intervals, cfg, is_pending=False):
     if is_pending or not intervals:
         return "⏳️ Графік очікується"
 
@@ -112,8 +111,8 @@ def generate_day_block(is_today, intervals, cfg, is_pending=False):
     
     on_icon = cfg.get('ui', {}).get('icons', {}).get('on', '🔆')
     off_icon = cfg.get('ui', {}).get('icons', {}).get('off', '✖️')
-    lines.append(f"{on_icon} Світло є <b>{format_duration(total_on)} г</b>")
-    lines.append(f"{off_icon} Світла нема <b>{format_duration(total_off)} г</b>")
+    lines.append(f"{on_icon} Світло є <b>{format_duration(total_on)} год</b>")
+    lines.append(f"{off_icon} Світла нема <b>{format_duration(total_off)} год</b>")
     
     return "\n".join(lines)
 
@@ -151,68 +150,69 @@ def main():
     
     state = load_state()
     if state["date"] != today_str:
-        # New day reset
         state = {"date": today_str, "morning_msg_id": None, "combined_msg_id": None, "hashes": {}}
 
-    def get_source_data(date_str, source_key):
+    def get_source_info(date_str, source_key):
         s_data = data.get(source_key, {}).get(group, {}).get(date_str, {})
         slots = s_data.get('slots')
         status = s_data.get('status', 'unknown')
         is_pending = (slots is None) or (status == 'pending')
-        # Heuristic for pending on Github (all same values usually means not updated yet)
         if source_key == 'github' and slots:
             if all(s == slots[0] for s in slots) and date_str == tomorrow_str: 
                 is_pending = True
-        return slots, is_pending
+        
+        source_name = cfg.get('sources', {}).get(source_key, {}).get('name', source_key.capitalize())
+        content = generate_day_block_content(date_str == today_str, get_all_intervals(slots) if slots else [], cfg, is_pending)
+        return source_name, content, is_pending
 
-    has_tomorrow = False
+    # Check tomorrow's availability
+    tomorrow_available = False
     for s_key in ['github', 'yasno']:
-        _, is_p = get_source_data(tomorrow_str, s_key)
+        _, _, is_p = get_source_info(tomorrow_str, s_key)
         if not is_p:
-            has_tomorrow = True
+            tomorrow_available = True
             break
 
-    # Construct the report text
     dates_to_show = [today_str]
-    if has_tomorrow:
+    if tomorrow_available:
         dates_to_show.append(tomorrow_str)
 
     full_content_parts = []
     for d_str in dates_to_show:
         dt = datetime.datetime.strptime(d_str, "%Y-%m-%d")
-        # Exact title format: double space after icon and date
         day_title = f"📆  <b>{dt.strftime('%d.%m')}  ({DAYS_UA[dt.weekday()]})</b>"
         
-        source_blocks = []
-        for s_key in ['github', 'yasno']:
-            slots, is_p = get_source_data(d_str, s_key)
-            intervals = get_all_intervals(slots) if slots else []
-            source_name = cfg.get('sources', {}).get(s_key, {}).get('name', s_key.capitalize())
-            source_blocks.append((source_name, generate_day_block(d_str == today_str, intervals, cfg, is_p)))
+        # Get data for both sources
+        s1_name, s1_content, _ = get_source_info(d_str, 'github')
+        s2_name, s2_content, _ = get_source_info(d_str, 'yasno')
 
-        if len(source_blocks) == 2 and source_blocks[0][1] == source_blocks[1][1]:
-            sources_label = f"<i>[{source_blocks[0][0]}, {source_blocks[1][0]}]</i>"
-            block = f"{day_title}\n{sources_label}\n\n{source_blocks[0][1]}"
+        if s1_content == s2_content:
+            sources_label = f"<i>[{s1_name}, {s2_name}]</i>"
+            block = f"{day_title}\n{sources_label}\n\n{s1_content}"
         else:
-            block_parts = [day_title]
-            for name, txt in source_blocks:
-                block_parts.append(f"<i>[{name}]</i>\n{txt}")
-            block = "\n\n".join(block_parts)
+            block = f"{day_title}\n\n<i>[{s1_name}]</i>\n{s1_content}\n\n<i>[{s2_name}]</i>\n{s2_content}"
         
         full_content_parts.append(block)
 
     updated_time = now.strftime('%H:%M')
     footer = f"<i>🕐 Оновлено: {updated_time}</i>"
-    full_text = f"📈 <b>Графік групи {group_display}</b>\n\n" + "\n\n".join(full_content_parts) + f"\n\n{footer}"
+    
+    # Header
+    full_text = f"📈 <b>Графік групи {group_display}</b>\n\n" + "\n\n".join(full_content_parts)
+    
+    # Ensure there is a separator before footer if not already there from block
+    if not full_text.strip().endswith("---"):
+        full_text += "\n---"
+    full_text += f"\n{footer}"
     
     content_hash = hashlib.md5(full_text.encode()).hexdigest()
-    report_type = "combined" if has_tomorrow else "morning"
+    report_type = "combined" if tomorrow_available else "morning"
     
-    target_msg_id = state["combined_msg_id"] if has_tomorrow else state["morning_msg_id"]
+    target_msg_id = state["combined_msg_id"] if tomorrow_available else state["morning_msg_id"]
     old_hash = state["hashes"].get(report_type)
 
     if target_msg_id:
-        if old_hash == content_hash: return # No changes
+        if old_hash == content_hash: return 
         
         url = f"https://api.telegram.org/bot{TOKEN}/editMessageText"
         payload = {"chat_id": CHAT_ID, "message_id": target_msg_id, "text": full_text, "parse_mode": "HTML", "disable_web_page_preview": True}
@@ -220,17 +220,15 @@ def main():
         if r.status_code == 200:
             state["hashes"][report_type] = content_hash
         else:
-            # If edit fails (e.g. message deleted), reset ID to send new one next time
-            if has_tomorrow: state["combined_msg_id"] = None
+            if tomorrow_available: state["combined_msg_id"] = None
             else: state["morning_msg_id"] = None
     else:
-        # Send new message
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
         payload = {"chat_id": CHAT_ID, "text": full_text, "parse_mode": "HTML", "disable_web_page_preview": True}
         r = requests.post(url, json=payload)
         if r.status_code == 200:
             new_id = r.json()['result']['message_id']
-            if has_tomorrow:
+            if tomorrow_available:
                 state["combined_msg_id"] = new_id
             else:
                 state["morning_msg_id"] = new_id
