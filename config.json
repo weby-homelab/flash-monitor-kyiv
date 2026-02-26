@@ -11,7 +11,7 @@
   "sources": {
     "github": {
       "enabled": true,
-      "name": "ДТЕК"
+      "name": "Github"
     },
     "yasno": {
       "enabled": true,
