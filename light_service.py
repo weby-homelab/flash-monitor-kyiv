@@ -712,43 +712,30 @@ def schedule_loop():
     Periodically triggers report updates to keep charts and texts fresh.
     - Sync Schedules: every 10 mins
     - Daily Image: every 10 mins
-    - Text Report: every 30 mins
+    - Text Report: every 30 mins (handled inside main or by counter)
     - Weekly Telegram: Monday 00:15
-    - Rest hours: 23:00 - 06:00
     """
     print("Schedule loop started (10 min base interval)...")
     counter = 0
     weekly_sent_date = None
     
     while True:
-        now = datetime.datetime.now(KYIV_TZ)
-        h = now.hour
+        # 0. Sync schedules from external API
+        sync_schedules()
         
-        # Rest hours: 23:00 - 06:00
-        if 6 <= h < 23:
-            # 0. Sync schedules from external API
-            sync_schedules()
-            
-            # 1. Trigger Daily Image Update (every 10 mins)
+        # 1. Trigger Daily Image Update (every 10 mins)
+        try:
+            trigger_daily_report_update()
+        except: pass
+        
+        # 2. Trigger Text Report Update (every 30 mins)
+        if counter % 3 == 0:
             try:
-                trigger_daily_report_update()
+                trigger_text_report_update()
             except: pass
             
-            # 2. Trigger Text Report Update (every 30 mins)
-            # counter 0, 3, 6... (0, 30, 60 mins)
-            if counter % 3 == 0:
-                try:
-                    trigger_text_report_update()
-                except: pass
-                
-            # 3. Trigger Weekly Telegram Report (Monday around 00:10-00:20)
-            # Note: Weekly is at 00:15, which is in REST period. 
-            # We should allow Weekly even in rest period or move it.
-            # Let's check it separately.
-        
-        # Keep Weekly check outside of daytime-only block if needed, 
-        # but the prompt says service rests 23-06. 
-        # We'll allow weekly check since it's once a week.
+        # 3. Trigger Weekly Telegram Report (Monday around 00:10-00:20)
+        now = datetime.datetime.now(KYIV_TZ)
         if now.weekday() == 0 and now.hour == 0 and 10 <= now.minute < 20:
             today_str = now.strftime("%Y-%m-%d")
             if weekly_sent_date != today_str:
