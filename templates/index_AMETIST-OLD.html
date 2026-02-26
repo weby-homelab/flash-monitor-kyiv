@@ -37,12 +37,6 @@
             --danger: #f87171;
             --warning: #fbbf24;
             --blur: 25px;
-            
-            /* Professional Muted Graph Colors */
-            --color-graph-fact-on: #14b8a6;
-            --color-graph-fact-off: #f43f5e;
-            --color-graph-plan-on: #818cf8;
-            --color-graph-plan-off: #64748b;
         }
         @media (prefers-color-scheme: light) {
             :root {
@@ -55,22 +49,9 @@
                 --accent: #8b5cf6;
                 --success: #059669;
                 --danger: #dc2626;
-                
-                /* Light Mode Professional Muted */
-                --color-graph-fact-on: #0f766e;
-                --color-graph-fact-off: #be123c;
             }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        html, body { 
-            max-width: 100%; 
-            overflow-x: hidden; 
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none;  /* IE/Edge */
-        }
-        html::-webkit-scrollbar, body::-webkit-scrollbar { 
-            display: none; /* Chrome/Safari/Webkit */
-        }
         body { background-color: var(--bg-color); color: var(--text-primary); font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 60px; background-attachment: fixed; transition: background-color 0.3s; }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 10% 10%, rgba(167, 139, 250, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.08) 0%, transparent 40%); z-index: -1; }
         .container { width: 100%; max-width: 480px; }
@@ -123,28 +104,7 @@
         
         .chart-wrap { border-radius: 24px; overflow: hidden; border: 1px solid var(--card-border); margin-top: 12px; background: #000; cursor: pointer; box-shadow: var(--card-shadow); }
         .chart-wrap img { width: 100%; display: block; }
-        .schedule-text { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; font-weight: 500; box-shadow: var(--card-shadow); color: var(--text-primary); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); }
-        
-        .schedule-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
-        .col-header { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--card-border); }
-        .col-header.on { color: #14b8a6; } /* teal */
-        .col-header.off { color: #f43f5e; } /* rose */
-
-        .schedule-date { color: var(--text-primary); font-weight: 600; margin-bottom: 20px; font-size: 1rem; }
-        .schedule-line { display: flex; align-items: center; margin-bottom: 6px; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
-        .schedule-time { color: var(--text-primary); opacity: 0.85; width: 40px; text-align: center; }
-        .time-sep { width: 12px; text-align: center; opacity: 0.4; }
-        .schedule-duration { color: var(--text-secondary); margin-left: 8px; font-size: 0.8em; opacity: 0.6; }
-        
-        .schedule-line.off { color: #f43f5e !important; }
-        .schedule-line.on { color: #14b8a6 !important; }
-
-        .schedule-summary { border-top: 1px dashed var(--card-border); margin-top: 20px; padding-top: 16px; display: flex; gap: 24px; font-size: 1.1rem; }
-        
-        .light-hours { color: #14b8a6; font-weight: 700; text-shadow: 0 0 8px rgb(20 184 166 / 0.3); }
-        .no-light-hours { color: #f43f5e; font-weight: 700; text-shadow: 0 0 8px rgb(244 63 94 / 0.3); }
-        
-        .updated-time { color: var(--text-secondary); font-size: 0.85rem; margin-top: 12px; font-weight: 500; opacity: 0.8; }
+        .schedule-text { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; padding: 24px; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; font-weight: 500; box-shadow: var(--card-shadow); }
         
         footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
         footer a { color: inherit; text-decoration: none; font-weight: 700; }
@@ -162,6 +122,7 @@
         
         <div id="light-card" class="card"><div class="status-row"><div class="status-icon" id="light-icon">⏳</div><div class="status-info"><div class="status-title" id="light-text">Завантаження</div><div class="status-desc" id="light-event">...</div></div></div></div>
         
+        <div class="section-header">Повітряна тривога (Київ)</div>
         <div id="alert-card" class="card"><div class="status-row"><div class="status-icon" id="alert-icon">🛡️</div><div class="status-info"><div class="status-title" id="alert-val">---</div><div class="status-desc" id="alert-status">...</div></div></div></div>
         <div class="card" style="padding: 0; height: 320px; border: none; background: #000;"><iframe id="alert-map" src="https://alerts.in.ua/?minimal=true" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen></iframe></div>
         
@@ -285,12 +246,12 @@
                     aCard.className = 'card alert-active'; 
                     document.getElementById('alert-icon').innerText = '🚨'; 
                     document.getElementById('alert-val').innerText = 'ТРИВОГА'; 
-                    document.getElementById('alert-status').innerText = 'Київ. Пройдіть в укриття!'; 
+                    document.getElementById('alert-status').innerText = 'Пройдіть в укриття!'; 
                 } else { 
                     aCard.className = 'card'; 
                     document.getElementById('alert-icon').innerText = '🛡️'; 
                     document.getElementById('alert-val').innerText = 'СПОКІЙНО'; 
-                    document.getElementById('alert-status').innerText = 'Київ. Тривоги немає'; 
+                    document.getElementById('alert-status').innerText = 'Тривоги немає'; 
                 }
 
                 if (lastAlertStatus !== null && isAlert !== lastAlertStatus) {
