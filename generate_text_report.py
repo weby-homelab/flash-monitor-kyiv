@@ -71,7 +71,11 @@ def format_duration(hours):
     return f"{hours:g}".replace('.', ',')
 
 def generate_day_block_content(is_today, intervals, cfg, is_pending=False):
-    if is_pending or not intervals:
+    if is_pending:
+        # User example shows summary even for pending blocks
+        return "⏳️ Графік очікується\n---\n🔆 Світло є 0 год\n✖️ Світла нема 0 год"
+    
+    if not intervals:
         return "⏳️ Графік очікується"
 
     lines = []
@@ -132,7 +136,6 @@ def main():
     now = datetime.datetime.now(KYIV_TZ)
     h = now.hour
     
-    # Rest hours: 23:00 - 06:00
     if h < 6 or h >= 23:
         return
 
@@ -165,7 +168,6 @@ def main():
         content = generate_day_block_content(date_str == today_str, get_all_intervals(slots) if slots else [], cfg, is_pending)
         return source_name, content, is_pending
 
-    # Check tomorrow's availability
     tomorrow_available = False
     for s_key in ['github', 'yasno']:
         _, _, is_p = get_source_info(tomorrow_str, s_key)
@@ -182,7 +184,6 @@ def main():
         dt = datetime.datetime.strptime(d_str, "%Y-%m-%d")
         day_title = f"📆  <b>{dt.strftime('%d.%m')}  ({DAYS_UA[dt.weekday()]})</b>"
         
-        # Get data for both sources
         s1_name, s1_content, _ = get_source_info(d_str, 'github')
         s2_name, s2_content, _ = get_source_info(d_str, 'yasno')
 
@@ -197,10 +198,9 @@ def main():
     updated_time = now.strftime('%H:%M')
     footer = f"<i>🕐 Оновлено: {updated_time}</i>"
     
-    # Header
-    full_text = f"📈 <b>Графік групи {group_display}</b>\n\n" + "\n\n".join(full_content_parts)
+    # Header and Join blocks with the orange diamond separator
+    full_text = f"📈 <b>Графік групи {group_display}</b>\n\n" + "\n\n🔸️🔸️🔸️\n".join(full_content_parts)
     
-    # Ensure there is a separator before footer if not already there from block
     if not full_text.strip().endswith("---"):
         full_text += "\n---"
     full_text += f"\n{footer}"
