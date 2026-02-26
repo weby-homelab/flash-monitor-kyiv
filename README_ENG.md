@@ -9,7 +9,7 @@
 
 <br>
 
-# FLASH MONITOR KYIV (v1.6.0 Autonomous Edition)
+# FLASH MONITOR KYIV (v1.7.0 Autonomous Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
@@ -18,10 +18,12 @@
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
 Recent fixes and improvements:
-- **UI/UX:** New design for text schedules in Telegram with pixel-perfect alignment.
-- **Reports:** Improved daily report logic, added proper month names.
-- **Air Quality:** Flexible monitoring station configuration in config.json.
-- **Logic Fix:** Dashboard status now correctly matches actual power state (properly shows "Turned on" info when power is on).
+- **Telegram:** New compact message format for status changes with "time until next scheduled event" calculation (e.g., "Outage in ~ 3 h 25 min").
+- **UI/UX Web:** Redesigned schedule block on the dashboard — now split into two columns (ON and OFF) for better readability.
+- **Colors:** New schedule color scheme: **Teal** for power-on periods and **Rose** for outages.
+- **UI/UX Logic:** Removed redundant headers; alert status now laconically shows: "Kyiv. Clear".
+- **Time Formatting:** Fixed end-of-day time display — "24:00" is now used everywhere instead of "tomorrow at 00:00".
+- **Logic Fix:** Dashboard status now correctly matches actual power state.
 - **Algorithm Improvement:** More reliable nearest transition search for deviation calculation.
 - **Telegram Notifications:** Statistics format fixed to: "Turned on/off later/earlier by X hours Y minutes".
 - **Synchronization:** Enabled local host (`127.0.0.1`) sync for flexible setup in multi-service environments.

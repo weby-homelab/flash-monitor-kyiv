@@ -11,6 +11,7 @@ import requests
 import subprocess
 from urllib.parse import urlparse, parse_qs
 import sys
+import re
 from dotenv import load_dotenv
 
 from parser_service import update_local_schedules
@@ -189,9 +190,156 @@ def format_duration(seconds):
     h = int(seconds // 3600)
     m = int((seconds % 3600) // 60)
     parts = []
-    if h > 0: parts.append(f"{h} год")
+    if h > 0: parts.append(f"{h} г")
     if m > 0: parts.append(f"{m} хв")
     return " ".join(parts) if parts else "0 хв"
+
+def get_next_scheduled_event(event_time, look_for_light):
+    # look_for_light: True if we want to know when it will be ON, False for OFF
+    try:
+        if not os.path.exists(SCHEDULE_FILE): return None
+        with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
+        
+        source = data.get('yasno') or data.get('github')
+        if not source: return None
+        
+        group_key = list(source.keys())[0]
+        schedule_data = source[group_key]
+        
+        now_dt = datetime.datetime.fromtimestamp(event_time, KYIV_TZ)
+        today_str = now_dt.strftime("%Y-%m-%d")
+        tomorrow_str = (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        
+        if today_str not in schedule_data: return None
+        
+        slots = list(schedule_data[today_str]['slots'])
+        if tomorrow_str in schedule_data:
+            slots.extend(schedule_data[tomorrow_str]['slots'])
+        else:
+            slots.extend([slots[-1]] * 48)
+            
+        current_slot_idx = (now_dt.hour * 2) + (1 if now_dt.minute >= 30 else 0)
+        
+        target_idx = -1
+        
+        # If the current scheduled state ALREADY matches look_for_light, 
+        # we probably want the END of this block? No, we want the START of the NEXT block of this type.
+        # But usually we want the nearest future transition to the target state.
+        
+        # Search for the first transition to look_for_light in the future
+        for i in range(current_slot_idx, len(slots)):
+            # A transition to look_for_light is when slots[i] == look_for_light
+            # AND (i == 0 or slots[i-1] != look_for_light)
+            if slots[i] == look_for_light:
+                if i == 0 or slots[i-1] != look_for_light:
+                    # Found the start of a block of the target type
+                    # If this start is in the past or current slot, and we are currently in it,
+                    # we should find the NEXT one.
+                    if i <= current_slot_idx:
+                        continue
+                    target_idx = i
+                    break
+        
+        # Fallback: if we are currently in a state that should be the target state 
+        # (e.g. looking for LIGHT and it's scheduled to be LIGHT now),
+        # then the "next transition to LIGHT" might be far away. 
+        # But if the user wants "Expectation", maybe they mean the end of the CURRENT block?
+        # Let's look at the user's example again.
+        
+        if target_idx == -1:
+            # Try to find any occurrence if transition search failed
+            for i in range(current_slot_idx + 1, len(slots)):
+                if slots[i] == look_for_light:
+                    target_idx = i
+                    break
+                    
+        if target_idx == -1: return None
+        
+        # Find end of that block
+        end_idx = len(slots)
+        for i in range(target_idx + 1, len(slots)):
+            if slots[i] != look_for_light:
+                end_idx = i
+                break
+                
+        def idx_to_hm(idx):
+            rem = idx % 48
+            h = rem // 2
+            m = 30 if rem % 2 else 0
+            return f"{h:02d}:{m:02d}"
+            
+        start_t = idx_to_hm(target_idx)
+        end_t = idx_to_hm(end_idx)
+        
+        # Calculate time until start_t from event_time
+        days_offset = target_idx // 48
+        rem_idx = target_idx % 48
+        target_dt = now_dt.replace(hour=rem_idx // 2, minute=(30 if rem_idx % 2 else 0), second=0, microsecond=0)
+        target_dt += datetime.timedelta(days=days_offset)
+        
+        diff_sec = (target_dt - now_dt).total_seconds()
+        if diff_sec < 0: diff_sec = 0
+        
+        return {
+            "time_left_sec": diff_sec,
+            "interval": f"{start_t}-{end_t}"
+        }
+    except Exception as e:
+        print(f"Error in get_next_scheduled_event: {e}")
+        return None
+
+def format_event_message(is_up, event_time, prev_event_time):
+    time_str = datetime.datetime.fromtimestamp(event_time, KYIV_TZ).strftime("%H:%M")
+    
+    if is_up:
+        header = f"🟢 <b>{time_str} Світло з'явилося</b>"
+        duration_prefix = "Не було"
+        wait_prefix = "❌ Вимкнення через"
+        look_for_light = False # Next we wait for OFF
+    else:
+        header = f"🔴 <b>{time_str} Світло зникло</b>"
+        duration_prefix = "Воно було"
+        wait_prefix = "💡 Очікуємо через"
+        look_for_light = True # Next we wait for ON
+
+    # 1. Deviation
+    dev_msg = get_deviation_info(event_time, is_up)
+    # get_deviation_info returns: "• Увімкнули пізніше на 10 хв"
+    dev_line = ""
+    if dev_msg:
+        # Expected: "⚡️ На 10 хв пізніше графіка"
+        m = re.search(r"(?:Увімкнули|Вимкнули)\s+(раніше|пізніше)\s+на\s+(.+)$", dev_msg)
+        if m:
+            timing = m.group(1)
+            value = m.group(2)
+            dev_line = f"⚡️ На {value} {timing} графіка"
+        elif "точно за графіком" in dev_msg:
+            dev_line = "⚡️ Точно за графіком"
+
+    # 2. Previous Duration
+    if prev_event_time > 0:
+        dur_sec = abs(event_time - prev_event_time)
+        dur_str = format_duration(dur_sec)
+    else:
+        dur_str = "невідомо"
+    dur_line = f"🕓 {duration_prefix} {dur_str}"
+    
+    # 3. Next event and Interval
+    next_info = get_next_scheduled_event(event_time, look_for_light)
+    wait_line = ""
+    interval_line = ""
+    if next_info:
+        wait_dur = format_duration(next_info["time_left_sec"])
+        wait_line = f"{wait_prefix} ~ {wait_dur},"
+        interval_line = f"🗓 ({next_info['interval']})"
+        
+    msg = f"{header}\n"
+    if dev_line: msg += f"{dev_line}\n"
+    msg += f"{dur_line}\n"
+    if wait_line: msg += f"{wait_line},\n"
+    if interval_line: msg += f"{interval_line}"
+    
+    return msg.strip()
 
 def get_schedule_context():
     try:
@@ -242,6 +390,7 @@ def get_schedule_context():
             if day_offset == 0:
                 return f"{h:02d}:{m:02d}"
             elif day_offset == 1:
+                if h == 0 and m == 0: return "24:00"
                 return f"завтра о {h:02d}:{m:02d}"
             else:
                 return "післязавтра"
@@ -484,41 +633,10 @@ def monitor_loop():
                 state["went_down_at"] = down_time_ts
                 log_event("down", down_time_ts)
                 
-                # Calculate how long it was UP
-                if state["came_up_at"] > 0:
-                    duration = format_duration(down_time_ts - state["came_up_at"])
-                else:
-                    duration = "невідомо"
-                
-                sched_light_now, current_end, next_range, next_duration = get_schedule_context()
-                
-                time_str = datetime.datetime.fromtimestamp(down_time_ts, KYIV_TZ).strftime("%H:%M")
-                dev_msg = get_deviation_info(down_time_ts, False)
-                
-                # Header
-                msg = f"🔴 <b>{time_str} Світло зникло!</b>\n\n"
-                
-                # Stats Block
-                msg += "📊 <b>Статистика відключення:</b>\n"
-                msg += f"• Світло було: <b>{duration}</b>\n"
-                if dev_msg:
-                    msg += f"{dev_msg}\n"
-                
-                # Schedule Block
-                msg += "\n🗓 <b>Аналіз:</b>\n"
-                
-                scheduled_off_time = get_nearest_schedule_switch(down_time_ts, False)
-                if scheduled_off_time:
-                     msg += f"• За графіком світло мало зникнути о: <b>{scheduled_off_time}</b>\n"
-                
-                if sched_light_now is True: # Should be light (but went down)
-                    expected_return = next_range.split(' - ')[1] if ' - ' in next_range else "час очікується"
-                    msg += f"• Очікуємо увімкнення: <b>{expected_return}</b>"
-                else:
-                    msg += f"• Очікуємо увімкнення: <b>{current_end}</b>"
+                # New compact message format
+                msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
 
                 threading.Thread(target=send_telegram, args=(msg,)).start()
-                # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
                 save_state()
 
 def alerts_loop():
