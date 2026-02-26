@@ -1,7 +1,7 @@
 import requests
 from flask import Flask, render_template, jsonify, send_from_directory, make_response
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import time
 import re
@@ -188,353 +188,245 @@ def get_power_events_data(limit=5):
         
     return latest_event_text, recent_events
 
-def get_light_status_api():
-    load_state()
-    with state_lock:
-        status = state.get("status", "unknown")
-    
-    event_text, recent_events = get_power_events_data()
-    
-    config_path = os.path.join(DATA_DIR, "config.json")
-    if not os.path.exists(config_path):
-        config_path = "config.json"
-        
-    group_name = "36.1"
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, 'r') as f:
-                cfg = json.load(f)
-                groups = cfg.get("settings", {}).get("groups", [])
-                if groups: group_name = groups[0].replace("GPV", "")
-        except: pass
+DAYS_UA = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
 
-    res = "on" if status == "up" else "off" if status == "down" else "unknown"
-    return {"status": res, "event": event_text, "history": recent_events, "group": group_name}
+def render_day_schedule_html(slots, date_obj):
+    if not slots: return ""
+    
+    intervals_on = []
+    intervals_off = []
+    current_state = slots[0]
+    start_idx = 0
+    
+    def format_slot_time(idx):
+        mins = idx * 30
+        h, m = mins // 60, mins % 60
+        return f"{h:02d}:{m:02d}"
+        
+    for i in range(1, 48):
+        if slots[i] != current_state:
+            inv = {"state": current_state, "start": format_slot_time(start_idx), "end": format_slot_time(i), "duration": (i - start_idx) * 0.5}
+            if current_state: intervals_on.append(inv)
+            else: intervals_off.append(inv)
+            start_idx = i
+            current_state = slots[i]
+    
+    # Last interval
+    inv = {"state": current_state, "start": format_slot_time(start_idx), "end": "24:00", "duration": (48 - start_idx) * 0.5}
+    if current_state: intervals_on.append(inv)
+    else: intervals_off.append(inv)
+
+    total_on = sum(1 for s in slots if s) * 0.5
+    total_off = 24.0 - total_on
+
+    MONTHS_UA = {1: "Січня", 2: "Лютого", 3: "Березня", 4: "Квітня", 5: "Травня", 6: "Червня", 7: "Липня", 8: "Серпня", 9: "Вересня", 10: "Жовтня", 11: "Листопада", 12: "Грудня"}
+    day_title = f"{date_obj.day} {MONTHS_UA[date_obj.month]} ({DAYS_UA[date_obj.weekday()]})"
+    
+    def fmt_dur(hours):
+        return f"{hours:g}".replace('.', ',')
+
+    res = []
+    res.append(f"<div class='schedule-date'>{day_title}</div>")
+    res.append("<div class='schedule-columns'>")
+    
+    # Column ON
+    res.append("<div class='schedule-col'>")
+    res.append(f"<div class='col-header on'>Увімкнення 🔆 {fmt_dur(total_on)}</div>")
+    for inv in intervals_on:
+        res.append(f"<div class='schedule-line on'><span class='schedule-time'>{inv['start']}</span><span class='time-sep'>-</span><span class='schedule-time'>{inv['end']}</span><span class='schedule-duration'>({fmt_dur(inv['duration'])})</span></div>")
+    res.append("</div>")
+
+    # Column OFF
+    res.append("<div class='schedule-col'>")
+    res.append(f"<div class='col-header off'>Вимкнення ✖️ {fmt_dur(total_off)}</div>")
+    for inv in intervals_off:
+        res.append(f"<div class='schedule-line off'><span class='schedule-time'>{inv['start']}</span><span class='time-sep'>-</span><span class='schedule-time'>{inv['end']}</span><span class='schedule-duration'>({fmt_dur(inv['duration'])})</span></div>")
+    res.append("</div>")
+    res.append("</div>")
+    return "".join(res)
 
 def get_today_schedule_text():
     try:
-        from zoneinfo import ZoneInfo
-        import datetime
-        from light_service import get_timezone
-        KYIV_TZ = get_timezone()
-        DAYS_UA = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
-        
-        config_path = os.path.join(DATA_DIR, "config.json")
-        if not os.path.exists(config_path):
-            config_path = "config.json"
-            
-        target_group = "GPV36.1" # Default
-        if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
-                cfg = json.load(f)
-                groups = cfg.get("settings", {}).get("groups", [])
-                if groups: target_group = groups[0]
-
-        schedule_file = os.path.join(DATA_DIR, "last_schedules.json")
+        data_dir = os.environ.get("DATA_DIR", ".")
+        schedule_file = os.path.join(data_dir, "last_schedules.json")
         if not os.path.exists(schedule_file):
-            return "Немає даних"
-            
-        with open(schedule_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            
-        now = datetime.datetime.now(KYIV_TZ)
-        today_str = now.strftime("%Y-%m-%d")
-        
-        source_name = ""
-        source_data = None
-        if data.get('yasno'):
-            source_data = data['yasno']
-            source_name = "ДТЕК, Yasno"
-        elif data.get('github'):
-            source_data = data['github']
-            source_name = "ДТЕК"
-            
-        if not source_data:
-            return "Немає даних"
-            
-        # Prioritize target_group, fallback to first available
-        if target_group in source_data:
-            group_key = target_group
-        else:
-            group_key = list(source_data.keys())[0]
-            
-        schedule = source_data[group_key]
-        
-        if today_str not in schedule:
             return "Графік відсутній"
             
-        day_data = schedule[today_str]
-        if isinstance(day_data, dict):
-            slots = day_data.get('slots', [])
-        else:
-            slots = day_data # Handle list format if present
+        with open(schedule_file, 'r') as f:
+            data = json.load(f)
             
-        if not slots or len(slots) < 48:
-            return "Графік відсутній або некоректний"
-            
-        intervals_on = []
-        intervals_off = []
-        current_state = slots[0]
-        start_idx = 0
+        source = data.get('yasno') or data.get('github')
+        if not source: return "Дані не знайдені"
         
-        def format_slot_time(idx):
-            mins = idx * 30
-            h = mins // 60
-            m = mins % 60
-            return f"{h:02d}:{m:02d}"
-            
-        for i in range(1, 48):
-            if slots[i] != current_state:
-                inv = {
-                    "state": current_state, 
-                    "start": format_slot_time(start_idx), 
-                    "end": format_slot_time(i), 
-                    "duration": (i - start_idx) * 0.5
-                }
-                if current_state: intervals_on.append(inv)
-                else: intervals_off.append(inv)
-                start_idx = i
-                current_state = slots[i]
+        group_key = list(source.keys())[0]
+        schedule_data = source[group_key]
         
-        # Last interval of the day
-        inv = {
-            "state": current_state, 
-            "start": format_slot_time(start_idx), 
-            "end": "24:00", 
-            "duration": (48 - start_idx) * 0.5
-        }
-        if current_state: intervals_on.append(inv)
-        else: intervals_off.append(inv)
-
-        # Totals for TODAY only (before merging with tomorrow)
-        total_on = sum(1 for s in slots if s) * 0.5
-        total_off = 24.0 - total_on
-
-        MONTHS_UA = {1: "Січня", 2: "Лютого", 3: "Березня", 4: "Квітня", 5: "Травня", 6: "Червня", 7: "Липня", 8: "Серпня", 9: "Вересня", 10: "Жовтня", 11: "Листопада", 12: "Грудня"}
-        day_title = f"{now.day} {MONTHS_UA[now.month]} ({DAYS_UA[now.weekday()]})"
-
-        lines = []
-        lines.append(f"<div class='schedule-date'>{day_title}</div>")
+        now = datetime.now(KYIV_TZ)
+        today_str = now.strftime("%Y-%m-%d")
+        tomorrow_str = (now + timedelta(days=1)).strftime("%Y-%m-%d")
         
-        def fmt_dur(hours):
-            return f"{hours:g}".replace('.', ',')
-
-        lines.append("<div class='schedule-columns'>")
+        output = []
         
-        # Column ON
-        lines.append("<div class='schedule-col'>")
-        lines.append(f"<div class='col-header on'>Увімкнення 🔆 {fmt_dur(total_on)}</div>")
-        for inv in intervals_on:
-            line_html = (
-                f"<div class='schedule-line on'>"
-                f"<span class='schedule-time'>{inv['start']}</span>"
-                f"<span class='time-sep'>-</span>"
-                f"<span class='schedule-time'>{inv['end']}</span>"
-                f"<span class='schedule-duration'>({fmt_dur(inv['duration'])})</span>"
-                f"</div>"
-            )
-            lines.append(line_html)
-        lines.append("</div>")
-
-        # Column OFF
-        lines.append("<div class='schedule-col'>")
-        lines.append(f"<div class='col-header off'>Вимкнення ✖️ {fmt_dur(total_off)}</div>")
-        for inv in intervals_off:
-            line_html = (
-                f"<div class='schedule-line off'>"
-                f"<span class='schedule-time'>{inv['start']}</span>"
-                f"<span class='time-sep'>-</span>"
-                f"<span class='schedule-time'>{inv['end']}</span>"
-                f"<span class='schedule-duration'>({fmt_dur(inv['duration'])})</span>"
-                f"</div>"
-            )
-            lines.append(line_html)
-        lines.append("</div>")
+        # Today
+        if today_str in schedule_data and schedule_data[today_str].get('slots'):
+            output.append(render_day_schedule_html(schedule_data[today_str]['slots'], now))
         
-        lines.append("</div>") # End columns
+        # Tomorrow
+        if tomorrow_str in schedule_data and schedule_data[tomorrow_str].get('slots'):
+            # Only show tomorrow if it has actual data (not just pending)
+            slots = schedule_data[tomorrow_str]['slots']
+            if slots and any(s is not None for s in slots):
+                output.append("<div class='schedule-divider'>🔸️🔸️🔸️</div>")
+                output.append(render_day_schedule_html(slots, now + timedelta(days=1)))
             
         file_mtime = os.path.getmtime(schedule_file)
-        dt_mtime = datetime.datetime.fromtimestamp(file_mtime, KYIV_TZ)
-        lines.append(f"<div class='updated-time'>Оновлено: {dt_mtime.strftime('%H:%M')}</div>")
+        dt_mtime = datetime.fromtimestamp(file_mtime, KYIV_TZ)
+        output.append(f"<div class='updated-time'>Оновлено: {dt_mtime.strftime('%H:%M')}</div>")
         
-        return "".join(lines)
+        return "".join(output)
     except Exception as e:
         print(f"Error building schedule text: {e}")
         return "Помилка завантаження графіка"
 
 def get_air_quality():
     try:
-        # Load AQI settings from config
-        config_path = os.path.join(DATA_DIR, "config.json")
+        data_dir = os.environ.get("DATA_DIR", ".")
+        config_path = os.path.join(data_dir, "config.json")
         if not os.path.exists(config_path):
-            config_path = "config.json"
+            return {"status": "error", "text": "Config missing"}
             
-        seb_station = "17095" # Default: Symyrenka
-        lat, lon = "50.408", "30.400" # Default: Borshchahivka
-        loc_name = "Борщагівка (Симиренка)"
-        
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, 'r') as f:
-                    cfg = json.load(f)
-                    aqi_cfg = cfg.get("sources", {}).get("air_quality", {})
-                    if aqi_cfg:
-                        seb_station = aqi_cfg.get("seb_station", seb_station)
-                        lat = aqi_cfg.get("lat", lat)
-                        lon = aqi_cfg.get("lon", lon)
-                        loc_name = aqi_cfg.get("location_name", loc_name)
-            except: pass
+        with open(config_path, 'r') as f:
+            cfg = json.load(f)
+            
+        aq_cfg = cfg.get("sources", {}).get("air_quality", {})
+        if not aq_cfg:
+            return {"status": "error", "text": "AQ source disabled"}
 
-        # 1. Try to scrape PM data from SaveEcoBot
-        pm1, pm25, pm10 = None, None, None
-        try:
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-            seb_r = requests.get(f"https://www.saveecobot.com/station/{seb_station}", headers=headers, timeout=10)
-            if seb_r.status_code == 200:
-                soup = BeautifulSoup(seb_r.text, 'html.parser')
-                text = soup.get_text()
-                
-                import re
-                pm1_match = re.search(r"PM1:\s*([\d.]+)", text)
-                pm25_match = re.search(r"PM2.5:\s*([\d.]+)", text)
-                pm10_match = re.search(r"PM10:\s*([\d.]+)", text)
-                
-                if pm1_match: pm1 = float(pm1_match.group(1))
-                if pm25_match: pm25 = float(pm25_match.group(1))
-                if pm10_match: pm10 = float(pm10_match.group(1))
-        except Exception as e:
-            print(f"SaveEcoBot scraping error: {e}")
+        # OpenMeteo for PM2.5/PM10
+        lat = aq_cfg.get("lat", "50.45")
+        lon = aq_cfg.get("lon", "30.52")
+        om_url = f"https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={lon}&current=pm10,pm2_5"
+        
+        # SaveEcoBot for Station-specific (Station 17095)
+        seb_id = aq_cfg.get("seb_station", "17095")
+        seb_url = f"https://www.saveecobot.com/platform/api/v1/stations/{seb_id}"
+        
+        # Weather for Temp/Hum
+        w_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m"
 
-        # 2. Fetch AQI, Temp, Humidity from Open-Meteo
-        aq_url = f"https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={lon}&current=us_aqi,pm2_5,pm10"
-        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m"
-        
-        aq_r = requests.get(aq_url, timeout=5)
-        w_r = requests.get(weather_url, timeout=5)
-        
-        aq_data = aq_r.json() if aq_r.status_code == 200 else {}
-        w_data = w_r.json() if w_r.status_code == 200 else {}
-        
-        current_aq = aq_data.get('current', {})
-        current_w = w_data.get('current', {})
-        
-        aqi = current_aq.get('us_aqi', 0)
-        
-        # Use SaveEcoBot data if available, otherwise fallback to Open-Meteo
-        final_pm1 = pm1 if pm1 is not None else None
-        final_pm25 = pm25 if pm25 is not None else current_aq.get('pm2_5', "--")
-        final_pm10 = pm10 if pm10 is not None else current_aq.get('pm10', "--")
-        
-        temp = current_w.get('temperature_2m', "--")
-        hum = current_w.get('relative_humidity_2m', "--")
-        
-        wind_speed = current_w.get('wind_speed_10m', "--")
-        wind_dir_deg = current_w.get('wind_direction_10m', None)
-        wind_dir = "--"
-        if wind_dir_deg is not None:
-            dirs = ['Пн', 'Пн-Сх', 'Сх', 'Пд-Сх', 'Пд', 'Пд-Зх', 'Зх', 'Пн-Зх']
-            ix = int((wind_dir_deg + 22.5) / 45) % 8
-            wind_dir = dirs[ix]
-        
-        # Determine text status
-        if aqi <= 50: status_text = "Відмінне"
-        elif aqi <= 100: status_text = "Помірне"
-        elif aqi <= 150: status_text = "Шкідливе для чутливих"
-        else: status_text = "Шкідливе"
-        
-        return {
-            "aqi": aqi, 
-            "pm1": final_pm1,
-            "pm25": final_pm25,
-            "pm10": final_pm10,
-            "temp": temp,
-            "hum": hum,
-            "wind_speed": wind_speed,
-            "wind_dir": wind_dir,
-            "text": status_text, 
-            "location": loc_name, 
-            "status": "ok"
-        }
+        def fetch_all():
+            pm_data = requests.get(om_url, timeout=5).json()
+            w_data = requests.get(w_url, timeout=5).json()
+            
+            pm25 = pm_data.get('current', {}).get('pm2_5', 0)
+            pm10 = pm_data.get('current', {}).get('pm10', 0)
+            
+            # Simple AQI calculation based on PM2.5 (standard European scale approx)
+            aqi = int(pm25 * 3) # rough proxy for simplified dashboard
+            
+            status = "ok"
+            status_text = "Низький"
+            if aqi > 50: 
+                status = "warning"
+                status_text = "Помірне"
+            if aqi > 100: 
+                status = "danger"
+                status_text = "Високе"
+
+            return {
+                "aqi": aqi,
+                "status": status,
+                "text": status_text,
+                "pm25": pm25,
+                "pm10": pm10,
+                "pm1": None,
+                "temp": w_data.get('current', {}).get('temperature_2m'),
+                "hum": w_data.get('current', {}).get('relative_humidity_2m'),
+                "wind_speed": w_data.get('current', {}).get('wind_speed_10m'),
+                "wind_dir": get_wind_label(w_data.get('current', {}).get('wind_direction_10m')),
+                "location": aq_cfg.get("location_name", "Київ")
+            }
+
+        return cached_fetch("air_quality", fetch_all)
     except Exception as e:
-        print(f"AQI/Weather Error: {e}")
-    return {
-        "aqi": "--", "pm1": None, "pm25": "--", "pm10": "--", 
-        "temp": "--", "hum": "--", "wind_speed": "--", "wind_dir": "--",
-        "text": "Невідомо", "location": "Симиренка", "status": "error"
-    }
+        print(f"AQ Error: {e}")
+        return {"status": "error", "text": "Дані відсутні"}
+
+def get_wind_label(deg):
+    if deg is None: return "-"
+    labels = ["Пн", "ПнСх", "Сх", "ПдСх", "Пд", "ПдЗх", "Зх", "ПнЗх"]
+    return labels[int((deg + 22.5) % 360 / 45)]
 
 @app.route('/')
 def index():
-    ts = int(time.time())
-    response = make_response(render_template('index.html', ts=ts))
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    return response
+    # Force dark theme preference for the dashboard
+    return render_template('index.html')
 
-@app.route('/robots.txt')
-def robots_txt():
-    return "User-agent: *\nAllow: /", 200, {'Content-Type': 'text/plain'}
-
-@app.route('/manifest.json')
-def serve_manifest():
-    return send_from_directory('static', 'manifest.json')
-
-@app.route('/service-worker.js')
-def serve_sw():
-    return send_from_directory('static', 'service-worker.js')
-
-
-@app.route('/api/push/<secret_key>', methods=['GET'])
-def push_api(secret_key):
-    # Reload state to ensure we have the latest status from other workers/monitor
+@app.route('/api/status')
+def api_status():
     load_state()
+    with state_lock:
+        current_status = state.get("status", "unknown")
+        # Ensure we return strictly "on" or "off" for UI icons
+        ui_light_state = "on" if current_status == "up" else "off"
+        
+    latest_event_text, recent_events = get_power_events_data()
+    schedule_text = get_today_schedule_text()
+    aq_data = get_air_quality()
+    alert_data = get_air_raid_alert()
+    
+    # Extract group name
+    data_dir = os.environ.get("DATA_DIR", ".")
+    config_path = os.path.join(data_dir, "config.json")
+    group_name = "---"
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            cfg = json.load(f)
+            groups = cfg.get("settings", {}).get("groups", [])
+            if groups:
+                group_name = groups[0].replace('GPV', '')
+
+    return jsonify({
+        "light": ui_light_state,
+        "light_event": latest_event_text,
+        "recent_events": recent_events,
+        "schedule_text": schedule_text,
+        "aqi": aq_data,
+        "radiation": get_radiation(),
+        "alert": alert_data,
+        "group": group_name
+    })
+
+@app.route('/api/push/<key>')
+def push_api(key):
+    load_state()
+    # Support multiple keys if needed, but here we check the one from state
+    if key != state.get('secret_key'):
+        return jsonify({"status": "error", "msg": "invalid_key"}), 403
+        
+    current_time = time.time()
     
     with state_lock:
-        if secret_key != state.get('secret_key'):
-            return jsonify({"status": "error", "msg": "invalid_key"}), 403
-            
-        current_time = get_current_time()
-        previous_status = state["status"]
-        
-        # Update heartbeat
+        previous_status = state.get("status", "unknown")
         state["last_seen"] = current_time
         
-        # Logic: If we were DOWN, and now we get a request -> We are UP
         if previous_status == "down" or previous_status == "unknown":
             state["status"] = "up"
             state["came_up_at"] = current_time
             log_event("up", current_time)
             
             # New compact message format
+            # Use went_down_at before it might get updated (though push only sets came_up)
             msg = format_event_message(True, current_time, state.get("went_down_at", 0))
             
             threading.Thread(target=send_telegram, args=(msg,)).start()
             # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
-        
+            
         save_state()
-    
-    return jsonify({"status": "ok", "msg": "heartbeat_received"})
-
-@app.route('/api/status')
-def api_status():
-    from light_service import get_timezone
-    KYIV_TZ = get_timezone()
-    
-    alert = cached_fetch('alert', get_air_raid_alert)
-    radiation = cached_fetch('radiation', get_radiation)
-    light_info = cached_fetch('light', get_light_status_api)
-    aqi = cached_fetch('aqi', get_air_quality)
-    schedule_text = cached_fetch('schedule_text', get_today_schedule_text)
-    
+        
     return jsonify({
-        "alert": alert,
-        "radiation": radiation,
-        "light": light_info["status"],
-        "light_event": light_info["event"],
-        "group": light_info.get("group", "unknown"),
-        "schedule_text": schedule_text,
-        "aqi": aqi,
+        "status": "ok", 
+        "msg": "heartbeat_received",
         "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
     })
 
