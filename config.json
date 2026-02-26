@@ -18,6 +18,12 @@
       "name": "Yasno",
       "region_id": "25",
       "dso_id": "902"
+    },
+    "air_quality": {
+      "seb_station": "17095",
+      "lat": "50.408",
+      "lon": "30.400",
+      "location_name": "Борщагівка (Симиренка)"
     }
   },
   "ui": {
