@@ -247,6 +247,7 @@ def render_day_schedule_html(slots, date_obj):
 
 def get_today_schedule_text():
     try:
+        config_path = "config.json"
         data_dir = os.environ.get("DATA_DIR", ".")
         schedule_file = os.path.join(data_dir, "last_schedules.json")
         if not os.path.exists(schedule_file):
@@ -290,8 +291,7 @@ def get_today_schedule_text():
 
 def get_air_quality():
     try:
-        data_dir = os.environ.get("DATA_DIR", ".")
-        config_path = os.path.join(data_dir, "config.json")
+        config_path = "config.json"
         if not os.path.exists(config_path):
             return {"status": "error", "text": "Config missing"}
             
@@ -376,8 +376,7 @@ def api_status():
     alert_data = get_air_raid_alert()
     
     # Extract group name
-    data_dir = os.environ.get("DATA_DIR", ".")
-    config_path = os.path.join(data_dir, "config.json")
+    config_path = "config.json"
     group_name = "---"
     if os.path.exists(config_path):
         with open(config_path, 'r') as f:
