@@ -169,16 +169,16 @@ def get_power_events_data(limit=5):
                     next_info = get_next_scheduled_event(ts, look_for_light)
                     wait_line = ""
                     if next_info:
-                        wait_dur = format_duration(next_info["time_left_sec"])
-                        wait_prefix = "Вимкнення через" if evt == "up" else "Очікуємо через"
-                        wait_line = f"{wait_prefix} ~ {wait_dur},"
+                        next_time = next_info["interval"].split('-')[0]
+                        wait_prefix = "Вимкнення о" if evt == "up" else "Очікуємо о"
+                        wait_line = f"{wait_prefix} {next_time}"
                     
                     if dev_line and wait_line:
                         latest_event_text = f"{dev_line}<br>{wait_line}"
                     elif dev_line:
-                        latest_event_text = f"{dev_line}<br>Наступне планове: {next_range}"
+                        latest_event_text = f"{dev_line}"
                     elif wait_line:
-                        latest_event_text = f"{wait_line}<br>Наступне планове: {next_range}"
+                        latest_event_text = f"{wait_line}"
                     else:
                         latest_event_text = f"Наступне планове: {next_range}"
                     
