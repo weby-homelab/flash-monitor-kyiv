@@ -9,15 +9,30 @@
 
 <br>
 
-# FLASH MONITOR KYIV (v1.2 Classic — Bare-Metal Edition)
+# FLASH MONITOR KYIV (v1.7.0 Autonomous Edition)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/classic/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
 </p>
 
-**Autonomous bare-metal power monitoring and security system for Kyiv.**
+**Autonomous Docker-based power monitoring and security system for Kyiv.**
+
+Recent fixes and improvements:
+- **Telegram:** New compact message format for status changes with "time until next scheduled event" calculation (e.g., "Outage in ~ 3 h 25 min").
+- **UI/UX Web:** Redesigned schedule block on the dashboard — now split into two columns (ON and OFF) for better readability.
+- **Colors:** New schedule color scheme: **Teal** for power-on periods and **Rose** for outages.
+- **UI/UX Logic:** Removed redundant headers; alert status now laconically shows: "Kyiv. Clear".
+- **Time Formatting:** Fixed end-of-day time display — "24:00" is now used everywhere instead of "tomorrow at 00:00".
+- **Logic Fix:** Dashboard status now correctly matches actual power state.
+- **Algorithm Improvement:** More reliable nearest transition search for deviation calculation.
+- **Telegram Notifications:** Statistics format fixed to: "Turned on/off later/earlier by X hours Y minutes".
+- **Synchronization:** Enabled local host (`127.0.0.1`) sync for flexible setup in multi-service environments.
+- **Stability:** Added `shutil` in `generate_weekly_report.py` and improved resilience to different history data formats.
+- **Optimization:** Fixed duplicate background process issue upon restart.
 
 🔗 **Live Monitoring:** [flash.srvrs.top](https://flash.srvrs.top/)
+
+📖 **Guide:** [Full setup and configuration from scratch](INSTRUCTIONS_INSTALL_ENG.md)
 
 ---
 
@@ -26,10 +41,13 @@
 ### 💡 Smart Power Monitoring
 - **Heartbeat Tracking:** Real-time power monitoring via IoT signals (Push API).
 - **"Plan vs Fact" Analytics:** Automatic comparison of real outages with scheduled plans.
-- **Visualization:** Generation of daily and weekly charts in a dark theme.
+- **Schedule Accuracy:** Calculation of deviations (delays or early switches) for each event and displaying the next planned interval.
+- **Visualization:** Daily and weekly charts.
+- **UI/UX Design:** Adaptive Amethyst Mist theme with automatic Light/Dark mode and Glassmorphism.
 
 ### 🛡️ Security & Environment
-- **Air Alerts:** Instant status and integrated live map.
+- **Air Alerts:** Instant status and Telegram notifications for alert start/end in Kyiv.
+- **Live Map:** Integrated air raid alert map for Kyiv and region.
 - **Air Quality (AQI):** Real-time PM2.5, PM10, and radiation background.
 
 ---
@@ -47,7 +65,7 @@ It is highly recommended to use your **HTTPS domain address** (e.g., via Cloudfl
 
 ## 🛠 Tech Stack
 - **Backend:** Python 3.11, Flask, Gunicorn.
-- **Service Management:** Systemd (Ubuntu/Debian).
+- **Containerization:** Docker + Docker Compose.
 
 ---
 
@@ -55,5 +73,6 @@ It is highly recommended to use your **HTTPS domain address** (e.g., via Cloudfl
 MIT License.
 
 <p align="center">
-  © 2026 Weby Homelab — infrastructure that doesn’t give up.<br>Made with ❤️ in Kyiv under air raid sirens and blackouts...
+  © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv">Weby Homelab</a><br>
+  Made with ❤️ in Kyiv under air raid sirens and blackouts
 </p>

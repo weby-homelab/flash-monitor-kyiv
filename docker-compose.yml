@@ -1,0 +1,28 @@
+services:
+  flash-monitor:
+    image: webyhomelab/flash-monitor:v1.6.0
+    container_name: flash-monitor
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./data:/app/data
+      - ./config.json:/app/config.json:ro
+    environment:
+      - TZ=Europe/Kiev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5050/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  background-worker:
+    image: webyhomelab/flash-monitor:v1.6.0
+    container_name: flash-monitor-worker
+    restart: unless-stopped
+    command: python run_background.py
+    volumes:
+      - ./data:/app/data
+      - ./config.json:/app/config.json:ro
+    environment:
+      - TZ=Europe/Kiev
