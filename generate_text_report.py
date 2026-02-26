@@ -97,18 +97,21 @@ def generate_day_block(is_today, intervals, cfg):
         elif not is_today and inv['start_idx'] < 48:
              marker = " (прод.)"
              
-        icon = cfg['ui']['icons']['on'] if inv['state'] else cfg['ui']['icons']['off']
+        icon = cfg.get('ui', {}).get('icons', {}).get('on', '🔆')
+        off_icon = cfg.get('ui', {}).get('icons', {}).get('off', '✖️')
+        icon_to_use = icon if inv['state'] else off_icon
+        
         duration_text = f"({format_duration(inv['duration'])} год.)"
         
-        line = f"{icon} {start_str} - {end_str} {duration_text:>10}{marker}"
+        line = f"{icon_to_use} {start_str} - {end_str} {duration_text:>10}{marker}"
         day_intervals.append(line)
     
     lines.append("<code>")
     lines.extend(day_intervals)
     lines.append("</code>")
     
-    on_icon = cfg['ui']['icons']['on']
-    off_icon = cfg['ui']['icons']['off']
+    on_icon = cfg.get('ui', {}).get('icons', {}).get('on', '🔆')
+    off_icon = cfg.get('ui', {}).get('icons', {}).get('off', '✖️')
     lines.append(f"\n{on_icon} Світло є: <b>{format_duration(total_on)} год.</b>")
     lines.append(f"{off_icon} Світла нема: <b>{format_duration(total_off)} год.</b>")
     
@@ -146,8 +149,7 @@ def main():
         
     groups = cfg.get("settings", {}).get("groups", ["GPV36.1"])
     group = groups[0] if groups else "GPV36.1"
-    ui_cfg = cfg.get('ui', {})
-    icons = ui_cfg.get('icons', {'calendar': '📆', 'on': '🔆', 'off': '✖️', 'clock': '🕐'})
+    icons = cfg.get('ui', {}).get('icons', {'calendar': '📆', 'on': '🔆', 'off': '✖️', 'clock': '🕐'})
     
     today_str = now.strftime("%Y-%m-%d")
     tomorrow_str = (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
@@ -181,7 +183,9 @@ def main():
             if combined_slots and any(x is not None for x in combined_slots):
                 clean_slots = [val if val is not None else (True if i < 48 else False) for i, val in enumerate(combined_slots)]
                 intervals = get_all_intervals(clean_slots)
-                source_name = cfg.get('sources', {}).get(s_key, {}).get('name', s_key.capitalize())
+                # Ensure source name is fetched from config
+                source_cfg = cfg.get('sources', {}).get(s_key, {})
+                source_name = source_cfg.get('name', s_key.capitalize())
                 source_blocks.append((source_name, generate_day_block(is_today, intervals, cfg)))
         
         if not is_today and not has_real_tomorrow_data:
@@ -190,18 +194,19 @@ def main():
         if not source_blocks: continue
 
         day_title = f"{icons.get('calendar', '📆')}  <b>{dt.strftime('%d.%m')} ({DAYS_UA[dt.weekday()]})</b>"
+        group_display = group.replace('GPV', '')
         if len(source_blocks) == 2 and source_blocks[0][1] == source_blocks[1][1]:
             sources_label = f"<i>[{source_blocks[0][0]}, {source_blocks[1][0]}]</i>"
-            content = f"{day_title}\n{sources_label}\n\n{source_blocks[0][1]}"
+            content = f"{day_title}\n{sources_label}\n{source_blocks[0][1]}"
         else:
             blocks = [day_title]
             for name, txt in source_blocks:
                 blocks.append(f"<i>[{name}]</i>\n{txt}")
             content = "\n\n".join(blocks)
 
-        updated_text = ui_cfg.get('text', {}).get('updated', 'Оновлено')
+        updated_text = cfg.get('ui', {}).get('text', {}).get('updated', 'Оновлено')
         footer = f"<i>{icons.get('clock', '🕐')} {updated_text}: {now.strftime('%H:%M')}</i>"
-        full_text = f"📈 <b>Графік групи {group.replace('GPV', '')}</b>\n\n{content}\n\n{footer}"
+        full_text = f"📈 <b>Графік групи {group_display}</b>\n\n{content}\n\n{footer}"
         
         content_hash = hashlib.md5(full_text.encode()).hexdigest()
         
