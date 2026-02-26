@@ -393,7 +393,8 @@ def api_status():
         "aqi": aq_data,
         "radiation": get_radiation(),
         "alert": alert_data,
-        "group": group_name
+        "group": group_name,
+        "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
     })
 
 @app.route('/api/push/<key>')
