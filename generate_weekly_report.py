@@ -125,22 +125,22 @@ def get_weekly_stats(start_date, end_date, events):
     }
 
 def generate_weekly_chart(end_date, daily_data, theme='dark'):
-    # Amethyst Mist Palette
+    # Professional Muted Palette
     if theme == 'dark':
-        bg_color = '#120B1F'
-        text_color = '#F0E6FF'
-        fact_on_color = '#67E8F9'
-        fact_off_color = '#FF6B81'
-        plan_on_color = '#C4B5FD'
-        plan_off_color = '#475569'
+        bg_color = '#0f172a'
+        text_color = '#f8fafc'
+        fact_on_color = '#14b8a6'
+        fact_off_color = '#f43f5e'
+        plan_on_color = '#818cf8'
+        plan_off_color = '#64748b'
         plt_style = 'dark_background'
     else:
-        bg_color = '#F7F4FF'
-        text_color = '#1a0933'
-        fact_on_color = '#88E8C8'
-        fact_off_color = '#FF6B81'
-        plan_on_color = '#A78BFA'
-        plan_off_color = '#94A3B8'
+        bg_color = '#f8fafc'
+        text_color = '#0f172a'
+        fact_on_color = '#14b8a6'
+        fact_off_color = '#f43f5e'
+        plan_on_color = '#818cf8'
+        plan_off_color = '#64748b'
         plt_style = 'default'
 
     with plt.style.context(plt_style):

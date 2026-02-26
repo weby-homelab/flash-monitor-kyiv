@@ -37,6 +37,12 @@
             --danger: #f87171;
             --warning: #fbbf24;
             --blur: 25px;
+            
+            /* Professional Muted Graph Colors */
+            --color-graph-fact-on: #14b8a6;
+            --color-graph-fact-off: #f43f5e;
+            --color-graph-plan-on: #818cf8;
+            --color-graph-plan-off: #64748b;
         }
         @media (prefers-color-scheme: light) {
             :root {
@@ -49,6 +55,10 @@
                 --accent: #8b5cf6;
                 --success: #059669;
                 --danger: #dc2626;
+                
+                /* Light Mode Professional Muted */
+                --color-graph-fact-on: #0f766e;
+                --color-graph-fact-off: #be123c;
             }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -113,17 +123,23 @@
         
         .chart-wrap { border-radius: 24px; overflow: hidden; border: 1px solid var(--card-border); margin-top: 12px; background: #000; cursor: pointer; box-shadow: var(--card-shadow); }
         .chart-wrap img { width: 100%; display: block; }
-        .schedule-text { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; font-weight: 500; box-shadow: var(--card-shadow); color: #fff; backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); }
+        .schedule-text { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; font-weight: 500; box-shadow: var(--card-shadow); color: var(--text-primary); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); }
+        
+        .schedule-date { color: var(--text-primary); font-weight: 600; margin-bottom: 20px; font-size: 1rem; }
         .schedule-line { display: flex; align-items: center; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
-        .schedule-line .time-s { width: 45px; text-align: right; }
-        .schedule-line .time-sep { width: 25px; text-align: center; opacity: 0.5; }
-        .schedule-line .time-e { width: 45px; text-align: left; }
-        .schedule-line .dur { margin-left: 20px; }
-        .schedule-line.off { color: #666 !important; }
-        .schedule-line.on { color: #fff !important; }
-        .schedule-title { color: #fff; font-weight: 700; margin-bottom: 20px; font-size: 1rem; }
-        .schedule-summary { color: #fff; font-weight: 700; margin-top: 20px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 12px; font-size: 1.1rem; display: flex; gap: 24px; }
-        .schedule-updated { color: #666; font-size: 0.85rem; margin-top: 12px; font-weight: 500; }
+        .schedule-time { color: var(--text-primary); opacity: 0.85; width: 45px; text-align: center; }
+        .time-sep { width: 20px; text-align: center; opacity: 0.4; }
+        .schedule-duration { color: var(--text-secondary); margin-left: 20px; font-size: 0.9em; }
+        
+        .schedule-line.off { color: var(--text-secondary) !important; opacity: 0.7; }
+        .schedule-line.on { color: var(--text-primary) !important; }
+
+        .schedule-summary { border-top: 1px dashed var(--card-border); margin-top: 20px; padding-top: 16px; display: flex; gap: 24px; font-size: 1.1rem; }
+        
+        .light-hours { color: var(--color-graph-fact-on); font-weight: 700; text-shadow: 0 0 8px rgb(20 184 166 / 0.3); }
+        .no-light-hours { color: var(--color-graph-fact-off); font-weight: 700; text-shadow: 0 0 8px rgb(244 63 94 / 0.3); }
+        
+        .updated-time { color: var(--text-secondary); font-size: 0.85rem; margin-top: 12px; font-weight: 500; opacity: 0.8; }
         
         footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
         footer a { color: inherit; text-decoration: none; font-weight: 700; }

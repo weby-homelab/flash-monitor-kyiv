@@ -293,7 +293,7 @@ def get_today_schedule_text():
         day_title = f"{now.day} {MONTHS_UA[now.month]} ({DAYS_UA[now.weekday()]})"
 
         lines = []
-        lines.append(f"<div class='schedule-title'>{day_title}</div>")
+        lines.append(f"<div class='schedule-date'>{day_title}</div>")
         
         def fmt_dur(hours):
             return f"{hours:g}".replace('.', ',')
@@ -303,19 +303,19 @@ def get_today_schedule_text():
             # Separate spans for each part of the time range for pixel-perfect alignment
             line_html = (
                 f"<div class='schedule-line {cls}'>"
-                f"<span class='time-s'>{inv['start']}</span>"
+                f"<span class='schedule-time'>{inv['start']}</span>"
                 f"<span class='time-sep'>-</span>"
-                f"<span class='time-e'>{inv['end']}</span>"
-                f"<span class='dur'>({fmt_dur(inv['duration'])})</span>"
+                f"<span class='schedule-time'>{inv['end']}</span>"
+                f"<span class='schedule-duration'>({fmt_dur(inv['duration'])})</span>"
                 f"</div>"
             )
             lines.append(line_html)
             
-        lines.append(f"<div class='schedule-summary'><span>🔆{int(total_on)}</span><span>✖️{int(total_off)}</span></div>")
+        lines.append(f"<div class='schedule-summary'><span class='light-hours'>🔆 {int(total_on)}</span><span class='no-light-hours'>✖️ {int(total_off)}</span></div>")
         
         file_mtime = os.path.getmtime(schedule_file)
         dt_mtime = datetime.datetime.fromtimestamp(file_mtime, KYIV_TZ)
-        lines.append(f"<div class='schedule-updated'>Оновлено: {dt_mtime.strftime('%H:%M')}</div>")
+        lines.append(f"<div class='updated-time'>Оновлено: {dt_mtime.strftime('%H:%M')}</div>")
         
         return "".join(lines)
     except Exception as e:
