@@ -1,6 +1,7 @@
 import json
 import os
 import datetime
+import shutil
 from zoneinfo import ZoneInfo
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -12,22 +13,22 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import necessary functions from the daily report script to reuse logic
-from generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ
+from generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ, load_schedule_slots
 
 # --- Configuration ---
+DATA_DIR = os.environ.get("DATA_DIR", ".")
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
-EVENT_LOG_FILE = "event_log.json"
-HISTORY_FILE = "schedule_history.json"
+EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
+HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 
 def get_schedule_slots(date_obj):
+    """
+    Wrapper around load_schedule_slots from daily report to ensure consistent logic.
+    """
     try:
-        if not os.path.exists(HISTORY_FILE):
-            return None
-        with open(HISTORY_FILE, "r") as f:
-            history = json.load(f)
-        date_str = date_obj.strftime("%Y-%m-%d")
-        return history.get(date_str, [True]*48)
+        slots = load_schedule_slots(date_obj)
+        return slots
     except:
         return [True] * 48
 
@@ -123,15 +124,32 @@ def get_weekly_stats(start_date, end_date, events):
         'daily_data': days_stats
     }
 
-def generate_weekly_chart(end_date, daily_data):
-    # Dark Mode - Deep Purple Background
-    with plt.style.context('dark_background'):
-        fig, ax = plt.subplots(figsize=(10, 5.0), facecolor='#1E122A')
-        ax.set_facecolor('#1E122A')
+def generate_weekly_chart(end_date, daily_data, theme='dark'):
+    # Professional Muted Palette
+    if theme == 'dark':
+        bg_color = '#0f172a'
+        text_color = '#f8fafc'
+        fact_on_color = '#14b8a6'
+        fact_off_color = '#f43f5e'
+        plan_on_color = '#818cf8'
+        plan_off_color = '#64748b'
+        plt_style = 'dark_background'
+    else:
+        bg_color = '#f8fafc'
+        text_color = '#0f172a'
+        fact_on_color = '#14b8a6'
+        fact_off_color = '#f43f5e'
+        plan_on_color = '#818cf8'
+        plan_off_color = '#64748b'
+        plt_style = 'default'
+
+    with plt.style.context(plt_style):
+        fig, ax = plt.subplots(figsize=(10, 5.0), facecolor=bg_color)
+        ax.set_facecolor(bg_color)
         
         # Colors
-        color_map = {'up': '#4CAF50', 'down': '#EF9A9A', 'unknown': '#C8E6C9'}
-        sched_map = {True: '#FFF59D', False: '#BDBDBD'} 
+        color_map = {'up': fact_on_color, 'down': fact_off_color, 'unknown': fact_on_color}
+        sched_map = {True: plan_on_color, False: plan_off_color} 
         
         y_labels = []
         y_ticks = []
@@ -142,7 +160,6 @@ def generate_weekly_chart(end_date, daily_data):
             day_date = day_info['date']
             intervals = day_info['intervals']
             
-            # Increased vertical step from 1 to 1.3 for more spacing between days
             y_pos = 9 - i * 1.3
             
             day_names = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"]
@@ -153,10 +170,8 @@ def generate_weekly_chart(end_date, daily_data):
             # --- 1. Draw Actual Data (Top Strip) ---
             now_kyiv = datetime.datetime.now(KYIV_TZ)
             
-            # Only draw actual data if the day is not in the future
             if day_date <= now_kyiv.date():
                 for start, end, state in intervals:
-                    # Clip future intervals for Today
                     if day_date == now_kyiv.date():
                         if start > now_kyiv: continue 
                         if end > now_kyiv: end = now_kyiv
@@ -174,15 +189,15 @@ def generate_weekly_chart(end_date, daily_data):
                     duration_num = end_num - start_num
                     
                     if duration_num > 0:
-                        color = color_map.get(state, '#C8E6C9')
+                        color = color_map.get(state, fact_on_color)
                         ax.broken_barh([(start_num, duration_num)], (y_pos, 0.45), facecolors=color, edgecolor='none')
 
             # --- Separator Line (Background Color) ---
-            ax.axhline(y=y_pos, color='#1E122A', linewidth=0.5, zorder=5)
+            ax.axhline(y=y_pos, color=bg_color, linewidth=0.5, zorder=5)
 
             # --- Hour Markers on the Bars (Background Color) ---
             hour_points = [mdates.date2num(datetime.datetime.combine(dummy_date, datetime.time(h, 0))) for h in range(1, 24)]
-            ax.vlines(hour_points, y_pos - 0.45, y_pos + 0.45, colors='#1E122A', linewidth=0.8, zorder=6)
+            ax.vlines(hour_points, y_pos - 0.45, y_pos + 0.45, colors=bg_color, linewidth=0.8, zorder=6)
 
             # --- 2. Draw Schedule Data (Bottom Strip) ---
             slots = get_schedule_slots(day_date)
@@ -193,20 +208,20 @@ def generate_weekly_chart(end_date, daily_data):
                     start_n = mdates.date2num(s_date)
                     duration_n = duration_h / 24.0
                     
-                    color = sched_map.get(is_on, '#E0E0E0')
+                    color = sched_map.get(is_on, plan_off_color)
                     ax.broken_barh([(start_n, duration_n)], (y_pos - 0.45, 0.45), facecolors=color, edgecolor='none')
 
         # Formatting
         ax.set_ylim(-0.5, 10.5)
         ax.set_yticks(y_ticks)
-        ax.set_yticklabels(y_labels, color='white')
-        ax.tick_params(axis='x', colors='white')
-        ax.tick_params(axis='y', colors='white')
+        ax.set_yticklabels(y_labels, color=text_color)
+        ax.tick_params(axis='x', colors=text_color)
+        ax.tick_params(axis='y', colors=text_color)
         
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
-        ax.spines['bottom'].set_color('white')
+        ax.spines['bottom'].set_color(text_color)
         
         x_start = datetime.datetime(2000, 1, 1, 0, 0)
         x_end = datetime.datetime(2000, 1, 1, 23, 59)
@@ -215,23 +230,24 @@ def generate_weekly_chart(end_date, daily_data):
         ax.xaxis.set_major_locator(mdates.HourLocator(interval=2))
         ax.xaxis.set_minor_locator(mdates.HourLocator(interval=1))
         
-        ax.set_title(f"Енергетичний тиждень ({daily_data[0]['date'].strftime('%d.%m')} - {daily_data[-1]['date'].strftime('%d.%m')})", fontsize=14, color='white')
+        ax.set_title(f"Енергетичний тиждень ({daily_data[0]['date'].strftime('%d.%m')} - {daily_data[-1]['date'].strftime('%d.%m')})", fontsize=14, color=text_color)
         
         import matplotlib.patches as mpatches
-        green_patch = mpatches.Patch(color='#4CAF50', label='Світло є')
-        red_patch = mpatches.Patch(color='#EF9A9A', label='Світла немає')
-        yellow_patch = mpatches.Patch(color='#FFF59D', label='Графік: Є')
-        gray_patch = mpatches.Patch(color='#BDBDBD', label='Графік: Немає')
+        green_patch = mpatches.Patch(color=fact_on_color, label='Світло є')
+        red_patch = mpatches.Patch(color=fact_off_color, label='Світла немає')
+        yellow_patch = mpatches.Patch(color=plan_on_color, label='Графік: Є')
+        gray_patch = mpatches.Patch(color=plan_off_color, label='Графік: Немає')
         
         legend = plt.legend(handles=[green_patch, red_patch, yellow_patch, gray_patch], 
                    loc='upper center', bbox_to_anchor=(0.5, -0.1),
                    fancybox=False, frameon=False, shadow=False, ncol=4)
-        plt.setp(legend.get_texts(), color='white')
+        plt.setp(legend.get_texts(), color=text_color)
         
         plt.tight_layout()
         plt.subplots_adjust(bottom=0.15)
         
-        filename = f"weekly_report_{end_date.strftime('%Y-%m-%d')}.png"
+        suffix = "_light" if theme == 'light' else ""
+        filename = f"weekly_report_{end_date.strftime('%Y-%m-%d')}{suffix}.png"
         plt.savefig(filename, dpi=100, facecolor=fig.get_facecolor())
         plt.close()
     
@@ -275,17 +291,35 @@ if __name__ == "__main__":
     
     # If output is specified, use that filename
     if args.output:
-        # We need to hack generate_weekly_chart or just rename the result
-        temp_filename = generate_weekly_chart(sunday, stats['daily_data'])
+        temp_filename = generate_weekly_chart(sunday, stats['daily_data'], theme='dark')
+        temp_light = generate_weekly_chart(sunday, stats['daily_data'], theme='light')
+        
         if os.path.exists(temp_filename):
             if os.path.exists(args.output):
                 os.remove(args.output)
-            os.rename(temp_filename, args.output)
+            shutil.move(temp_filename, args.output)
             print(f"Chart saved to {args.output}")
+            
+        base, ext = os.path.splitext(args.output)
+        light_output = f"{base}_light{ext}"
+        
+        if os.path.exists(temp_light):
+            if os.path.exists(light_output):
+                os.remove(light_output)
+            shutil.move(temp_light, light_output)
+            print(f"Light chart saved to {light_output}")
+            
         sys.exit(0)
 
     # Standard Telegram Flow
-    filename = generate_weekly_chart(sunday, stats['daily_data'])
+    filename = generate_weekly_chart(sunday, stats['daily_data'], theme='dark')
+    filename_light = generate_weekly_chart(sunday, stats['daily_data'], theme='light')
+    
+    # Save copy for Web Dashboard
+    web_dir = os.path.join(DATA_DIR, "static")
+    if not os.path.exists(web_dir): os.makedirs(web_dir)
+    shutil.copy(filename, os.path.join(web_dir, "weekly.png"))
+    shutil.copy(filename_light, os.path.join(web_dir, "weekly_light.png"))
     
     up_h = stats['total_up'] / 3600
     down_h = stats['total_down'] / 3600
@@ -347,3 +381,5 @@ if __name__ == "__main__":
     send_telegram_photo(filename, caption)
     if os.path.exists(filename):
         os.remove(filename)
+    if os.path.exists(filename_light):
+        os.remove(filename_light)
