@@ -183,22 +183,22 @@ def format_duration(seconds):
     return " ".join(parts) if parts else "0 хв"
 
 def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
-    # Professional Muted Palette - Updated to Teal/Rose
+    # Vibrant colors for Fact, Muted for Plan
     if theme == 'dark':
         bg_color = '#0f172a'
         text_color = '#f8fafc'
-        fact_on_color = '#14b8a6' # Teal
-        fact_off_color = '#f43f5e' # Rose
-        plan_on_color = '#0d9488' # Darker Teal for plan
-        plan_off_color = '#be123c' # Darker Rose for plan
+        fact_on_color = '#14b8a6' # Vibrant Teal
+        fact_off_color = '#f43f5e' # Vibrant Rose
+        plan_on_color = '#818cf8' # Distinct Indigo
+        plan_off_color = '#475569' # Distinct Slate
         plt_style = 'dark_background'
     else:
         bg_color = '#f8fafc'
         text_color = '#0f172a'
         fact_on_color = '#14b8a6'
         fact_off_color = '#f43f5e'
-        plan_on_color = '#0d9488'
-        plan_off_color = '#be123c'
+        plan_on_color = '#818cf8'
+        plan_off_color = '#64748b'
         plt_style = 'default'
 
     with plt.style.context(plt_style):
