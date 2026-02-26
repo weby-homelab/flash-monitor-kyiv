@@ -135,17 +135,22 @@ def save_state(state):
 def main():
     now = datetime.datetime.now(KYIV_TZ)
     h = now.hour
+    print(f"DEBUG: Starting main at {now.strftime('%H:%M:%S')}")
     
     if h < 6 or h >= 23:
+        print(f"DEBUG: Resting period (hour {h}). Skipping.")
         return
 
     cfg = load_config()
-    if not os.path.exists(SCHEDULE_FILE): return
+    if not os.path.exists(SCHEDULE_FILE): 
+        print(f"DEBUG: Schedule file missing: {SCHEDULE_FILE}")
+        return
     with open(SCHEDULE_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
         
     groups = cfg.get("settings", {}).get("groups", ["GPV36.1"])
     group = groups[0] if groups else "GPV36.1"
+    print(f"DEBUG: Processing group {group}")
     group_display = group.replace('GPV', '')
     
     today_str = now.strftime("%Y-%m-%d")
