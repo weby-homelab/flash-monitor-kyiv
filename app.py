@@ -12,7 +12,7 @@ from light_service import (
     monitor_loop, schedule_loop, get_current_time, format_duration, 
     log_event, get_schedule_context, send_telegram, 
     get_deviation_info, get_nearest_schedule_switch,
-    format_event_message,
+    format_event_message, get_next_scheduled_event,
     trigger_daily_report_update, trigger_weekly_report_update,
     get_air_raid_alert,
     KYIV_TZ
@@ -151,19 +151,37 @@ def get_power_events_data(limit=5):
                     ts = last_match['timestamp']
                     evt = last_match['event']
                     
+                    # --- NEW TEXT LOGIC ---
                     dev_msg = get_deviation_info(ts, evt == "up")
-                    dev_html = ""
-                    
+                    dev_line = ""
                     if dev_msg:
-                        # dev_msg already contains the verb and timing info
-                        # format: "• Увімкнули пізніше на 10 хв"
-                        dev_html = dev_msg.replace("• ", "").strip()
+                        # Expected: "На 10 хв пізніше графіка"
+                        m = re.search(r"(?:Увімкнули|Вимкнули)\s+(раніше|пізніше)\s+на\s+(.+)$", dev_msg)
+                        if m:
+                            timing = m.group(1)
+                            value = m.group(2)
+                            dev_line = f"На {value} {timing} графіка"
+                        elif "точно за графіком" in dev_msg:
+                            dev_line = "Точно за графіком"
                     
-                    next_line = f"Наступне планове: {next_range}"
-                    if dev_html:
-                        latest_event_text = f"{dev_html}<br>{next_line}"
+                    # Next event prediction
+                    look_for_light = (evt != "up") # If currently UP, look for OFF (False)
+                    next_info = get_next_scheduled_event(ts, look_for_light)
+                    wait_line = ""
+                    if next_info:
+                        wait_dur = format_duration(next_info["time_left_sec"])
+                        wait_prefix = "Вимкнення через" if evt == "up" else "Очікуємо через"
+                        wait_line = f"{wait_prefix} ~ {wait_dur},"
+                    
+                    if dev_line and wait_line:
+                        latest_event_text = f"{dev_line}<br>{wait_line}"
+                    elif dev_line:
+                        latest_event_text = f"{dev_line}<br>Наступне планове: {next_range}"
+                    elif wait_line:
+                        latest_event_text = f"{wait_line}<br>Наступне планове: {next_range}"
                     else:
-                        latest_event_text = next_line
+                        latest_event_text = f"Наступне планове: {next_range}"
+                    
     except Exception as e:
         print(f"Error reading events: {e}")
         pass
