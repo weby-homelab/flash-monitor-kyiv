@@ -305,7 +305,7 @@ def get_today_schedule_text():
         
         # Column ON
         lines.append("<div class='schedule-col'>")
-        lines.append(f"<div class='col-header on'>Увімкнення 🔆 {int(total_on)}</div>")
+        lines.append(f"<div class='col-header on'>Увімкнення 🔆 {fmt_dur(total_on)}</div>")
         for inv in intervals_on:
             line_html = (
                 f"<div class='schedule-line on'>"
@@ -320,7 +320,7 @@ def get_today_schedule_text():
 
         # Column OFF
         lines.append("<div class='schedule-col'>")
-        lines.append(f"<div class='col-header off'>Вимкнення ✖️ {int(total_off)}</div>")
+        lines.append(f"<div class='col-header off'>Вимкнення ✖️ {fmt_dur(total_off)}</div>")
         for inv in intervals_off:
             line_html = (
                 f"<div class='schedule-line off'>"
