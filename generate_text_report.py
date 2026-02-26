@@ -97,7 +97,11 @@ def generate_day_block(is_today, intervals, cfg):
         elif not is_today and inv['start_idx'] < 48:
              marker = " (прод.)"
              
-        icon = cfg['ui']['icons']['on'] if inv['state'] else cfg['ui']['icons']['off']
+        # Use fallback icons if ui section or icons are missing
+        ui_cfg = cfg.get('ui', {})
+        icons = ui_cfg.get('icons', {'on': '🔆', 'off': '✖️'})
+        icon = icons.get('on', '🔆') if inv['state'] else icons.get('off', '✖️')
+        
         duration_text = f"({format_duration(inv['duration'])} год.)"
         
         line = f"{icon} {start_str} - {end_str} {duration_text:>10}{marker}"
@@ -107,8 +111,8 @@ def generate_day_block(is_today, intervals, cfg):
     lines.extend(day_intervals)
     lines.append("</code>")
     
-    on_icon = cfg['ui']['icons']['on']
-    off_icon = cfg['ui']['icons']['off']
+    on_icon = cfg.get('ui', {}).get('icons', {}).get('on', '🔆')
+    off_icon = cfg.get('ui', {}).get('icons', {}).get('off', '✖️')
     lines.append(f"\n{on_icon} Світло є: <b>{format_duration(total_on)} год.</b>")
     lines.append(f"{off_icon} Світла нема: <b>{format_duration(total_off)} год.</b>")
     
