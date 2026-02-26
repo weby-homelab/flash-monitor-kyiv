@@ -292,7 +292,7 @@ def get_today_schedule_text():
         total_on = sum(1 for s in slots if s) * 0.5
         total_off = 24.0 - total_on
 
-        MONTHS_UA = {1: "Січня", 2: "Лютого", 3: "Березня", 4: "Квітня", 5: "Травня", 6: "Червня", 7: "Липня", 8: "Середня", 9: "Вересня", 10: "Жовтня", 11: "Листопада", 12: "Грудня"}
+        MONTHS_UA = {1: "Січня", 2: "Лютого", 3: "Березня", 4: "Квітня", 5: "Травня", 6: "Червня", 7: "Липня", 8: "Серпня", 9: "Вересня", 10: "Жовтня", 11: "Листопада", 12: "Грудня"}
         day_title = f"{now.day} {MONTHS_UA[now.month]} ({DAYS_UA[now.weekday()]})"
 
         lines = []
@@ -305,7 +305,7 @@ def get_today_schedule_text():
         
         # Column ON
         lines.append("<div class='schedule-col'>")
-        lines.append("<div class='col-header on'>Увімкнення</div>")
+        lines.append(f"<div class='col-header on'>Увімкнення 🔆 {int(total_on)}</div>")
         for inv in intervals_on:
             line_html = (
                 f"<div class='schedule-line on'>"
@@ -320,7 +320,7 @@ def get_today_schedule_text():
 
         # Column OFF
         lines.append("<div class='schedule-col'>")
-        lines.append("<div class='col-header off'>Вимкнення</div>")
+        lines.append(f"<div class='col-header off'>Вимкнення ✖️ {int(total_off)}</div>")
         for inv in intervals_off:
             line_html = (
                 f"<div class='schedule-line off'>"
@@ -335,8 +335,6 @@ def get_today_schedule_text():
         
         lines.append("</div>") # End columns
             
-        lines.append(f"<div class='schedule-summary'><span class='light-hours'>🔆 {int(total_on)}</span><span class='no-light-hours'>✖️ {int(total_off)}</span></div>")
-        
         file_mtime = os.path.getmtime(schedule_file)
         dt_mtime = datetime.datetime.fromtimestamp(file_mtime, KYIV_TZ)
         lines.append(f"<div class='updated-time'>Оновлено: {dt_mtime.strftime('%H:%M')}</div>")
