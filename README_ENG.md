@@ -9,7 +9,7 @@
 
 <br>
 
-# FLASH MONITOR KYIV (v1.7.0 Autonomous Edition)
+# FLASH MONITOR KYIV (v1.9.3 Autonomous Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
@@ -18,14 +18,13 @@
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
 Recent fixes and improvements:
-- **Telegram:** New compact message format for status changes with "time until next scheduled event" calculation (e.g., "Outage in ~ 3 h 25 min").
-- **UI/UX Web:** Redesigned schedule block on the dashboard — now split into two columns (ON and OFF) for better readability.
-- **Colors:** New schedule color scheme: **Teal** for power-on periods and **Rose** for outages.
-- **UI/UX Logic:** Removed redundant headers; alert status now laconically shows: "Kyiv. Clear".
-- **Time Formatting:** Fixed end-of-day time display — "24:00" is now used everywhere instead of "tomorrow at 00:00".
+- **Dashboard:** Added display of tomorrow's schedule (when available) with automatic day separation.
+- **UI/UX:** Fixed "undefined" update time in the dashboard footer.
+- **Sources:** Renamed "Github" source to the official "ДТЕК" for better data consistency.
+- **Charts:** Improved visual distinction between "Plan" and "Fact" on charts (Indigo/Slate for Plan, Teal/Rose for Fact).
+- **Telegram:** Restored stable text report logic with perfect alignment and source merging.
+- **Time Formatting:** Fixed hour display in summaries (uses "год").
 - **Logic Fix:** Dashboard status now correctly matches actual power state.
-- **Algorithm Improvement:** More reliable nearest transition search for deviation calculation.
-- **Telegram Notifications:** Statistics format fixed to: "Turned on/off later/earlier by X hours Y minutes".
 - **Synchronization:** Enabled local host (`127.0.0.1`) sync for flexible setup in multi-service environments.
 - **Stability:** Added `shutil` in `generate_weekly_report.py` and improved resilience to different history data formats.
 - **Optimization:** Fixed duplicate background process issue upon restart.
