@@ -102,9 +102,9 @@ def generate_day_block(is_today, intervals, cfg):
         icons = ui_cfg.get('icons', {'on': '🔆', 'off': '✖️'})
         icon = icons.get('on', '🔆') if inv['state'] else icons.get('off', '✖️')
         
-        duration_text = f"({format_duration(inv['duration'])} год.)"
+        duration_text = f"({format_duration(inv['duration'])})"
         
-        line = f"{icon} {start_str} - {end_str} {duration_text:>10}{marker}"
+        line = f"{icon} {start_str}-{end_str:<5} {duration_text:>5}{marker}"
         day_intervals.append(line)
     
     lines.append("<code>")
@@ -113,8 +113,8 @@ def generate_day_block(is_today, intervals, cfg):
     
     on_icon = cfg.get('ui', {}).get('icons', {}).get('on', '🔆')
     off_icon = cfg.get('ui', {}).get('icons', {}).get('off', '✖️')
-    lines.append(f"\n{on_icon} Світло є: <b>{format_duration(total_on)} год.</b>")
-    lines.append(f"{off_icon} Світла нема: <b>{format_duration(total_off)} год.</b>")
+    lines.append(f"\nСвітло є {on_icon} <b>{format_duration(total_on)}</b>")
+    lines.append(f"Світла нема {off_icon} <b>{format_duration(total_off)}</b>")
     
     return "\n".join(lines)
 
