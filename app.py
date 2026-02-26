@@ -276,7 +276,7 @@ def get_today_schedule_text():
             # Only show tomorrow if it has actual data (not just pending)
             slots = schedule_data[tomorrow_str]['slots']
             if slots and any(s is not None for s in slots):
-                output.append("<div class='schedule-divider'>🔸️🔸️🔸️</div>")
+                output.append("<div class='schedule-divider'></div>")
                 output.append(render_day_schedule_html(slots, now + timedelta(days=1)))
             
         file_mtime = os.path.getmtime(schedule_file)
