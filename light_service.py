@@ -27,7 +27,28 @@ CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 PORT = 8889
 # SECRET_KEY handled in state
 STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
+STATE_LOCK_FILE = os.path.join(DATA_DIR, "power_monitor_state.lock")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
+
+class FileLock:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.lock_file = None
+
+    def __enter__(self):
+        self.lock_file = open(self.file_path, 'w')
+        try:
+            fcntl.flock(self.lock_file, fcntl.LOCK_EX)
+        except (IOError, OSError):
+            self.lock_file.close()
+            raise
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.lock_file:
+            fcntl.flock(self.lock_file, fcntl.LOCK_UN)
+            self.lock_file.close()
+            self.lock_file = None
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 SCHEDULE_API_URL = os.environ.get("SCHEDULE_API_URL", "")
