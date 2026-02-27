@@ -122,13 +122,13 @@ flowchart TD
 
 ## 🐳 Швидкий запуск через Docker
 
-**Офіційний образ:** `webyhomelab/flash-monitor:latest`
+**Офіційний образ:** `webyhomelab/flash-monitor-kyiv:latest`
 
 ### Docker Compose
 ```yaml
 services:
   web:
-    image: webyhomelab/flash-monitor:latest
+    image: webyhomelab/flash-monitor-kyiv:latest
     container_name: flash-monitor-web
     ports: ["5050:5050"]
     volumes: ["./data:/app/data"]
@@ -138,7 +138,7 @@ services:
       - DATA_DIR=/app/data
 
   worker:
-    image: webyhomelab/flash-monitor:latest
+    image: webyhomelab/flash-monitor-kyiv:latest
     container_name: flash-monitor-worker
     command: python run_background.py
     volumes: ["./data:/app/data"]
