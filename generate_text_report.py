@@ -95,9 +95,9 @@ def generate_day_block(is_today, intervals, cfg):
         off_icon = cfg.get('ui', {}).get('icons', {}).get('off', '✖️')
         icon_to_use = icon if inv['state'] else off_icon
         
-        duration_text = f"({format_duration(disp_dur)} год.)"
+        duration_text = f"({format_duration(disp_dur)})"
         
-        line = f"{icon_to_use} {start_str} - {end_str} {duration_text:>10}"
+        line = f"{icon_to_use} {start_str} - {end_str} {duration_text:>5}"
         day_intervals.append(line)
     
     lines.append("---")
@@ -167,6 +167,9 @@ def main():
             s_today = s_data.get(today_str, {}).get('slots')
             s_tomorrow = s_data.get(tomorrow_str, {}).get('slots')
             
+            if not is_today and not s_tomorrow:
+                continue
+
             if not is_today and s_tomorrow:
                 has_real_tomorrow_data = True
 
@@ -176,6 +179,9 @@ def main():
                     combined_slots.extend(s_tomorrow)
                 else:
                     combined_slots.extend([None] * 48)
+            elif not is_today and s_tomorrow:
+                combined_slots.extend([None] * 48)
+                combined_slots.extend(s_tomorrow)
             
             if combined_slots and any(x is not None for x in combined_slots):
                 clean_slots = [val if val is not None else (True if i < 48 else False) for i, val in enumerate(combined_slots)]
