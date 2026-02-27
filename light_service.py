@@ -728,11 +728,10 @@ def schedule_loop():
             trigger_daily_report_update()
         except: pass
         
-        # 2. Trigger Text Report Update (every 30 mins)
-        if counter % 3 == 0:
-            try:
-                trigger_text_report_update()
-            except: pass
+        # 2. Trigger Text Report Update (every 10 mins)
+        try:
+            trigger_text_report_update()
+        except: pass
             
         # 3. Trigger Weekly Telegram Report (Monday around 00:10-00:20)
         now = datetime.datetime.now(KYIV_TZ)
