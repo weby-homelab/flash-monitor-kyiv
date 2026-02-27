@@ -90,12 +90,6 @@ def generate_day_block(is_today, intervals, cfg):
         
         start_str = format_slot_time(disp_start, is_end=False)
         end_str = format_slot_time(disp_end, is_end=True)
-        
-        marker = ""
-        if is_today and inv['end_idx'] > 48:
-             marker = " (далі)"
-        elif not is_today and inv['start_idx'] < 48:
-             marker = " (прод.)"
              
         icon = cfg.get('ui', {}).get('icons', {}).get('on', '🔆')
         off_icon = cfg.get('ui', {}).get('icons', {}).get('off', '✖️')
@@ -103,17 +97,18 @@ def generate_day_block(is_today, intervals, cfg):
         
         duration_text = f"({format_duration(disp_dur)} год.)"
         
-        line = f"{icon_to_use} {start_str} - {end_str} {duration_text:>10}{marker}"
+        line = f"{icon_to_use} {start_str} - {end_str} {duration_text:>10}"
         day_intervals.append(line)
     
-    lines.append("<code>")
+    lines.append("---")
     lines.extend(day_intervals)
-    lines.append("</code>")
+    lines.append("---")
     
     on_icon = cfg.get('ui', {}).get('icons', {}).get('on', '🔆')
     off_icon = cfg.get('ui', {}).get('icons', {}).get('off', '✖️')
-    lines.append(f"\n{on_icon} Світло є: <b>{format_duration(total_on)} год.</b>")
-    lines.append(f"{off_icon} Світла нема: <b>{format_duration(total_off)} год.</b>")
+    lines.append(f"{on_icon} Світло є: {format_duration(total_on)} год.")
+    lines.append(f"{off_icon} Світла нема: {format_duration(total_off)} год.")
+    lines.append("---")
     
     return "\n".join(lines)
 
@@ -195,15 +190,15 @@ def main():
             
         if not source_blocks: continue
 
-        day_title = f"{icons.get('calendar', '📆')}  <b>{dt.strftime('%d.%m')} ({DAYS_UA[dt.weekday()]})</b>"
+        day_title = f"{icons.get('calendar', '📆')}  {dt.strftime('%d.%m')} ({DAYS_UA[dt.weekday()]})"
         if len(source_blocks) == 2 and source_blocks[0][1] == source_blocks[1][1]:
-            sources_label = f"<i>[{source_blocks[0][0]}, {source_blocks[1][0]}]</i>"
+            sources_label = f"[{source_blocks[0][0]}, {source_blocks[1][0]}]"
             day_content = f"{day_title}\n{sources_label}\n{source_blocks[0][1]}"
         else:
             blocks = [day_title]
             for name, txt in source_blocks:
-                blocks.append(f"<i>[{name}]</i>\n{txt}")
-            day_content = "\n\n".join(blocks)
+                blocks.append(f"[{name}]\n{txt}")
+            day_content = "\n".join(blocks)
             
         all_day_contents.append(day_content)
 
@@ -214,7 +209,7 @@ def main():
     combined_content = "\n\n".join(all_day_contents)
 
     updated_text = cfg.get('ui', {}).get('text', {}).get('updated', 'Оновлено')
-    footer = f"<i>{icons.get('clock', '🕐')} {updated_text}: {now.strftime('%H:%M')}</i>"
+    footer = f"🕐 {updated_text}: {now.strftime('%H:%M')}"
     full_text = f"📈 <b>Графік групи {group_display}</b>\n\n{combined_content}\n\n{footer}"
     
     content_hash = hashlib.md5(full_text.encode()).hexdigest()
