@@ -1,4 +1,4 @@
-# 🚀 Flash Monitor Kyiv Installation Guide (v1.4.8+)
+# 🚀 Flash Monitor Kyiv Installation Guide (v1.9.7)
 
 This project is now fully autonomous. It can either parse schedules itself or synchronize with another server.
 
@@ -17,7 +17,7 @@ cd flash-monitor
 ```
 
 ### Create `config.json` configuration file
-Copy this example (replace `your_group` with your outage group, e.g., `GPV36.1`):
+Example configuration for Kyiv (replace `your_group` with your outage group, e.g., `GPV36.1`):
 ```json
 {
   "settings": {
@@ -26,7 +26,7 @@ Copy this example (replace `your_group` with your outage group, e.g., `GPV36.1`)
     "style": "list"
   },
   "sources": {
-    "github": { "enabled": true },
+    "dtek": { "enabled": true },
     "yasno": { "enabled": true, "region_id": "25", "dso_id": "902" }
   }
 }
@@ -43,9 +43,9 @@ SCHEDULE_API_URL=
 ```
 
 ## 3. System Launch
-Create your `docker-compose.yml` (using the one from the repository) and start the containers:
+Use the `docker-compose.yml` from the repository and start the containers:
 ```bash
-docker compose up -d
+docker compose pull && docker compose up -d
 ```
 The dashboard will be available at port `:5050`.
 
@@ -57,7 +57,7 @@ To enable power status and charts, configure your IoT device (ESP8266/ESP32) or 
    cat data/power_monitor_state.json | grep secret_key
    ```
 2. Configure your device to send a GET request every minute:
-   `http://your-ip:5050/api/push/YOUR_SECRET_KEY`
+   `https://your-domain/api/push/YOUR_SECRET_KEY`
 
 ---
 © 2026 Weby Homelab. Made with ❤️ in Kyiv under air raid sirens and blackouts
