@@ -117,8 +117,6 @@ def get_report_state():
         try:
             with open(TEXT_REPORT_ID_FILE, "r") as f:
                 data = json.load(f)
-                if "message_id" in data and "date" in data:
-                    return {data["date"]: {"message_id": data["message_id"], "hash": data.get("hash")}}
                 return data
         except: pass
     return {}
@@ -133,6 +131,7 @@ def save_report_state(state):
 def main():
     now = datetime.datetime.now(KYIV_TZ)
     current_time = now.time()
+    current_hour = now.hour
     
     if not (datetime.time(6, 0) <= current_time <= datetime.time(23, 45)):
         return
@@ -149,7 +148,37 @@ def main():
     today_str = now.strftime("%Y-%m-%d")
     tomorrow_str = (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
     
+    # Calculate if tomorrow data is currently available globally
+    has_tomorrow_now = False
+    for s_key in ['github', 'yasno']:
+        s_tomorrow = data.get(s_key, {}).get(group, {}).get(tomorrow_str, {}).get('slots')
+        if s_tomorrow:
+            has_tomorrow_now = True
+            break
+
     report_state = get_report_state()
+    today_state = report_state.get(today_str, {})
+    
+    # Migrate old state format if needed
+    if "message_id" in today_state and "morning_id" not in today_state:
+        # Convert old format to new format
+        today_state = {
+            "morning_id": today_state.get("message_id"),
+            "morning_hash": today_state.get("hash"),
+            "morning_had_tomorrow": has_tomorrow_now # Assume current state if migrating
+        }
+    
+    morning_id = today_state.get("morning_id")
+    evening_id = today_state.get("evening_id")
+    morning_had_tomorrow = today_state.get("morning_had_tomorrow", False)
+    
+    target_slot = "morning"
+    if evening_id:
+        target_slot = "evening"
+    elif current_hour >= 22:
+        target_slot = "evening"
+    elif morning_id and has_tomorrow_now and not morning_had_tomorrow:
+        target_slot = "evening"
     
     all_day_contents = []
     
@@ -165,23 +194,23 @@ def main():
             
             combined_slots = []
             s_today = s_data.get(today_str, {}).get('slots')
-            s_tomorrow = s_data.get(tomorrow_str, {}).get('slots')
+            s_tomorrow_local = s_data.get(tomorrow_str, {}).get('slots')
             
-            if not is_today and not s_tomorrow:
+            if not is_today and not s_tomorrow_local:
                 continue
 
-            if not is_today and s_tomorrow:
+            if not is_today and s_tomorrow_local:
                 has_real_tomorrow_data = True
 
             if s_today:
                 combined_slots.extend(s_today)
-                if s_tomorrow:
-                    combined_slots.extend(s_tomorrow)
+                if s_tomorrow_local:
+                    combined_slots.extend(s_tomorrow_local)
                 else:
                     combined_slots.extend([None] * 48)
-            elif not is_today and s_tomorrow:
+            elif not is_today and s_tomorrow_local:
                 combined_slots.extend([None] * 48)
-                combined_slots.extend(s_tomorrow)
+                combined_slots.extend(s_tomorrow_local)
             
             if combined_slots and any(x is not None for x in combined_slots):
                 clean_slots = [val if val is not None else (True if i < 48 else False) for i, val in enumerate(combined_slots)]
@@ -220,9 +249,8 @@ def main():
     
     content_hash = hashlib.md5(full_text.encode()).hexdigest()
     
-    date_info = report_state.get(today_str, {})
-    last_id = date_info.get("message_id")
-    last_hash = date_info.get("hash")
+    last_id = today_state.get(f"{target_slot}_id")
+    last_hash = today_state.get(f"{target_slot}_hash")
 
     if last_id:
         if last_hash != content_hash:
@@ -230,7 +258,8 @@ def main():
             payload = {"chat_id": CHAT_ID, "message_id": last_id, "text": full_text, "parse_mode": "HTML", "disable_web_page_preview": True}
             r = requests.post(url, json=payload)
             if r.status_code == 200:
-                report_state[today_str] = {"message_id": last_id, "hash": content_hash}
+                today_state[f"{target_slot}_hash"] = content_hash
+                report_state[today_str] = today_state
                 save_report_state(report_state)
     else:
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
@@ -238,7 +267,11 @@ def main():
         r = requests.post(url, json=payload)
         if r.status_code == 200:
             new_id = r.json()['result']['message_id']
-            report_state[today_str] = {"message_id": new_id, "hash": content_hash}
+            today_state[f"{target_slot}_id"] = new_id
+            today_state[f"{target_slot}_hash"] = content_hash
+            if target_slot == "morning":
+                today_state["morning_had_tomorrow"] = has_tomorrow_now
+            report_state[today_str] = today_state
             save_report_state(report_state)
 
 if __name__ == "__main__":
