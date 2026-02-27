@@ -9,7 +9,7 @@
     "show_intervals_detail": false
   },
   "sources": {
-    "ДТЕК": {
+    "github": {
       "enabled": true,
       "name": "ДТЕК"
     },
