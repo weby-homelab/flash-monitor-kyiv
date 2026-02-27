@@ -30,25 +30,34 @@ STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
 STATE_LOCK_FILE = os.path.join(DATA_DIR, "power_monitor_state.lock")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 
+_process_locks = {}
+_process_locks_lock = threading.Lock()
+
 class FileLock:
     def __init__(self, file_path):
         self.file_path = file_path
-        self.lock_file = None
 
     def __enter__(self):
-        self.lock_file = open(self.file_path, 'w')
-        try:
-            fcntl.flock(self.lock_file, fcntl.LOCK_EX)
-        except (IOError, OSError):
-            self.lock_file.close()
-            raise
+        with _process_locks_lock:
+            if self.file_path not in _process_locks:
+                # Use 'a' to avoid truncating concurrent readers/writers unexpectedly, 
+                # although it's just a lock file.
+                f = open(self.file_path, 'a')
+                _process_locks[self.file_path] = {'file': f, 'count': 0, 'thread_lock': threading.RLock()}
+            lock_info = _process_locks[self.file_path]
+            
+        lock_info['thread_lock'].acquire()
+        if lock_info['count'] == 0:
+            fcntl.flock(lock_info['file'], fcntl.LOCK_EX)
+        lock_info['count'] += 1
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.lock_file:
-            fcntl.flock(self.lock_file, fcntl.LOCK_UN)
-            self.lock_file.close()
-            self.lock_file = None
+        lock_info = _process_locks[self.file_path]
+        lock_info['count'] -= 1
+        if lock_info['count'] == 0:
+            fcntl.flock(lock_info['file'], fcntl.LOCK_UN)
+        lock_info['thread_lock'].release()
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 SCHEDULE_API_URL = os.environ.get("SCHEDULE_API_URL", "")
