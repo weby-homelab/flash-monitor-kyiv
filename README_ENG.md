@@ -17,7 +17,7 @@
 
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
-Recent fixes and improvements (v1.9.7):
+Recent fixes and improvements (v1.9.8):
 - **Reporting Logic:** New intelligent Telegram reporting schedule. Morning report (06:00) combines today and tomorrow. Evening report sent at 22:00 (or instantly when tomorrow's schedule appears).
 - **Performance:** Background loop frequency increased to 10 minutes for real-time status updates.
 - **Visual Style:** Implemented "Black-and-White" style (Glassmorphism, tabular-nums) for perfect alignment of text reports.
