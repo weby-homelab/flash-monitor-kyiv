@@ -15,7 +15,7 @@ from light_service import (
     format_event_message, get_next_scheduled_event,
     trigger_daily_report_update, trigger_weekly_report_update,
     get_air_raid_alert,
-    KYIV_TZ
+    KYIV_TZ, FileLock, STATE_LOCK_FILE
 )
 
 
@@ -86,9 +86,6 @@ def get_radiation():
         "unit": "мкЗв/год",
         "status": "normal"
     }
-
-LIGHT_STATE_FILE = "power_monitor_state.json"
-EVENT_LOG_FILE = "event_log.json"
 
 def get_power_events_data(limit=5):
     recent_events = []
@@ -399,30 +396,31 @@ def api_status():
 
 @app.route('/api/push/<key>')
 def push_api(key):
-    load_state()
-    # Support multiple keys if needed, but here we check the one from state
+    # We do a quick check first without locking, just in case
     if key != state.get('secret_key'):
         return jsonify({"status": "error", "msg": "invalid_key"}), 403
         
     current_time = time.time()
     
     with state_lock:
-        previous_status = state.get("status", "unknown")
-        state["last_seen"] = current_time
-        
-        if previous_status == "down" or previous_status == "unknown":
-            state["status"] = "up"
-            state["came_up_at"] = current_time
-            log_event("up", current_time)
+        with FileLock(STATE_LOCK_FILE):
+            load_state()  # Reload to get latest changes from other workers
+            previous_status = state.get("status", "unknown")
+            state["last_seen"] = current_time
             
-            # New compact message format
-            # Use went_down_at before it might get updated (though push only sets came_up)
-            msg = format_event_message(True, current_time, state.get("went_down_at", 0))
-            
-            threading.Thread(target=send_telegram, args=(msg,)).start()
-            # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
-            
-        save_state()
+            if previous_status == "down" or previous_status == "unknown":
+                state["status"] = "up"
+                state["came_up_at"] = current_time
+                log_event("up", current_time)
+                
+                # New compact message format
+                # Use went_down_at before it might get updated (though push only sets came_up)
+                msg = format_event_message(True, current_time, state.get("went_down_at", 0))
+                
+                threading.Thread(target=send_telegram, args=(msg,)).start()
+                # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
+                
+            save_state()
         
     return jsonify({
         "status": "ok", 

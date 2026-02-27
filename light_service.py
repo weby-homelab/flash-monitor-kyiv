@@ -12,6 +12,7 @@ import subprocess
 from urllib.parse import urlparse, parse_qs
 import sys
 import re
+import fcntl
 from dotenv import load_dotenv
 
 from parser_service import update_local_schedules
@@ -135,40 +136,41 @@ def log_event(event_type, timestamp):
             "date_str": datetime.datetime.fromtimestamp(timestamp, KYIV_TZ).strftime("%Y-%m-%d %H:%M:%S")
         }
         
-        # Read existing logs or create new list
-        logs = []
-        if os.path.exists(EVENT_LOG_FILE):
-            try:
-                with open(EVENT_LOG_FILE, 'r') as f:
-                    content = f.read().strip()
-                    if content:
-                        logs = json.loads(content)
-                        if not isinstance(logs, list):
-                            logs = []
-            except (json.JSONDecodeError, FileNotFoundError):
-                logs = []
-            
-        logs.append(entry)
-        
-        # Keep roughly last ~30 days (assuming ~20 events/day max = 600 events)
-        if len(logs) > 1000: 
-            logs = logs[-1000:]
-            
-        with open(EVENT_LOG_FILE, 'w') as f:
-            json.dump(logs, f, indent=2)
-            
+        with FileLock(STATE_LOCK_FILE):
+            logs = []
+            if os.path.exists(EVENT_LOG_FILE):
+                try:
+                    with open(EVENT_LOG_FILE, 'r') as f:
+                        content = f.read().strip()
+                        if content:
+                            logs = json.loads(content)
+                            if not isinstance(logs, list):
+                                logs = []
+                except (json.JSONDecodeError, FileNotFoundError):
+                    pass
+                
+            logs.append(entry)
+            if len(logs) > 1000: 
+                logs = logs[-1000:]
+                
+            temp_file = EVENT_LOG_FILE + '.tmp'
+            with open(temp_file, 'w') as f:
+                json.dump(logs, f, indent=2)
+            os.replace(temp_file, EVENT_LOG_FILE)
+                
     except Exception as e:
         print(f"Failed to log event: {e}")
 
 def load_state():
     global state
-    if os.path.exists(STATE_FILE):
-        try:
-            with open(STATE_FILE, 'r') as f:
-                saved_state = json.load(f)
-                state.update(saved_state)
-        except Exception as e:
-            print(f"Error loading state: {e}")
+    with FileLock(STATE_LOCK_FILE):
+        if os.path.exists(STATE_FILE):
+            try:
+                with open(STATE_FILE, 'r') as f:
+                    saved_state = json.load(f)
+                    state.update(saved_state)
+            except Exception as e:
+                print(f"Error loading state: {e}")
     
     if not state.get("secret_key"):
         state["secret_key"] = secrets.token_urlsafe(16)
@@ -176,11 +178,14 @@ def load_state():
 
 def save_state():
     with state_lock:
-        try:
-            with open(STATE_FILE, 'w') as f:
-                json.dump(state, f)
-        except Exception as e:
-            print(f"Error saving state: {e}")
+        with FileLock(STATE_LOCK_FILE):
+            try:
+                temp_file = STATE_FILE + '.tmp'
+                with open(temp_file, 'w') as f:
+                    json.dump(state, f)
+                os.replace(temp_file, STATE_FILE)
+            except Exception as e:
+                print(f"Error saving state: {e}")
 
 def get_current_time():
     # Returns local time timestamp
