@@ -17,17 +17,13 @@
 
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
-Recent fixes and improvements:
-- **Dashboard:** Added display of tomorrow's schedule (when available) with automatic day separation.
-- **UI/UX:** Fixed "undefined" update time in the dashboard footer.
-- **Sources:** Renamed "Github" source to the official "ДТЕК" for better data consistency.
-- **Charts:** Improved visual distinction between "Plan" and "Fact" on charts (Indigo/Slate for Plan, Teal/Rose for Fact).
-- **Telegram:** Restored stable text report logic with perfect alignment and source merging.
-- **Time Formatting:** Fixed hour display in summaries (uses "год").
-- **Logic Fix:** Dashboard status now correctly matches actual power state.
-- **Synchronization:** Enabled local host (`127.0.0.1`) sync for flexible setup in multi-service environments.
-- **Stability:** Added `shutil` in `generate_weekly_report.py` and improved resilience to different history data formats.
-- **Optimization:** Fixed duplicate background process issue upon restart.
+Recent fixes and improvements (v1.9.7):
+- **Reporting Logic:** New intelligent Telegram reporting schedule. Morning report (06:00) combines today and tomorrow. Evening report sent at 22:00 (or instantly when tomorrow's schedule appears).
+- **Performance:** Background loop frequency increased to 10 minutes for real-time status updates.
+- **Visual Style:** Implemented "Black-and-White" style (Glassmorphism, tabular-nums) for perfect alignment of text reports.
+- **Merge Logic:** Fixed duration calculation for midnight-crossing intervals to ensure correct daily block display.
+- **Dashboard:** Added tomorrow's schedule display with automatic day separation and improved "Plan vs Fact" visualization.
+- **Reliability:** Centralized background loops in `run_background.py` to prevent redundant threads in Gunicorn.
 
 🔗 **Live Monitoring:** [flash.srvrs.top](https://flash.srvrs.top/)
 
@@ -40,14 +36,21 @@ Recent fixes and improvements:
 ### 💡 Smart Power Monitoring
 - **Heartbeat Tracking:** Real-time power monitoring via IoT signals (Push API).
 - **"Plan vs Fact" Analytics:** Automatic comparison of real outages with scheduled plans.
-- **Schedule Accuracy:** Calculation of deviations (delays or early switches) for each event and displaying the next planned interval.
+- **Schedule Accuracy:** Calculation of deviations (delays or early switches) for each event.
 - **Visualization:** Daily and weekly charts.
-- **UI/UX Design:** Adaptive Amethyst Mist theme with automatic Light/Dark mode and Glassmorphism.
+- **UI/UX Design:** "Black-and-White" theme with Glassmorphism and tabular-nums fonts for precise text reports.
 
 ### 🛡️ Security & Environment
 - **Air Alerts:** Instant status and Telegram notifications for alert start/end in Kyiv.
 - **Live Map:** Integrated air raid alert map for Kyiv and region.
-- **Air Quality (AQI):** Real-time PM2.5, PM10, and radiation background.
+- **Air Quality (AQI):** Real-time PM2.5, PM10, and radiation background (Simyrenka location).
+- **Weather:** Current temperature, humidity, and wind parameters.
+
+### 🔔 Telegram Notifications
+- **Intelligent Reports:** Dynamic text schedules with right-aligned durations.
+- **Morning Report (06:00):** Full situational overview for today and tomorrow (if available).
+- **Evening/Instant Update:** Automated delivery of tomorrow's schedule as soon as DTEK publishes it.
+- **Smart Merge:** Correct handling of night-time intervals.
 
 ---
 
