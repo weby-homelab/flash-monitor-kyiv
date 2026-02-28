@@ -8,6 +8,8 @@ services:
     volumes:
       - ./data:/app/data
       - ./config.json:/app/config.json:ro
+    env_file:
+      - .env
     environment:
       - TZ=Europe/Kiev
     healthcheck:
@@ -24,5 +26,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./config.json:/app/config.json:ro
+    env_file:
+      - .env
     environment:
       - TZ=Europe/Kiev
