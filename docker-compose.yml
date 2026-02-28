@@ -1,6 +1,6 @@
 services:
   flash-monitor:
-    image: webyhomelab/flash-monitor-kyiv:v1.10.2
+    image: webyhomelab/flash-monitor-kyiv:v1.10.3
     container_name: flash-monitor
     restart: unless-stopped
     ports:
@@ -19,7 +19,7 @@ services:
       retries: 3
 
   background-worker:
-    image: webyhomelab/flash-monitor-kyiv:v1.10.2
+    image: webyhomelab/flash-monitor-kyiv:v1.10.3
     container_name: flash-monitor-worker
     restart: unless-stopped
     command: python run_background.py

@@ -409,7 +409,8 @@ if __name__ == "__main__":
     shifted_time = now - datetime.timedelta(minutes=30)
     target_date = shifted_time.date()
 
-    # Simple argument parsing    for arg in sys.argv[1:]:
+    # Simple argument parsing
+    for arg in sys.argv[1:]:
         if arg == "--no-send":
             continue
         try:
