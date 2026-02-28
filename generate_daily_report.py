@@ -402,10 +402,14 @@ def send_telegram_photo(photo_path, caption, target_date):
             print(f"Error sending report: {e}")
 
 if __name__ == "__main__":
-    target_date = datetime.datetime.now(KYIV_TZ).date()
-    
-    # Simple argument parsing
-    for arg in sys.argv[1:]:
+    # If called without arguments, calculate target date
+    # Shift time back by 30 minutes so that a report generated at 00:05 
+    # will still update the previous day's report as a final summary.
+    now = datetime.datetime.now(KYIV_TZ)
+    shifted_time = now - datetime.timedelta(minutes=30)
+    target_date = shifted_time.date()
+
+    # Simple argument parsing    for arg in sys.argv[1:]:
         if arg == "--no-send":
             continue
         try:
