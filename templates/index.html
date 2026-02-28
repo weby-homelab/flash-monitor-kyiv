@@ -19,6 +19,7 @@
     <!-- PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#050505">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/static/icon.svg">
     
@@ -41,8 +42,6 @@
             /* Professional Muted Graph Colors */
             --color-graph-fact-on: #14b8a6;
             --color-graph-fact-off: #f43f5e;
-            --color-graph-plan-on: #818cf8;
-            --color-graph-plan-off: #64748b;
         }
         @media (prefers-color-scheme: light) {
             :root {
@@ -127,8 +126,8 @@
         
         .schedule-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
         .col-header { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--card-border); }
-        .col-header.on { color: #14b8a6; } /* teal */
-        .col-header.off { color: #f43f5e; } /* rose */
+        .col-header.on { color: var(--color-graph-fact-on); } /* teal */
+        .col-header.off { color: var(--color-graph-fact-off); } /* rose */
 
         .schedule-date { color: var(--text-primary); font-weight: 600; margin-bottom: 20px; font-size: 1rem; }
         .schedule-line { display: flex; align-items: center; margin-bottom: 6px; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
@@ -136,13 +135,13 @@
         .time-sep { width: 12px; text-align: center; opacity: 0.4; }
         .schedule-duration { color: var(--text-secondary); margin-left: 8px; font-size: 0.8em; opacity: 0.6; }
         
-        .schedule-line.off { color: #f43f5e !important; }
-        .schedule-line.on { color: #14b8a6 !important; }
+        .schedule-line.off { color: var(--color-graph-fact-off) !important; }
+        .schedule-line.on { color: var(--color-graph-fact-on) !important; }
 
         .schedule-summary { border-top: 1px dashed var(--card-border); margin-top: 20px; padding-top: 16px; display: flex; gap: 24px; font-size: 1.1rem; }
         
-        .light-hours { color: #14b8a6; font-weight: 700; text-shadow: 0 0 8px rgb(20 184 166 / 0.3); }
-        .no-light-hours { color: #f43f5e; font-weight: 700; text-shadow: 0 0 8px rgb(244 63 94 / 0.3); }
+        .light-hours { color: var(--color-graph-fact-on); font-weight: 700; text-shadow: 0 0 8px rgb(20 184 166 / 0.3); }
+        .no-light-hours { color: var(--color-graph-fact-off); font-weight: 700; text-shadow: 0 0 8px rgb(244 63 94 / 0.3); }
         .schedule-divider { text-align: center; margin: 24px 0; opacity: 0.5; font-size: 0.8rem; letter-spacing: 4px; }
         
         .updated-time { color: var(--text-secondary); font-size: 0.85rem; margin-top: 12px; font-weight: 500; opacity: 0.8; }
