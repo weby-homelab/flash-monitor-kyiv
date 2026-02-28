@@ -345,22 +345,39 @@ if __name__ == "__main__":
 
     plan_section = ""
     if plan_up_h > 0:
+        def format_duration_h(hours_val):
+            h = int(abs(hours_val))
+            m = int(round((abs(hours_val) - h) * 60))
+            if m == 60:
+                h += 1
+                m = 0
+            parts = []
+            if h > 0: parts.append(f"{h} г")
+            if m > 0: parts.append(f"{m} хв")
+            return " ".join(parts) if parts else "0 хв"
+
         diff_total = up_h - plan_up_h
-        sign = "+" if diff_total > 0 else ""
+        sign = "+" if diff_total > 0 else "-" if diff_total < 0 else ""
+        diff_formatted = f"{sign}{format_duration_h(abs(diff_total))}"
+        
         compliance_pct = (up_h / plan_up_h * 100) if plan_up_h > 0 else 0
         
         plan_section = f"""
 📉 <b>План vs Факт:</b>
  • За планом 🔆 <b>{int(plan_up_h)}г</b>
  • Реально 🔆 <b>{int(up_h)}г</b>
- • Відхилення: <b>{sign}{diff_total:.1f}г</b> (Світла {compliance_pct:.0f}% від плану)
+ • Відхилення: <b>{diff_formatted}</b> (Світла {compliance_pct:.0f}% від плану)
 """
         if easiest and hardest and easiest != hardest:
              e_name = day_names[easiest['date'].weekday()]
              h_name = day_names[hardest['date'].weekday()]
              e_diff = easiest['diff']
              h_diff = hardest['diff']
-             plan_section += f"\n🌤 <b>Легше ніж очікувалось:</b> {e_name} (+{e_diff:.1f}г понад план)\n🌩 <b>Важче ніж очікувалось:</b> {h_name} ({h_diff:.1f}г від плану)"
+             
+             e_sign = "+" if e_diff > 0 else "-" if e_diff < 0 else ""
+             h_sign = "+" if h_diff > 0 else "-" if h_diff < 0 else ""
+             
+             plan_section += f"\n🌤 <b>Легше ніж очікувалось:</b> {e_name} ({e_sign}{format_duration_h(abs(e_diff))} понад план)\n🌩 <b>Важче ніж очікувалось:</b> {h_name} ({h_sign}{format_duration_h(abs(h_diff))} від плану)"
 
     caption = f"""📅 <b>Енергетичний тиждень ({monday.strftime('%d.%m')} - {sunday.strftime('%d.%m')})</b>
 
