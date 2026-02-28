@@ -683,32 +683,32 @@ def alerts_loop():
         try:
             current_alert = get_air_raid_alert()
             new_status = current_alert.get("status")
-            
-            # Reload state to get latest alert_status
-            load_state()
-            
-            with state_lock:
-                old_status = state.get("alert_status", "clear")
-                
-                # We only care about "м. Київ" alerts for Telegram notifications
-                # active = м. Київ, region = Київська область, clear = No alert
-                
-                if new_status != old_status:
-                    time_str = datetime.datetime.now(KYIV_TZ).strftime("%H:%M")
-                    
-                    if new_status == "active":
-                        msg = f"🔴 <b>{time_str} ПОВІТРЯНА ТРИВОГА! (м. Київ)</b>\n\n🏠 Будьте в укритті!"
-                        threading.Thread(target=send_telegram, args=(msg,)).start()
-                    elif old_status == "active" and new_status != "active":
-                        msg = f"🟢 <b>{time_str} ВІДБІЙ ТРИВОГИ (м. Київ)</b>\n\n✅ Можна виходити з укриття."
-                        threading.Thread(target=send_telegram, args=(msg,)).start()
-                    
-                    # Update state
-                    state["alert_status"] = new_status
-                    save_state()
-                    
-        except Exception as e:
-            print(f"Error in alerts loop: {e}")
+
+            if new_status != "unknown":
+                # Reload state to get latest alert_status
+                load_state()
+
+                with state_lock:
+                    old_status = state.get("alert_status", "clear")
+
+                    # We only care about "м. Київ" alerts for Telegram notifications
+                    # active = м. Київ, region = Київська область, clear = No alert
+
+                    if new_status != old_status:
+                        time_str = datetime.datetime.now(KYIV_TZ).strftime("%H:%M")
+
+                        if new_status == "active":
+                            msg = f"🔴 <b>{time_str} ПОВІТРЯНА ТРИВОГА! (м. Київ)</b>\n\n🏠 Будьте в укритті!"
+                            threading.Thread(target=send_telegram, args=(msg,)).start()
+                        elif old_status == "active" and new_status != "active":
+                            msg = f"🟢 <b>{time_str} ВІДБІЙ ТРИВОГИ (м. Київ)</b>\n\n✅ Можна виходити з укриття."
+                            threading.Thread(target=send_telegram, args=(msg,)).start()
+
+                        # Update state
+                        state["alert_status"] = new_status
+                        save_state()
+
+        except Exception as e:            print(f"Error in alerts loop: {e}")
             
         time.sleep(60)
 
