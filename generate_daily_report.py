@@ -446,7 +446,8 @@ if __name__ == "__main__":
         
         diff_sec = t_up - plan_up_sec
         diff_hours = diff_sec / 3600
-        sign = "+" if diff_hours > 0 else ""
+        sign = "+" if diff_sec > 0 else "-" if diff_sec < 0 else ""
+        diff_formatted = f"{sign}{format_duration(abs(diff_sec))}"
         
         compliance_pct = (t_up / plan_up_sec * 100) if plan_up_sec > 0 else 0
         
@@ -467,7 +468,7 @@ if __name__ == "__main__":
         caption += f"\n\n📉 <b>План vs Факт:</b>\n"
         caption += f" • За планом 🔆 <b>{format_duration(plan_up_sec)}</b>\n"
         caption += f" • Реально 🔆 <b>{format_duration(t_up)}</b>\n"
-        caption += f" • Відхилення: <b>{sign}{diff_hours:.1f}г</b> (Світла {compliance_pct:.0f}% від плану)"
+        caption += f" • Відхилення: <b>{diff_formatted}</b> (Світла {compliance_pct:.0f}% від плану)"
                
     if "--no-send" not in sys.argv:
         # Check if we can update an existing message
