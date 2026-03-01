@@ -222,10 +222,15 @@ def get_current_time():
     return time.time()
 
 def format_duration(seconds):
-    h = int(seconds // 3600)
+    d = int(seconds // 86400)
+    h = int((seconds % 86400) // 3600)
     m = int((seconds % 3600) // 60)
     parts = []
-    if h > 0: parts.append(f"{h} г")
+    if d > 0:
+        parts.append(f"{d}д")
+        if h > 0: parts.append(f"{h} год")
+    else:
+        if h > 0: parts.append(f"{h} г")
     if m > 0: parts.append(f"{m} хв")
     return " ".join(parts) if parts else "0 хв"
 
