@@ -9,7 +9,7 @@
 
 <br>
 
-# FLASH MONITOR KYIV (v1.10.4 Autonomous Edition)
+# FLASH MONITOR KYIV (v1.11.0 Autonomous Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
@@ -17,7 +17,8 @@
 
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
-Recent fixes and improvements (v1.10.4):
+Recent fixes and improvements (v1.11.0):
+- **Forecast Logic:** Added display of next shutdown/startup time in Telegram messages even if the exact schedule is missing (shows 'unknown').
 - **Telegram Formatting:** Updated power outage notification format. Duration now shows "1d 5h" (if >24h), added detailed deviation calculation ("1h 8m later than scheduled") and forecast.
 - **Alert Fix:** Fixed a bug where API timeouts or errors caused false "Air Raid Alert Over" notifications.
 - **Reporting Logic:** New intelligent Telegram reporting schedule.
