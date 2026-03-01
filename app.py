@@ -162,12 +162,13 @@ def get_power_events_data(limit=5):
                             dev_line = "Точно за графіком"
                     
                     # Next event prediction
-                    look_for_light = (evt != "up") # If currently UP, look for OFF (False)
-                    next_info = get_next_scheduled_event(ts, look_for_light)
+                    current_ts = time.time()
+                    look_for_light = (status != "up") # If currently UP, look for OFF (False)
+                    next_info = get_next_scheduled_event(current_ts, look_for_light)
                     wait_line = ""
                     if next_info:
                         next_time = next_info["interval"].split('-')[0]
-                        wait_prefix = "Вимкнення о" if evt == "up" else "Очікуємо о"
+                        wait_prefix = "Вимкнення о" if status == "up" else "Очікуємо о"
                         wait_line = f"{wait_prefix} {next_time}"
                     
                     if dev_line and wait_line:

@@ -257,36 +257,34 @@ def get_next_scheduled_event(event_time, look_for_light):
         
         # Build 48-hour slot list
         slots = list(schedule_data[today_str]['slots'])
-        if tomorrow_str in schedule_data:
-            slots.extend(schedule_data[tomorrow_str]['slots'])
+        tomorrow_data = schedule_data.get(tomorrow_str)
+        if tomorrow_data and isinstance(tomorrow_data, dict) and tomorrow_data.get('slots'):
+            slots.extend(tomorrow_data['slots'])
         else:
             slots.extend([slots[-1]] * 48)
             
-        # Current slot based on time
         current_slot_idx = (now_dt.hour * 2) + (1 if now_dt.minute >= 30 else 0)
         
         target_idx = -1
-        # Strategy: find the first slot in the future (i > current_slot_idx) 
-        # where the scheduled state matches look_for_light AND it's a transition point
-        # (meaning the state before it was different).
+        
+        # Search for transition (prefer point where it *starts* being look_for_light)
         for i in range(current_slot_idx + 1, len(slots)):
             if slots[i] == look_for_light:
-                # If we are looking for OFF, we want the point where it becomes OFF
-                # If the previous slot was already OFF, it's not the 'next event' start, 
-                # unless we are currently in an ON block.
-                if i == 0 or slots[i-1] != look_for_light:
+                # If we are currently in that state according to schedule, we look for NEXT block
+                if i > 0 and slots[i-1] != look_for_light:
                     target_idx = i
                     break
         
-        # Fallback: just find the first occurrence if no transition found 
-        # (e.g. if we are already past the last transition of the day)
+        # If no transition found (maybe we are already in the last block of the day), 
+        # just find first occurrence
         if target_idx == -1:
             for i in range(current_slot_idx + 1, len(slots)):
                 if slots[i] == look_for_light:
                     target_idx = i
                     break
                     
-        if target_idx == -1: return None
+        if target_idx == -1:
+            return None
         
         # Find end of that block
         end_idx = len(slots)
@@ -307,8 +305,11 @@ def get_next_scheduled_event(event_time, look_for_light):
         # Calculate time until start_t
         days_offset = target_idx // 48
         rem_idx = target_idx % 48
+        
+        # Create target dt safely
         target_dt = now_dt.replace(hour=rem_idx // 2, minute=(30 if rem_idx % 2 else 0), second=0, microsecond=0)
-        target_dt += datetime.timedelta(days=days_offset)
+        if days_offset > 0:
+            target_dt += datetime.timedelta(days=days_offset)
         
         diff_sec = (target_dt - now_dt).total_seconds()
         if diff_sec < 0: diff_sec = 0
