@@ -235,7 +235,10 @@ def format_duration(seconds):
     return " ".join(parts) if parts else "0 хв"
 
 def get_next_scheduled_event(event_time, look_for_light):
-    # look_for_light: True if we want to know when it will be ON, False for OFF
+    """
+    Finds the next scheduled transition to the target state.
+    look_for_light: True if looking for next ON, False for next OFF.
+    """
     try:
         if not os.path.exists(SCHEDULE_FILE): return None
         with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
@@ -252,42 +255,32 @@ def get_next_scheduled_event(event_time, look_for_light):
         
         if today_str not in schedule_data: return None
         
+        # Build 48-hour slot list
         slots = list(schedule_data[today_str]['slots'])
         if tomorrow_str in schedule_data:
             slots.extend(schedule_data[tomorrow_str]['slots'])
         else:
             slots.extend([slots[-1]] * 48)
             
+        # Current slot based on time
         current_slot_idx = (now_dt.hour * 2) + (1 if now_dt.minute >= 30 else 0)
         
         target_idx = -1
-        
-        # If the current scheduled state ALREADY matches look_for_light, 
-        # we probably want the END of this block? No, we want the START of the NEXT block of this type.
-        # But usually we want the nearest future transition to the target state.
-        
-        # Search for the first transition to look_for_light in the future
-        for i in range(current_slot_idx, len(slots)):
-            # A transition to look_for_light is when slots[i] == look_for_light
-            # AND (i == 0 or slots[i-1] != look_for_light)
+        # Strategy: find the first slot in the future (i > current_slot_idx) 
+        # where the scheduled state matches look_for_light AND it's a transition point
+        # (meaning the state before it was different).
+        for i in range(current_slot_idx + 1, len(slots)):
             if slots[i] == look_for_light:
+                # If we are looking for OFF, we want the point where it becomes OFF
+                # If the previous slot was already OFF, it's not the 'next event' start, 
+                # unless we are currently in an ON block.
                 if i == 0 or slots[i-1] != look_for_light:
-                    # Found the start of a block of the target type
-                    # If this start is in the past or current slot, and we are currently in it,
-                    # we should find the NEXT one.
-                    if i <= current_slot_idx:
-                        continue
                     target_idx = i
                     break
         
-        # Fallback: if we are currently in a state that should be the target state 
-        # (e.g. looking for LIGHT and it's scheduled to be LIGHT now),
-        # then the "next transition to LIGHT" might be far away. 
-        # But if the user wants "Expectation", maybe they mean the end of the CURRENT block?
-        # Let's look at the user's example again.
-        
+        # Fallback: just find the first occurrence if no transition found 
+        # (e.g. if we are already past the last transition of the day)
         if target_idx == -1:
-            # Try to find any occurrence if transition search failed
             for i in range(current_slot_idx + 1, len(slots)):
                 if slots[i] == look_for_light:
                     target_idx = i
@@ -311,7 +304,7 @@ def get_next_scheduled_event(event_time, look_for_light):
         start_t = idx_to_hm(target_idx)
         end_t = idx_to_hm(end_idx)
         
-        # Calculate time until start_t from event_time
+        # Calculate time until start_t
         days_offset = target_idx // 48
         rem_idx = target_idx % 48
         target_dt = now_dt.replace(hour=rem_idx // 2, minute=(30 if rem_idx % 2 else 0), second=0, microsecond=0)
@@ -372,12 +365,17 @@ def format_event_message(is_up, event_time, prev_event_time):
         wait_dur = format_duration(next_info["time_left_sec"])
         wait_line = f"{wait_prefix} ~ {wait_dur}"
         interval_line = f"🗓 ({next_info['interval']})"
-        
+    else:
+        # Ensure fallback message is user-friendly.
+        wait_line = f"{wait_prefix} 🤷‍♂️ час очікується"
+
     msg = f"{header}\n"
     if dev_line: msg += f"{dev_line}\n"
     msg += f"{dur_line}\n"
-    if wait_line: msg += f"{wait_line},\n"
-    if interval_line: msg += f"{interval_line}"
+    
+    msg += f"{wait_line}"
+    if interval_line:
+        msg += f",\n{interval_line}"
     
     return msg.strip()
 
