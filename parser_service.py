@@ -107,18 +107,47 @@ def update_local_schedules(config_path: str, output_path: str):
     try:
         with open(config_path, "r") as f:
             cfg = json.load(f)
-        
+
         gh_data = fetch_github(cfg)
         ys_data = fetch_yasno(cfg)
-        
+
+        github_cache = extract_github(gh_data, cfg)
+        yasno_cache = extract_yasno(ys_data, cfg)
+
         cache = {
-            "github": extract_github(gh_data, cfg),
-            "yasno": extract_yasno(ys_data, cfg),
+            "github": github_cache,
+            "yasno": yasno_cache,
             "last_update": datetime.now(KYIV_TZ).strftime("%Y-%m-%d %H:%M:%S")
         }
-        
+
         with open(output_path, "w") as f:
             json.dump(cache, f, indent=2)
+
+        # Update schedule_history.json to preserve historical plans
+        data_dir = os.environ.get("DATA_DIR", ".")
+        history_path = os.path.join(data_dir, "schedule_history.json")
+        history = {}
+        if os.path.exists(history_path):
+            try:
+                with open(history_path, "r") as f:
+                    history = json.load(f)
+            except Exception:
+                pass
+
+        source = yasno_cache if yasno_cache else github_cache
+        if source:
+            group_key = list(source.keys())[0]
+            schedule_data = source[group_key]
+            history_updated = False
+            for date_str, day_data in schedule_data.items():
+                if day_data.get("slots"):
+                    history[date_str] = {"slots": day_data["slots"]}
+                    history_updated = True
+
+            if history_updated:
+                with open(history_path, "w") as f:
+                    json.dump(history, f, indent=2)
+
         print(f"Local schedules updated successfully at {cache['last_update']}")
         return True
     except Exception as e:
