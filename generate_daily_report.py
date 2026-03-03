@@ -442,8 +442,8 @@ if __name__ == "__main__":
     shutil.copy(filename_light, os.path.join(web_dir, "chart_light.png"))
     
     caption = (f"📊 <b>Звіт за {target_date.strftime('%d.%m.%Y')}</b>\n\n"
-               f"💡 Світло було 🔆 <b>{format_duration(t_up)}</b>\n"
-               f"✖️ Світла не було ✖️ <b>{format_duration(t_down)}</b>")
+               f"🔆 Світло було: <b>{format_duration(t_up)}</b>\n"
+               f"✖️ Світла не було: <b>{format_duration(t_down)}</b>")
 
     if slots:
         plan_up_cnt = sum(1 for s in slots if s)
@@ -470,10 +470,30 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Error saving stats json: {e}")
         
+        # Calculate plan up to the current time (if today) or end of day
+        now = datetime.datetime.now(KYIV_TZ)
+        is_today = (target_date == now.date())
+        calc_end_time = now if is_today else datetime.datetime.combine(target_date, datetime.time.max).replace(tzinfo=KYIV_TZ)
+        day_start = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
+        
+        plan_up_sec_now = 0
+        for i, s in enumerate(slots):
+            if s:
+                slot_start = day_start + datetime.timedelta(minutes=30 * i)
+                slot_end = slot_start + datetime.timedelta(minutes=30)
+                if slot_end <= calc_end_time:
+                    plan_up_sec_now += 1800
+                elif slot_start < calc_end_time:
+                    plan_up_sec_now += (calc_end_time - slot_start).total_seconds()
+
         caption += f"\n\n📉 <b>План vs Факт:</b>\n"
-        caption += f" • За планом 🔆 <b>{format_duration(plan_up_sec)}</b>\n"
-        caption += f" • Реально 🔆 <b>{format_duration(t_up)}</b>\n"
-        caption += f" • Відхилення: <b>{diff_formatted}</b> (Світла {compliance_pct:.0f}% від плану)"
+        caption += f"🔆 За планом на добу:  <b>{format_duration(plan_up_sec)}</b>\n"
+        
+        compliance_pct_now = (t_up / plan_up_sec_now * 100) if plan_up_sec_now > 0 else 0
+        time_label = "На цю хвилину" if is_today else "На кінець доби"
+        caption += f"🔆 {time_label}:\n"
+        caption += f"(Факт <b>{format_duration(t_up)}</b> | План <b>{format_duration(plan_up_sec_now)}</b>)\n"
+        caption += f"🔆 Світла {compliance_pct_now:.0f}% від плану"
                
     if "--no-send" not in sys.argv:
         # Check if we can update an existing message
