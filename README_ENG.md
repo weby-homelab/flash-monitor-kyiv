@@ -80,6 +80,6 @@ It is highly recommended to use your **HTTPS domain address** (e.g., via Cloudfl
 MIT License.
 
 <p align="center">
-  © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv">Weby Homelab</a><br>
+  ✦ 2026 Weby Homelab ✦<br>
   Made with ❤️ in Kyiv under air raid sirens and blackouts
 </p>
