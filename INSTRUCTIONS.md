@@ -100,5 +100,5 @@ void loop() {
 | Оновлення | `docker compose pull && docker compose up -d` | `git pull && pip install -r requirements.txt` |
 
 ---
-© 2026 Weby Homelab  
+✦ 2026 Weby Homelab ✦  
 Built to survive 12h+ blackouts & grid attacks since 2022
