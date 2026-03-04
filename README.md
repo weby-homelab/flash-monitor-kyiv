@@ -9,7 +9,7 @@
 
 <br>
 
-# СВІТЛО⚡БЕЗПЕКА (v1.11.2 Autonomous Edition)
+# СВІТЛО⚡БЕЗПЕКА (v1.11.3 Autonomous Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡БЕЗПЕКА Dashboard Preview" width="100%">
@@ -17,7 +17,7 @@
 
 **Автономна Docker-система моніторингу електропостачання та безпеки Києва.**
 
-Останні виправлення та покращення (v1.11.2):
+Останні виправлення та покращення (v1.11.3):
 - **Forecast Logic:** Додано відображення часу наступного вимкнення/увімкнення в Telegram-повідомленнях навіть за відсутності точного графіка (показує 'невідомо').
 - **Telegram Formatting:** Оновлено формат повідомлень про вимкнення світла. Тепер тривалість показується як "1д 5 год" (якщо >24г), додано детальний розрахунок відхилень від графіку ("На 1 год 8 хв пізніше") та прогнозу.
 - **Alert Fix:** Виправлено помилку, через яку збої API або таймаути викликали хибні сповіщення про "Відбій тривоги".
@@ -175,6 +175,6 @@ services:
 Розповсюджується під ліцензією **MIT**.
 
 <p align="center">
-  © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv">Weby Homelab</a><br>
+  ✦ 2026 Weby Homelab ✦<br>
   Made with ❤️ in Kyiv under air raid sirens and blackouts
 </p>
