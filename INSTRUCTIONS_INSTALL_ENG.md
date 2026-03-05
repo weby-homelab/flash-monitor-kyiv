@@ -1,4 +1,4 @@
-# 🚀 Flash Monitor Kyiv Installation Guide (v1.10.3)
+# 🚀 Flash Monitor Kyiv Installation Guide (v1.11.3)
 
 This project is now fully autonomous. It can either parse schedules itself or synchronize with another server.
 
@@ -60,4 +60,4 @@ To enable power status and charts, configure your IoT device (ESP8266/ESP32) or 
    `https://your-domain/api/push/YOUR_SECRET_KEY`
 
 ---
-© 2026 Weby Homelab. Made with ❤️ in Kyiv under air raid sirens and blackouts
+✦ 2026 Weby Homelab ✦. Made with ❤️ in Kyiv under air raid sirens and blackouts
