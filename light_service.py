@@ -276,12 +276,16 @@ def get_next_scheduled_event(event_time, look_for_light):
                     break
         
         # If no transition found (maybe we are already in the last block of the day), 
-        # just find first occurrence
+        # just find first occurrence, BUT only if we aren't currently in a block of that SAME state
+        # that started before or during current_slot_idx. If we are, we should really look for the 
+        # *next* block, not the remainder of the current one.
         if target_idx == -1:
-            for i in range(current_slot_idx + 1, len(slots)):
-                if slots[i] == look_for_light:
-                    target_idx = i
-                    break
+            # If the current slot is NOT the state we are looking for, it's safe to just find the first occurrence
+            if slots[current_slot_idx] != look_for_light:
+                for i in range(current_slot_idx + 1, len(slots)):
+                    if slots[i] == look_for_light:
+                        target_idx = i
+                        break
                     
         if target_idx == -1:
             return None
