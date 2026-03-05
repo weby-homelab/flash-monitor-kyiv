@@ -442,8 +442,8 @@ if __name__ == "__main__":
     shutil.copy(filename_light, os.path.join(web_dir, "chart_light.png"))
     
     caption = (f"📊 <b>Звіт за {target_date.strftime('%d.%m.%Y')}</b>\n\n"
-               f"💡 Світло було 🔆 <b>{format_duration(t_up)}</b>\n"
-               f"✖️ Світла не було ✖️ <b>{format_duration(t_down)}</b>")
+               f"🔆 Світло було: <b>{format_duration(t_up)}</b>\n"
+               f"✖️ Світла не було: <b>{format_duration(t_down)}</b>")
 
     if slots:
         plan_up_cnt = sum(1 for s in slots if s)
@@ -471,9 +471,10 @@ if __name__ == "__main__":
             print(f"Error saving stats json: {e}")
         
         caption += f"\n\n📉 <b>План vs Факт:</b>\n"
-        caption += f" • За планом 🔆 <b>{format_duration(plan_up_sec)}</b>\n"
-        caption += f" • Реально 🔆 <b>{format_duration(t_up)}</b>\n"
-        caption += f" • Відхилення: <b>{diff_formatted}</b> (Світла {compliance_pct:.0f}% від плану)"
+        caption += f"🔆 За планом на добу: <b>{format_duration(plan_up_sec)}</b>\n"
+        caption += f"🔆 На кінець доби:\n"
+        caption += f"(Факт <b>{format_duration(t_up)}</b> | План <b>{format_duration(plan_up_sec)}</b>)\n"
+        caption += f"🔆 Світла {compliance_pct:.0f}% від плану"
                
     if "--no-send" not in sys.argv:
         # Check if we can update an existing message
