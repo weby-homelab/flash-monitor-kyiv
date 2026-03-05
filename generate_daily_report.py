@@ -401,6 +401,55 @@ def send_telegram_photo(photo_path, caption, target_date):
         except Exception as e:
             print(f"Error sending report: {e}")
 
+def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
+    if now_time is None:
+        now_time = datetime.datetime.now(KYIV_TZ)
+        
+    caption = (f"📊 <b>Звіт за {target_date.strftime('%d.%m.%Y')}</b>\n\n"
+               f"🔆 Світло було: <b>{format_duration(t_up)}</b>\n"
+               f"✖️ Світла не було: <b>{format_duration(t_down)}</b>")
+    
+    plan_up_sec_formatted = "0 хв"
+    diff_hours = 0
+    compliance_pct = 0
+
+    if slots:
+        plan_up_cnt = sum(1 for s in slots if s)
+        plan_up_sec = plan_up_cnt * 1800  # 30 min * 60 sec
+        plan_up_sec_formatted = format_duration(plan_up_sec)
+        
+        diff_sec = t_up - plan_up_sec
+        diff_hours = diff_sec / 3600
+        sign = "+" if diff_sec > 0 else "-" if diff_sec < 0 else ""
+        diff_formatted = f"{sign}{format_duration(abs(diff_sec))}"
+        
+        compliance_pct = (t_up / plan_up_sec * 100) if plan_up_sec > 0 else 0
+        
+        is_today = (target_date == now_time.date())
+        calc_end_time = now_time if is_today else datetime.datetime.combine(target_date, datetime.time.max).replace(tzinfo=KYIV_TZ)
+        day_start = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
+        
+        plan_up_sec_now = 0
+        for i, s in enumerate(slots):
+            if s:
+                slot_start = day_start + datetime.timedelta(minutes=30 * i)
+                slot_end = slot_start + datetime.timedelta(minutes=30)
+                if slot_end <= calc_end_time:
+                    plan_up_sec_now += 1800
+                elif slot_start < calc_end_time:
+                    plan_up_sec_now += (calc_end_time - slot_start).total_seconds()
+        
+        caption += f"\n\n📉 <b>План vs Факт:</b>\n"
+        caption += f"🔆 За планом на добу:  <b>{plan_up_sec_formatted}</b>\n"
+        
+        compliance_pct_now = (t_up / plan_up_sec_now * 100) if plan_up_sec_now > 0 else 0
+        time_label = "На цю хвилину" if is_today else "На кінець доби"
+        caption += f"🔆 {time_label}:\n"
+        caption += f"(Факт <b>{format_duration(t_up)}</b> | План <b>{format_duration(plan_up_sec_now)}</b>)\n"
+        caption += f"🔆 Світла <b>{compliance_pct_now:.0f}%</b> від плану"
+        
+    return caption, plan_up_sec_formatted, diff_hours, compliance_pct
+
 if __name__ == "__main__":
     # If called without arguments, calculate target date
     # Shift time back by 30 minutes so that a report generated at 00:05 
@@ -441,25 +490,13 @@ if __name__ == "__main__":
     shutil.copy(filename, os.path.join(web_dir, "chart.png"))
     shutil.copy(filename_light, os.path.join(web_dir, "chart_light.png"))
     
-    caption = (f"📊 <b>Звіт за {target_date.strftime('%d.%m.%Y')}</b>\n\n"
-               f"🔆 Світло було: <b>{format_duration(t_up)}</b>\n"
-               f"✖️ Світла не було: <b>{format_duration(t_down)}</b>")
+    caption, plan_up_sec_formatted, diff_hours, compliance_pct = build_report_caption(target_date, t_up, t_down, slots, now)
 
     if slots:
-        plan_up_cnt = sum(1 for s in slots if s)
-        plan_up_sec = plan_up_cnt * 1800  # 30 min * 60 sec
-        
-        diff_sec = t_up - plan_up_sec
-        diff_hours = diff_sec / 3600
-        sign = "+" if diff_sec > 0 else "-" if diff_sec < 0 else ""
-        diff_formatted = f"{sign}{format_duration(abs(diff_sec))}"
-        
-        compliance_pct = (t_up / plan_up_sec * 100) if plan_up_sec > 0 else 0
-        
         # Save stats for Web Dashboard
         try:
             stats_data = {
-                "plan_up": format_duration(plan_up_sec),
+                "plan_up": plan_up_sec_formatted,
                 "fact_up": format_duration(t_up),
                 "diff": diff_hours,
                 "pct": int(compliance_pct),
@@ -469,31 +506,6 @@ if __name__ == "__main__":
                 json.dump(stats_data, f)
         except Exception as e:
             print(f"Error saving stats json: {e}")
-        
-        # Calculate plan up to the current time (if today) or end of day
-        now = datetime.datetime.now(KYIV_TZ)
-        is_today = (target_date == now.date())
-        calc_end_time = now if is_today else datetime.datetime.combine(target_date, datetime.time.max).replace(tzinfo=KYIV_TZ)
-        day_start = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
-        
-        plan_up_sec_now = 0
-        for i, s in enumerate(slots):
-            if s:
-                slot_start = day_start + datetime.timedelta(minutes=30 * i)
-                slot_end = slot_start + datetime.timedelta(minutes=30)
-                if slot_end <= calc_end_time:
-                    plan_up_sec_now += 1800
-                elif slot_start < calc_end_time:
-                    plan_up_sec_now += (calc_end_time - slot_start).total_seconds()
-        
-        caption += f"\n\n📉 <b>План vs Факт:</b>\n"
-        caption += f"🔆 За планом на добу:  <b>{format_duration(plan_up_sec)}</b>\n"
-        
-        compliance_pct_now = (t_up / plan_up_sec_now * 100) if plan_up_sec_now > 0 else 0
-        time_label = "На цю хвилину" if is_today else "На кінець доби"
-        caption += f"🔆 {time_label}:\n"
-        caption += f"(Факт <b>{format_duration(t_up)}</b> | План <b>{format_duration(plan_up_sec_now)}</b>)\n"
-        caption += f"🔆 Світла <b>{compliance_pct_now:.0f}%</b> від плану"
                
     if "--no-send" not in sys.argv:
         # Check if we can update an existing message
