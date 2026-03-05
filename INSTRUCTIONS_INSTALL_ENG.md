@@ -9,7 +9,7 @@
 
 <br>
 
-# 🚀 Flash Monitor Kyiv Installation Guide (v1.11.5)
+# 🚀 Flash Monitor Kyiv Installation Guide [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 This project is now fully autonomous. It can either parse schedules itself or synchronize with another server.
 

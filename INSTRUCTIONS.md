@@ -9,7 +9,7 @@
 
 <br>
 
-# 🛠 Інструкція з налаштування проекту СВІТЛО⚡БЕЗПЕКА (v1.11.5)
+# 🛠 Інструкція з налаштування проекту СВІТЛО⚡БЕЗПЕКА [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 Цей посібник допоможе вам розгорнути власну систему моніторингу «з нуля». Дотримуйтесь кроків для досягнення найкращого результату.
 
