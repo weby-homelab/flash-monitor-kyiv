@@ -1,3 +1,14 @@
+<p align="center">
+  <a href="DEVELOPMENT_ENG.md">
+    <img src="https://img.shields.io/badge/🇬🇧_English-00D4FF?style=for-the-badge&logo=readme&logoColor=white" alt="English README">
+  </a>
+  <a href="DEVELOPMENT.md">
+    <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Українська версія">
+  </a>
+</p>
+
+<br>
+
 # Правила розробки (Протокол нульової толерантності до регресій)
 
 Цей документ описує суворі правила розробки, яких повинні дотримуватись всі розробники (і ШІ-асистенти) під час роботи над проєктами в цьому репозиторії.
