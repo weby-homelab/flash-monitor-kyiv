@@ -9,7 +9,7 @@
 
 <br>
 
-# FLASH MONITOR KYIV (v1.11.3 Autonomous Edition)
+# FLASH MONITOR KYIV (v1.11.4 Autonomous Edition)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="FLASH MONITOR Dashboard Preview" width="100%">
@@ -17,12 +17,11 @@
 
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
-Recent fixes and improvements (v1.11.3):
-- **PWA / Manifest:** Added ID, orientation, extra 192/512 icons for better web app integration, and screenshots for manifest.
-- **Reporting Logic:** Updated plan vs fact calculation in daily Telegram report. Plan fulfillment is now calculated up to the current minute, instead of only at the end of the day.
-- **Forecast Logic:** Added display of next shutdown/startup time in Telegram messages.
-- **Telegram Formatting:** Updated power outage notification format. Duration now shows "1d 5h" (if >24h), added detailed deviation calculation.
-- **Alert Fix:** Fixed a bug causing false "Air Raid Alert Over" notifications.
+Recent fixes and improvements (v1.11.4):
+- **Daily Report:** Updated the text format of the daily Telegram report for better Plan vs Fact analytics visualization.
+- **Forecast Logic:** Added display of next shutdown/startup time in Telegram messages even if the exact schedule is missing (shows 'unknown').
+- **Telegram Formatting:** Updated power outage notification format. Duration now shows "1d 5h" (if >24h), added detailed deviation calculation ("1h 8m later than scheduled") and forecast.
+- **Alert Fix:** Fixed a bug where API timeouts or errors caused false "Air Raid Alert Over" notifications.
 - **Reporting Logic:** New intelligent Telegram reporting schedule.
 - **Performance:** Background loop frequency increased to 10 minutes.
 - **Visual Style:** Implemented "Black-and-White" style (Glassmorphism, tabular-nums) for perfect alignment of text reports.
