@@ -363,7 +363,12 @@ def format_event_message(is_up, event_time, prev_event_time):
     wait_line = ""
     interval_line = ""
     if next_info:
-        wait_dur = format_duration(next_info["time_left_sec"])
+        wait_sec = next_info["time_left_sec"]
+        if wait_sec < 60:
+            wait_dur = "менше хвилини"
+        else:
+            wait_dur = format_duration(wait_sec)
+        
         wait_line = f"{wait_prefix} ~ {wait_dur}"
         interval_line = f"🗓 ({next_info['interval']})"
     else:
