@@ -9,7 +9,7 @@
 
 <br>
 
-# 🚀 Інструкція зі встановлення Flash Monitor Kyiv (v1.11.5)
+# 🚀 Інструкція зі встановлення Flash Monitor Kyiv [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 Цей проект тепер є повністю автономним. Він може як парсити графіки самостійно, так і синхронізуватися з іншим сервером.
 
