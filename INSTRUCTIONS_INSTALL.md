@@ -1,4 +1,4 @@
-# 🚀 Інструкція зі встановлення Flash Monitor Kyiv (v1.10.3)
+# 🚀 Інструкція зі встановлення Flash Monitor Kyiv (v1.11.3)
 
 Цей проект тепер є повністю автономним. Він може як парсити графіки самостійно, так і синхронізуватися з іншим сервером.
 
@@ -60,4 +60,4 @@ docker compose pull && docker compose up -d
    `https://ваш-домен/api/push/ВАШ_СЕКРЕТНИЙ_КЛЮЧ`
 
 ---
-© 2026 Weby Homelab. Made with ❤️ in Kyiv under air raid sirens and blackouts
+✦ 2026 Weby Homelab ✦. Made with ❤️ in Kyiv under air raid sirens and blackouts
