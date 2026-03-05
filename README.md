@@ -69,7 +69,7 @@
 
 ---
 
-## 🏗 Архітектура Системи (v1.10.3)
+## 🏗 Архітектура Системи [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 ```mermaid
 flowchart TD
