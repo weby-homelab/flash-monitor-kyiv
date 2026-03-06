@@ -190,12 +190,24 @@
         </footer>
     </div>
     <div id="modal" onclick="this.style.display='none'"><img id="modal-img" src=""></div>
+    <input type="checkbox" id="haptic-trigger" style="display:none" switch>
     
     <script>
         let lastLightStatus = null;
         let lastAlertStatus = null;
         let notificationsEnabled = localStorage.getItem('notifications') === 'true';
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Light "ding"
+
+        function triggerHaptic(pattern = 10) {
+            try {
+                if (navigator.vibrate) {
+                    navigator.vibrate(pattern);
+                } else {
+                    const iosSwitch = document.getElementById('haptic-trigger');
+                    if (iosSwitch) iosSwitch.click();
+                }
+            } catch (e) { console.log("Haptic failed:", e); }
+        }
 
         function updateBellUI() {
             const btn = document.getElementById('bell-btn');
@@ -204,6 +216,7 @@
         }
 
         async function toggleNotifications() {
+            triggerHaptic([15, 30, 15]);
             if (!notificationsEnabled) {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
@@ -236,7 +249,11 @@
             }
         }
 
-        function zoomImage(src) { document.getElementById('modal-img').src = src; document.getElementById('modal').style.display = 'flex'; }
+        function zoomImage(src) { 
+            triggerHaptic(20);
+            document.getElementById('modal-img').src = src; 
+            document.getElementById('modal').style.display = 'flex'; 
+        }
         function getTheme() { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
         function refreshCharts() {
             const t = Date.now();
@@ -269,6 +286,7 @@
                 
                 if (lastLightStatus && currentLight !== lastLightStatus) {
                     playDing();
+                    if (document.hasFocus()) triggerHaptic([50, 100, 50]);
                     const statusText = currentLight === 'on' ? "Світло з'явилося!" : "Світло зникло!";
                     sendPush("⚡ СВІТЛО⚡БЕЗПЕКА", statusText);
                     refreshCharts();
@@ -295,6 +313,7 @@
 
                 if (lastAlertStatus !== null && isAlert !== lastAlertStatus) {
                     playDing();
+                    if (document.hasFocus()) triggerHaptic([100, 200, 100]);
                     const alertMsg = isAlert ? "Початок повітряної тривоги!" : "Відбій тривоги";
                     sendPush("🚨 ПОВІТРЯНА ТРИВОГА", alertMsg);
                 }
