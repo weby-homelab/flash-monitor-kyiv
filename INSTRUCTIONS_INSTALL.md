@@ -71,4 +71,4 @@ docker compose pull && docker compose up -d
    `https://ваш-домен/api/push/ВАШ_СЕКРЕТНИЙ_КЛЮЧ`
 
 ---
-✦ 2026 Weby Homelab ✦. Made with ❤️ in Kyiv under air raid sirens and blackouts
+© 2026 Weby Homelab. Made with ❤️ in Kyiv under air raid sirens and blackouts
