@@ -406,8 +406,8 @@ def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
         now_time = datetime.datetime.now(KYIV_TZ)
         
     caption = (f"📊 <b>Звіт за {target_date.strftime('%d.%m.%Y')}</b>\n\n"
-               f"🔆 Світло було: <b>{format_duration(t_up)}</b>\n"
-               f"✖️ Світла не було: <b>{format_duration(t_down)}</b>")
+               f"🔆 Світло було: {format_duration(t_up)}\n"
+               f"✖️ Світла не було: {format_duration(t_down)}")
     
     plan_up_sec_formatted = "0 хв"
     diff_hours = 0
@@ -440,13 +440,15 @@ def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
                     plan_up_sec_now += (calc_end_time - slot_start).total_seconds()
         
         caption += f"\n\n📉 <b>План vs Факт:</b>\n"
-        caption += f"🔆 За планом на добу:  <b>{plan_up_sec_formatted}</b>\n"
+        caption += f"🔆 За планом на добу:  {plan_up_sec_formatted}\n"
         
         compliance_pct_now = (t_up / plan_up_sec_now * 100) if plan_up_sec_now > 0 else 0
         time_label = "На цю хвилину" if is_today else "На кінець доби"
         caption += f"🔆 {time_label}:\n"
-        caption += f"(Факт <b>{format_duration(t_up)}</b> | План <b>{format_duration(plan_up_sec_now)}</b>)\n"
-        caption += f"🔆 Світла <b>{compliance_pct_now:.0f}%</b> від плану"
+        caption += f"✅ Факт {format_duration(t_up)} ⚡️ План {format_duration(plan_up_sec_now)}\n"
+        caption += f"👉 Світла {compliance_pct_now:.0f}% від плану\n"
+        caption += f"---\n"
+        caption += f"🕐 Оновлено: {now_time.strftime('%H:%M')}"
         
     return caption, plan_up_sec_formatted, diff_hours, compliance_pct
 
