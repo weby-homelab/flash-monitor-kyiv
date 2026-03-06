@@ -101,3 +101,18 @@ MIT License.
   ✦ 2026 Weby Homelab ✦<br>
   Made with ❤️ in Kyiv under air raid sirens and blackouts
 </p>
+
+---
+
+### 📊 Update History
+
+#### **v1.14.0** (2026-03-06)
+- **Live Monitoring:** The transition to a new day now occurs at **06:00 AM**.
+- **Night Buffer:** From 00:00 to 06:00 AM, the system continues to update yesterday's report for a complete daily summary.
+- **Adaptive Terminology:** Message titles update automatically: **"Monitoring"** (before 12:00 PM) and **"Report"** (after 12:00 PM).
+- **Optimization:** Improved "Plan vs Fact" calculation logic for correct statistics during midnight transitions.
+
+#### **v1.13.0** (2026-02-28)
+- Added support for custom haptic feedback for the PWA interface (Android and iOS 18+).
+- Improved tactile interaction with charts and notifications.
+
