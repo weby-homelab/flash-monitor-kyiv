@@ -106,6 +106,9 @@ MIT License.
 
 ### 📊 Update History
 
+#### **v1.14.1** (2026-03-06)
+- **Security:** Fixed environment isolation configuration. Introduced strict ZERO-TOLERANCE DEPLOYMENT RULES mandate to prevent cross-notification spam between test and production servers.
+
 #### **v1.14.0** (2026-03-06)
 - **Live Monitoring:** The transition to a new day now occurs at **06:00 AM**.
 - **Night Buffer:** From 00:00 to 06:00 AM, the system continues to update yesterday's report for a complete daily summary.
