@@ -27,7 +27,10 @@
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
 Recent fixes and improvements:
-- **Daily Report:** Updated the text format of the daily Telegram report for better Plan vs Fact analytics visualization.
+- **v1.13.0:** Added support for custom haptic feedback for the PWA interface (works on Android and iOS 18+). Improved tactile user experience when interacting with notifications and charts.
+- **v1.12.3:** Consolidated release. Finalized daily report format ("Plan vs Fact" in a single line, `🕐 Updated`), restored original copyright with GitHub link in the dashboard footer, and standardized documentation styling.
+- **v1.12.0:** Updated daily graphical report format. Added detailed "Plan vs Fact" analytics with direct comparison (`✅ Fact` vs `⚡️ Plan`), compliance percentage calculation, and a specific update timestamp (`🕐 Updated`).
+- **v1.11.7:** Updated the text format of the daily Telegram report for better Plan vs Fact analytics visualization.
 - **Forecast Logic:** Added display of next shutdown/startup time in Telegram messages even if the exact schedule is missing (shows 'unknown').
 - **Telegram Formatting:** Updated power outage notification format. Duration now shows "1d 5h" (if >24h), added detailed deviation calculation ("1h 8m later than scheduled") and forecast.
 - **Alert Fix:** Fixed a bug where API timeouts or errors caused false "Air Raid Alert Over" notifications.
