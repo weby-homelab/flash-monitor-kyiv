@@ -27,6 +27,7 @@
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
 Recent fixes and improvements:
+- **v1.12.3:** Consolidated release. Finalized daily report format ("Plan vs Fact" in a single line, `🕐 Updated`), restored original copyright with GitHub link in the dashboard footer, and standardized documentation styling.
 - **v1.12.0:** Updated daily graphical report format. Added detailed "Plan vs Fact" analytics with direct comparison (`✅ Fact` vs `⚡️ Plan`), compliance percentage calculation, and a specific update timestamp (`🕐 Updated`).
 - **v1.11.7:** Updated the text format of the daily Telegram report for better Plan vs Fact analytics visualization.
 - **Forecast Logic:** Added display of next shutdown/startup time in Telegram messages even if the exact schedule is missing (shows 'unknown').
