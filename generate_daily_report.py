@@ -405,7 +405,14 @@ def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
     if now_time is None:
         now_time = datetime.datetime.now(KYIV_TZ)
         
-    caption = (f"📊 <b>Звіт за {target_date.strftime('%d.%m.%Y')}</b>\n\n"
+    # Terminology: "Monitoring" for today's ongoing day before noon, "Report" for finished days or today after noon.
+    is_today = (target_date == now_time.date())
+    if is_today and now_time.hour < 12:
+        title_prefix = "Моніторинг"
+    else:
+        title_prefix = "Звіт"
+
+    caption = (f"📊 <b>{title_prefix} за {target_date.strftime('%d.%m.%Y')}</b>\n\n"
                f"🔆 Світло було: {format_duration(t_up)}\n"
                f"✖️ Світла не було: {format_duration(t_down)}")
     
@@ -425,7 +432,6 @@ def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
         
         compliance_pct = (t_up / plan_up_sec * 100) if plan_up_sec > 0 else 0
         
-        is_today = (target_date == now_time.date())
         calc_end_time = now_time if is_today else datetime.datetime.combine(target_date, datetime.time.max).replace(tzinfo=KYIV_TZ)
         day_start = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
         
@@ -454,10 +460,11 @@ def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
 
 if __name__ == "__main__":
     # If called without arguments, calculate target date
-    # Shift time back by 30 minutes so that a report generated at 00:05 
+    # Shift time back by 6 hours so that early morning updates (00:00-06:00) 
     # will still update the previous day's report as a final summary.
+    # A new day's report will start appearing exactly at 06:00 AM.
     now = datetime.datetime.now(KYIV_TZ)
-    shifted_time = now - datetime.timedelta(minutes=30)
+    shifted_time = now - datetime.timedelta(hours=6)
     target_date = shifted_time.date()
 
     # Simple argument parsing
