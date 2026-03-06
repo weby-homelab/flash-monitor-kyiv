@@ -27,6 +27,7 @@
 **Autonomous Docker-based power monitoring and security system for Kyiv.**
 
 Recent fixes and improvements:
+- **v1.13.0:** Added support for custom haptic feedback for the PWA interface (works on Android and iOS 18+). Improved tactile user experience when interacting with notifications and charts.
 - **v1.12.3:** Consolidated release. Finalized daily report format ("Plan vs Fact" in a single line, `🕐 Updated`), restored original copyright with GitHub link in the dashboard footer, and standardized documentation styling.
 - **v1.12.0:** Updated daily graphical report format. Added detailed "Plan vs Fact" analytics with direct comparison (`✅ Fact` vs `⚡️ Plan`), compliance percentage calculation, and a specific update timestamp (`🕐 Updated`).
 - **v1.11.7:** Updated the text format of the daily Telegram report for better Plan vs Fact analytics visualization.
