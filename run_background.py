@@ -1,5 +1,10 @@
 import threading
 import time
+
+# Запуск ініціалізації для нових користувачів
+import bootstrap
+bootstrap.perform_cold_start_if_needed()
+
 from light_service import monitor_loop, schedule_loop, alerts_loop, load_state
 
 if __name__ == "__main__":
