@@ -18,6 +18,7 @@
   <a href="https://github.com/weby-homelab/flash-monitor-kyiv/issues"><img src="https://img.shields.io/github/issues/weby-homelab/flash-monitor-kyiv" alt="GitHub issues"></a>
   <a href="https://github.com/weby-homelab/flash-monitor-kyiv/blob/main/LICENSE"><img src="https://img.shields.io/github/license/weby-homelab/flash-monitor-kyiv" alt="License"></a>
   <img src="https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white" alt="Python Version">
+  <img src="https://img.shields.io/badge/Platform-Bare_Metal-8B0000?style=flat&logo=linux&logoColor=white" alt="Platform Bare Metal">
 </p>
 
 <p align="center">
