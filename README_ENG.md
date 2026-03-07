@@ -106,6 +106,10 @@ MIT License.
 
 ### 📊 Update History
 
+#### **v1.14.2** (2026-03-07)
+- **UI:** Updated dashboard favicon and PWA icons to the new SVITLO⚡️ BEZPEKA logo.
+- **Fix:** Fixed assertions in `test_daily_report.py`.
+
 #### **v1.14.1** (2026-03-06)
 - **Security:** Fixed environment isolation configuration. Introduced strict ZERO-TOLERANCE DEPLOYMENT RULES mandate to prevent cross-notification spam between test and production servers.
 
