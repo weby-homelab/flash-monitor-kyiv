@@ -106,6 +106,9 @@ MIT License.
 
 ### 📊 Update History
 
+#### **v1.14.3** (2026-03-07)
+- **UI:** Updated dashboard favicon and PWA icons to the new Light-Safety-logo.
+
 #### **v1.14.2** (2026-03-07)
 - **UI:** Updated dashboard favicon and PWA icons to the new SVITLO⚡️ BEZPEKA logo.
 - **Fix:** Fixed assertions in `test_daily_report.py`.
