@@ -106,6 +106,9 @@ MIT License.
 
 ### 📊 Update History
 
+#### **v1.14.4** (2026-03-07)
+- **UI:** Updated dashboard favicon and PWA icons to the new Light-Safety-logo-2.
+
 #### **v1.14.3** (2026-03-07)
 - **UI:** Updated dashboard favicon and PWA icons to the new Light-Safety-logo.
 
