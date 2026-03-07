@@ -7,6 +7,11 @@ import time
 import re
 from bs4 import BeautifulSoup
 import threading
+
+# Запуск ініціалізації для нових користувачів
+import bootstrap
+bootstrap.perform_cold_start_if_needed()
+
 from light_service import (
     load_state, save_state, state, state_lock, 
     monitor_loop, schedule_loop, get_current_time, format_duration, 
