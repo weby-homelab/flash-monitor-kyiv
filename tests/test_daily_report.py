@@ -23,7 +23,7 @@ def test_build_report_caption_today():
     assert "📊 <b>Звіт за 05.03.2026</b>" in caption
     assert "📉 <b>План vs Факт:</b>" in caption
     assert "На цю хвилину" in caption
-    assert "Світла <b>100%</b> від плану" in caption
+    assert "Світла 100% від плану" in caption
 
 def test_build_report_caption_past_day():
     target_date = datetime.date(2026, 3, 4)
@@ -41,4 +41,4 @@ def test_build_report_caption_past_day():
     
     assert "📊 <b>Звіт за 04.03.2026</b>" in caption
     assert "На кінець доби" in caption
-    assert "Світла <b>117%</b> від плану" in caption
+    assert "Світла 117% від плану" in caption
