@@ -114,11 +114,20 @@ def update_local_schedules(config_path: str, output_path: str):
         github_cache = extract_github(gh_data, cfg)
         yasno_cache = extract_yasno(ys_data, cfg)
 
-        cache = {
-            "github": github_cache,
-            "yasno": yasno_cache,
-            "last_update": datetime.now(KYIV_TZ).strftime("%Y-%m-%d %H:%M:%S")
-        }
+        cache = {}
+        if os.path.exists(output_path):
+            try:
+                with open(output_path, "r") as f:
+                    cache = json.load(f)
+            except Exception:
+                pass
+
+        if github_cache:
+            cache["github"] = github_cache
+        if yasno_cache:
+            cache["yasno"] = yasno_cache
+            
+        cache["last_update"] = datetime.now(KYIV_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
         with open(output_path, "w") as f:
             json.dump(cache, f, indent=2)
