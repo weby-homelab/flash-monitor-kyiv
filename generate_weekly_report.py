@@ -273,6 +273,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", help="Target date YYYY-MM-DD")
     parser.add_argument("--output", help="Save chart to file instead of sending")
+    parser.add_argument("--no-send", action="store_true", help="Do not send to Telegram")
     args = parser.parse_args()
 
     now = datetime.datetime.now(KYIV_TZ)
@@ -395,7 +396,8 @@ if __name__ == "__main__":
 
 #тиждень #статистика_світла"""
     
-    send_telegram_photo(filename, caption)
+    if not args.no_send:
+        send_telegram_photo(filename, caption)
     if os.path.exists(filename):
         os.remove(filename)
     if os.path.exists(filename_light):
