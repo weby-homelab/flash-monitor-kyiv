@@ -38,7 +38,9 @@
 ## 🚀 Основні можливості
 
 ### 💡 Розумний Енергомоніторинг
-- **Heartbeat Tracking:** Моніторинг світла в реальному часі через IoT-сигнали (Push API).
+- **Smart Bootstrap:** Автоматичне розгортання актуальних планових графіків для вашої групи та регіону при першому запуску.
+- **Heartbeat Tracking & Manual Trigger:** Моніторинг світла в реальному часі через IoT-сигнали (`/api/push`) та миттєве ручне керування статусом (`/api/down`).
+- **Стійкість до збоїв API:** Надійне локальне кешування графіків, що захищає від падіння серверів DTEK/Yasno.
 - **Аналітика «План vs Факт»:** Автоматичне порівняння реальних вимкнень із запланованими графіками прямо на дашборді.
 - **Точність графіка:** Розрахунок відхилень (запізнення або раннє ввімкнення) для кожної події.
 - **Візуалізація:** Генерація денних та тижневих чартів у фірмовому стилі.
@@ -167,13 +169,6 @@ services:
 - **Backend:** Python 3.11, Flask, Gunicorn.
 - **Analytics:** Matplotlib, BeautifulSoup4.
 - **Infra:** Docker, PWA (Progressive Web App).
-
----
-
-## 🌐 Weby Homelab Ecosystem
-[![Flash Monitor Kyiv](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv?label=flash-monitor-kyiv&color=blue&logo=github)](https://github.com/weby-homelab/flash-monitor-kyiv)
-[![Light Monitor Kyiv](https://img.shields.io/github/v/release/weby-homelab/light-monitor-kyiv?label=light-monitor-kyiv&color=inactive&logo=github)](https://github.com/weby-homelab/light-monitor-kyiv)
-[![Security Monitor Kyiv](https://img.shields.io/github/v/release/weby-homelab/security-monitor-kyiv?label=security-monitor-kyiv&color=inactive&logo=github)](https://github.com/weby-homelab/security-monitor-kyiv)
 
 ---
 
