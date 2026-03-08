@@ -36,7 +36,9 @@
 ## 🚀 Key Features
 
 ### 💡 Smart Power Monitoring
-- **Heartbeat Tracking:** Real-time power monitoring via IoT signals (Push API).
+- **Smart Bootstrap:** Automatically provisions current scheduled outages for your specific group and region upon first startup.
+- **Heartbeat Tracking & Manual Trigger:** Real-time power monitoring via IoT signals (`/api/push`) and instant manual outage triggering (`/api/down`).
+- **API Resilience:** Robust local caching of schedules to protect against DTEK/Yasno server outages.
 - **"Plan vs Fact" Analytics:** Automatic comparison of real outages with scheduled plans.
 - **Schedule Accuracy:** Calculation of deviations (delays or early switches) for each event.
 - **Visualization:** Daily and weekly charts.
@@ -70,13 +72,6 @@ It is highly recommended to use your **HTTPS domain address** (e.g., via Cloudfl
 ## 🛠 Tech Stack
 - **Backend:** Python 3.11, Flask, Gunicorn.
 - **Containerization:** Docker + Docker Compose.
-
----
-
-## 🌐 Weby Homelab Ecosystem
-[![Flash Monitor Kyiv](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv?label=flash-monitor-kyiv&color=blue&logo=github)](https://github.com/weby-homelab/flash-monitor-kyiv)
-[![Light Monitor Kyiv](https://img.shields.io/github/v/release/weby-homelab/light-monitor-kyiv?label=light-monitor-kyiv&color=inactive&logo=github)](https://github.com/weby-homelab/light-monitor-kyiv)
-[![Security Monitor Kyiv](https://img.shields.io/github/v/release/weby-homelab/security-monitor-kyiv?label=security-monitor-kyiv&color=inactive&logo=github)](https://github.com/weby-homelab/security-monitor-kyiv)
 
 ---
 
