@@ -434,6 +434,35 @@ def push_api(key):
         "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
     })
 
+@app.route('/api/down/<key>')
+def down_api(key):
+    if key != state.get('secret_key'):
+        return jsonify({"status": "error", "msg": "invalid_key"}), 403
+        
+    current_time = time.time()
+    
+    with state_lock:
+        with FileLock(STATE_LOCK_FILE):
+            load_state()
+            previous_status = state.get("status", "unknown")
+            
+            if previous_status == "up" or previous_status == "unknown":
+                state["status"] = "down"
+                state["went_down_at"] = current_time
+                log_event("down", current_time)
+                
+                msg = format_event_message(False, current_time, state.get("came_up_at", 0))
+                
+                threading.Thread(target=send_telegram, args=(msg,)).start()
+                
+            save_state()
+        
+    return jsonify({
+        "status": "ok", 
+        "msg": "manual_down_received",
+        "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
+    })
+
 # Initialize State
 load_state()
 print(f"Push URL configured for key: {state.get('secret_key')}")
