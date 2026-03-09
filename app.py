@@ -161,14 +161,20 @@ def get_power_events_data(limit=5):
                         # get_deviation_info format: "• Увімкнули пізніше на 10 хв"
                         m = re.search(r"(?:Увімкнули|Вимкнули)\s+(раніше|пізніше)\s+на\s+(.+)$", dev_msg)
                         
-                        action_verb = "З'явилося" if status == "up" else "Зникло"
-                        
-                        if m:
-                            timing = m.group(1)
-                            value = m.group(2)
-                            dev_line = f"{action_verb} на {value} {timing}"
-                        elif "точно за графіком" in dev_msg:
-                            dev_line = f"{action_verb} Точно за графіком"
+                        if status == "up":
+                            if m:
+                                timing = m.group(1)
+                                value = m.group(2)
+                                dev_line = f"З'явилося на {value} {timing}"
+                            elif "точно за графіком" in dev_msg:
+                                dev_line = "З'явилося Точно за графіком"
+                        else:
+                            if m:
+                                timing = m.group(1)
+                                value = m.group(2)
+                                dev_line = f"на {value} {timing}"
+                            elif "точно за графіком" in dev_msg:
+                                dev_line = "Точно за графіком"
                     
                     # Next event prediction
                     current_ts = time.time()
@@ -176,9 +182,11 @@ def get_power_events_data(limit=5):
                     next_info = get_next_scheduled_event(current_ts, look_for_light)
                     wait_line = ""
                     if next_info:
-                        next_time = next_info["interval"].split('-')[0]
-                        wait_prefix = "Вимкнення о" if status == "up" else "Очікуємо о"
-                        wait_line = f"{wait_prefix} {next_time}"
+                        if status == "up":
+                            next_time = next_info["interval"].split('-')[0]
+                            wait_line = f"Вимкнення о {next_time}"
+                        else:
+                            wait_line = f"Очікуємо о {next_info['interval']}"
                     
                     if dev_line and wait_line:
                         latest_event_text = f"{dev_line}<br>{wait_line}"
