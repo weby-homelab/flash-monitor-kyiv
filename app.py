@@ -158,13 +158,17 @@ def get_power_events_data(limit=5):
                     dev_line = ""
                     if dev_msg:
                         # Expected: "На 10 хв пізніше графіка"
+                        # get_deviation_info format: "• Увімкнули пізніше на 10 хв"
                         m = re.search(r"(?:Увімкнули|Вимкнули)\s+(раніше|пізніше)\s+на\s+(.+)$", dev_msg)
+                        
+                        action_verb = "З'явилося" if status == "up" else "Зникло"
+                        
                         if m:
                             timing = m.group(1)
                             value = m.group(2)
-                            dev_line = f"На {value} {timing} графіка"
+                            dev_line = f"{action_verb} на {value} {timing}"
                         elif "точно за графіком" in dev_msg:
-                            dev_line = "Точно за графіком"
+                            dev_line = f"{action_verb} Точно за графіком"
                     
                     # Next event prediction
                     current_ts = time.time()
