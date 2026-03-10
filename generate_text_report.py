@@ -133,7 +133,7 @@ def main():
     current_time = now.time()
     current_hour = now.hour
     
-    if not (datetime.time(6, 0) <= current_time <= datetime.time(23, 45)):
+    if not (datetime.time(0, 10) <= current_time <= datetime.time(23, 45)):
         return
 
     cfg = load_config()
