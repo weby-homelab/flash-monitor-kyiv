@@ -165,16 +165,16 @@ def get_power_events_data(limit=5):
                             if m:
                                 timing = m.group(1)
                                 value = m.group(2)
-                                dev_line = f"З'явилося на {value} {timing}"
+                                dev_line = f"• З'явилося на {value} {timing}"
                             elif "точно за графіком" in dev_msg:
-                                dev_line = "З'явилося Точно за графіком"
+                                dev_line = "• З'явилося Точно за графіком"
                         else:
                             if m:
                                 timing = m.group(1)
                                 value = m.group(2)
-                                dev_line = f"на {value} {timing}"
+                                dev_line = f"• на {value} {timing}"
                             elif "точно за графіком" in dev_msg:
-                                dev_line = "Точно за графіком"
+                                dev_line = "• Точно за графіком"
                     
                     # Next event prediction
                     current_ts = time.time()
@@ -184,9 +184,9 @@ def get_power_events_data(limit=5):
                     if next_info:
                         if status == "up":
                             next_time = next_info["interval"].split('-')[0]
-                            wait_line = f"Вимкнення о {next_time}"
+                            wait_line = f"• Вимкнення о {next_time}"
                         else:
-                            wait_line = f"Очікуємо о {next_info['interval']}"
+                            wait_line = f"• Очікуємо о {next_info['interval']}"
                     
                     if dev_line and wait_line:
                         latest_event_text = f"{dev_line}<br>{wait_line}"
@@ -195,7 +195,7 @@ def get_power_events_data(limit=5):
                     elif wait_line:
                         latest_event_text = f"{wait_line}"
                     else:
-                        latest_event_text = f"Наступне планове: {next_range}"
+                        latest_event_text = f"• Наступне планове: {next_range}"
                     
     except Exception as e:
         print(f"Error reading events: {e}")
