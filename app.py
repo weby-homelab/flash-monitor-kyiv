@@ -13,26 +13,18 @@ import bootstrap
 bootstrap.perform_cold_start_if_needed()
 
 from light_service import (
-    load_state, save_state, state, state_lock, 
-    monitor_loop, schedule_loop, get_current_time, format_duration, 
-    log_event, get_schedule_context, send_telegram, 
+    load_state, save_state, state, state_lock,
+    monitor_loop, schedule_loop, get_current_time, format_duration,
+    log_event, get_schedule_context, send_telegram,
     get_deviation_info, get_nearest_schedule_switch,
     format_event_message, get_next_scheduled_event,
     trigger_daily_report_update, trigger_weekly_report_update,
     get_air_raid_alert,
-    KYIV_TZ, FileLock, STATE_LOCK_FILE
+    KYIV_TZ, FileLock, STATE_LOCK_FILE, DATA_DIR, EVENT_LOG_FILE
 )
 
 
 app = Flask(__name__, static_folder=None)
-
-# --- Configuration ---
-DATA_DIR = os.environ.get("DATA_DIR", ".")
-LIGHT_MONITOR_URL = "http://127.0.0.1:8889/"
-
-# --- Paths ---
-LIGHT_STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
-EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 
 # --- Caching ---
 CACHE = {}
