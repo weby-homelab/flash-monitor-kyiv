@@ -711,10 +711,10 @@ def alerts_loop():
                         time_str = datetime.datetime.now(KYIV_TZ).strftime("%H:%M")
 
                         if new_status == "active":
-                            msg = f"🔴 <b>{time_str} ПОВІТРЯНА ТРИВОГА! (м. Київ)</b>\n\n🏠 Будьте в укритті!"
+                            msg = f"⚠️ <b>{time_str} ПОВІТРЯНА ТРИВОГА! КИЇВ</b>"
                             threading.Thread(target=send_telegram, args=(msg,)).start()
                         elif old_status == "active" and new_status != "active":
-                            msg = f"🟢 <b>{time_str} ВІДБІЙ ТРИВОГИ (м. Київ)</b>\n\n✅ Можна виходити з укриття."
+                            msg = f"✅ <b>{time_str} ВІДБІЙ ТРИВОГИ</b>"
                             threading.Thread(target=send_telegram, args=(msg,)).start()
 
                         # Update state
