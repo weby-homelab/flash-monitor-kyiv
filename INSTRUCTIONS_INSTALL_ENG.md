@@ -21,19 +21,20 @@ apt-get install -y docker-compose-plugin
 ```
 
 ## 2. File Structure Setup
-Create the working directory and required folders:
+Create the working directory and download the required files:
 ```bash
 mkdir -p flash-monitor/data/static
 cd flash-monitor
+curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
 ```
 
 ### Create `config.json` configuration file
-Example configuration for Kyiv (replace `your_group` with your outage group, e.g., `GPV36.1`):
+Example configuration for Kyiv (replace `your_group` with your outage group, e.g., `"1"`, `"2"`, or `"3"`):
 ```json
 {
   "settings": {
     "region": "kyiv",
-    "groups": ["your_group"],
+    "groups": ["1"],
     "style": "list"
   },
   "sources": {
@@ -54,21 +55,25 @@ SCHEDULE_API_URL=
 ```
 
 ## 3. System Launch
-Use the `docker-compose.yml` from the repository and start the containers:
+Start the containers in the background:
 ```bash
 docker compose pull && docker compose up -d
 ```
 The dashboard will be available at port `:5050`.
 
 ## 4. Power Monitoring Setup (Heartbeat)
-To enable power status and charts, configure your IoT device (ESP8266/ESP32) or another server to send a "pulse":
+To enable power status and charts, configure your IoT device (ESP8266/ESP32, Mikrotik) or another server (e.g., Uptime Kuma) to send a "pulse":
 
-1. Find your unique secret key (while inside the flash-monitor folder):
+1. Find your automatically generated secret key (the file is created after the first launch):
    ```bash
    cat data/power_monitor_state.json | grep secret_key
    ```
 2. Configure your device to send a GET request every minute:
    `https://your-domain/api/push/YOUR_SECRET_KEY`
+
+**Additional (Manual Override):**
+Starting with version `v1.16.0`, you can manually trigger a power outage event (without waiting for a timeout) by sending a GET request to:
+`https://your-domain/api/down/YOUR_SECRET_KEY`
 
 ---
 ✦ 2026 Weby Homelab ✦. Made with ❤️ in Kyiv under air raid sirens and blackouts
