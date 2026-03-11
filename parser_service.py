@@ -72,7 +72,7 @@ def extract_github(data: dict, cfg: dict) -> dict:
             dt = datetime.fromtimestamp(int(ts), tz=KYIV_TZ)
             d_str = dt.strftime("%Y-%m-%d")
             if all(d.get(str(h), "yes") == "yes" for h in range(1, 25)):
-                res[grp][d_str] = {"slots": None, "status": "pending"}
+                res[grp][d_str] = {"slots": [True] * 48, "status": "normal"}
             else:
                 res[grp][d_str] = {"slots": parse_github_day(d), "status": "normal"}
     return res
@@ -103,6 +103,28 @@ def extract_yasno(data: dict, cfg: dict) -> dict:
                 res[grp][d_str] = {"slots": slots, "status": "normal"}
     return res
 
+def has_schedule_changed(old_cache: dict, new_cache: dict) -> bool:
+    if not old_cache:
+        return False
+        
+    for source in ['yasno', 'github']:
+        if source not in new_cache:
+            continue
+            
+        old_src = old_cache.get(source, {})
+        new_src = new_cache[source]
+        
+        if not old_src:
+            continue
+            
+        for group, new_dates in new_src.items():
+            old_dates = old_src.get(group, {})
+            for date_str, new_data in new_dates.items():
+                old_data = old_dates.get(date_str)
+                if not old_data or old_data.get('slots') != new_data.get('slots'):
+                    return True
+    return False
+
 def update_local_schedules(config_path: str, output_path: str):
     try:
         with open(config_path, "r") as f:
@@ -114,23 +136,26 @@ def update_local_schedules(config_path: str, output_path: str):
         github_cache = extract_github(gh_data, cfg)
         yasno_cache = extract_yasno(ys_data, cfg)
 
-        cache = {}
+        old_cache = {}
         if os.path.exists(output_path):
             try:
                 with open(output_path, "r") as f:
-                    cache = json.load(f)
+                    old_cache = json.load(f)
             except Exception:
                 pass
 
+        new_cache = {}
         if github_cache:
-            cache["github"] = github_cache
+            new_cache["github"] = github_cache
         if yasno_cache:
-            cache["yasno"] = yasno_cache
+            new_cache["yasno"] = yasno_cache
             
-        cache["last_update"] = datetime.now(KYIV_TZ).strftime("%Y-%m-%d %H:%M:%S")
+        has_changed = has_schedule_changed(old_cache, new_cache)
+            
+        new_cache["last_update"] = datetime.now(KYIV_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
         with open(output_path, "w") as f:
-            json.dump(cache, f, indent=2)
+            json.dump(new_cache, f, indent=2)
 
         # Update schedule_history.json to preserve historical plans
         data_dir = os.environ.get("DATA_DIR", ".")
@@ -157,8 +182,8 @@ def update_local_schedules(config_path: str, output_path: str):
                 with open(history_path, "w") as f:
                     json.dump(history, f, indent=2)
 
-        print(f"Local schedules updated successfully at {cache['last_update']}")
-        return True
+        print(f"Local schedules updated successfully at {new_cache['last_update']}. Changed: {has_changed}")
+        return True, has_changed
     except Exception as e:
         print(f"Failed to update local schedules: {e}")
-        return False
+        return False, False

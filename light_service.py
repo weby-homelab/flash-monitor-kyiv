@@ -753,7 +753,21 @@ def sync_schedules():
     if not sync_success:
         print("Starting local schedule parsing...")
         config_path = os.path.join(os.path.dirname(__file__), "config.json")
-        update_local_schedules(config_path, SCHEDULE_FILE)
+        result = update_local_schedules(config_path, SCHEDULE_FILE)
+        
+        has_changed = False
+        if isinstance(result, tuple) and len(result) == 2:
+            success, has_changed = result
+            
+        if has_changed:
+            print("Schedule changes detected! Sending alert...")
+            msg = "⚠️ <b>Увага! Оновлено графік відключень!</b>\nДТЕК щойно вніс зміни у графік.\n<i>Актуальний розклад дивіться у повідомленні вище 👆</i>"
+            threading.Thread(target=send_telegram, args=(msg,)).start()
+            try:
+                trigger_daily_report_update()
+                trigger_text_report_update()
+            except:
+                pass
 
 def schedule_loop():
     """
