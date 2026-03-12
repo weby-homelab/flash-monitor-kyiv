@@ -55,15 +55,16 @@ def manifest():
 def service_worker():
     return send_from_directory('static', 'service-worker.js')
 
+from werkzeug.exceptions import NotFound
+
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     # Try data dir first (for generated charts), then code dir
     data_static = os.path.join(DATA_DIR, 'static')
-    full_path = os.path.join(data_static, filename)
     
-    if os.path.exists(full_path):
+    try:
         response = make_response(send_from_directory(data_static, filename))
-    else:
+    except NotFound:
         response = make_response(send_from_directory('static', filename))
     
     # Disable caching for images to ensure they refresh in PWA/Mobile
