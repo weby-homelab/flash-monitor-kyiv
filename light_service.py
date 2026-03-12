@@ -763,11 +763,6 @@ def sync_schedules():
             print("Schedule changes detected! Sending alert...")
             msg = "⚠️ <b>Увага! Оновлено графік відключень!</b>\nДТЕК щойно вніс зміни у графік.\n<i>Актуальний розклад дивіться у повідомленні вище 👆</i>"
             threading.Thread(target=send_telegram, args=(msg,)).start()
-            try:
-                trigger_daily_report_update()
-                trigger_text_report_update()
-            except:
-                pass
 
 def schedule_loop():
     """
