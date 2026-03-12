@@ -63,6 +63,13 @@
 - **Evening/Instant Update:** Автоматичне надсилання завтрашнього графіка одразу після його публікації ДТЕК.
 - **Smart Merge:** Коректне об'єднання нічних інтервалів.
 
+#### 📱 Приклади реальних повідомлень
+- 📊 **[Щоденний графік "План vs Факт" (Smart Daily Report)](https://t.me/svitlobot_Symyrenka22B/1230)**
+- ⚡ **[Сповіщення про відключення світла з точністю до графіка](https://t.me/svitlobot_Symyrenka22B/1228)**
+- ⚠️ **[Миттєвий алерт про зміну графіків від ДТЕК](https://t.me/svitlobot_Symyrenka22B/1209)**
+- 📈 **[Тижнева аналітика відключень](https://t.me/svitlobot_Symyrenka22B/1212)**
+- 🚨 **[Сповіщення про повітряну тривогу в Києві](https://t.me/svitlobot_Symyrenka22B/1192)**
+
 ---
 
 ## 🏗 Архітектура Системи [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
