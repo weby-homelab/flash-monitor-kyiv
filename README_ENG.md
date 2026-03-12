@@ -31,7 +31,12 @@
 
 🔗 **Live Dashboard:** [flash.srvrs.top](https://flash.srvrs.top/)
 
-📖 **Instructions:** [Installation and Setup Guide](INSTRUCTIONS_INSTALL_ENG.md)
+## 📚 Project Documentation
+| File | Description |
+| :--- | :--- |
+| 📖 **[Installation and Setup Guide](INSTRUCTIONS_INSTALL_ENG.md)** | Main guide for deploying the system (Docker, environment variables, API). |
+| 🔌 **[IoT Devices Setup](INSTRUCTIONS_ENG.md)** | Sketches and instructions for ESP8266/ESP32 microcontrollers (physical power presence sensors). |
+| 🛠️ **[Development Guide](DEVELOPMENT_ENG.md)** | Architectural rules, security protocols, and code deployment instructions. |
 
 ---
 
