@@ -63,6 +63,13 @@
 - **Evening/Instant Update:** Automatic dispatch of tomorrow's schedule immediately after its publication by DTEK.
 - **Smart Merge:** Correct merging and calculation of overnight power intervals.
 
+#### 📱 Real Message Examples
+- 📊 **[Daily "Plan vs Fact" Report](https://t.me/svitlobot_Symyrenka22B/1230)**
+- ⚡ **[Power Outage Alert with Schedule Accuracy](https://t.me/svitlobot_Symyrenka22B/1228)**
+- ⚠️ **[Instant Alert on DTEK Schedule Change](https://t.me/svitlobot_Symyrenka22B/1209)**
+- 📈 **[Weekly Analytics Summary](https://t.me/svitlobot_Symyrenka22B/1212)**
+- 🚨 **[Air Raid Alert Notification](https://t.me/svitlobot_Symyrenka22B/1192)**
+
 ---
 
 ## 🏗 System Architecture [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
