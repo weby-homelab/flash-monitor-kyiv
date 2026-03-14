@@ -317,7 +317,6 @@ def get_today_schedule_text():
         # Today
         if today_str in schedule_data and schedule_data[today_str].get('slots'):
             output.append(render_day_schedule_html(schedule_data[today_str]['slots'], now))
-            output.append(f"<div class='source-label' style='margin-bottom: 24px;'>Джерело графіка: {schedule_source_name}</div>")
         
         # Tomorrow
         if tomorrow_str in schedule_data and schedule_data[tomorrow_str].get('slots'):
