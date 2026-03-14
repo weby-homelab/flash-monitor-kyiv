@@ -187,6 +187,11 @@ For sending Push signals, it is highly recommended to use the **HTTPS address of
 
 ---
 
+## 📝 Update History
+- **v1.17.4**: Dynamic Emergency Banner source attribution (DTEK, YASNO, or both). Intelligent footer source filtering (only shows source if it provided actual slots).
+- **v1.17.3**: Smart Schedule Fallback logic and Emergency status support.
+- **v1.17.2**: Updated air raid alert format.
+
 ## 📜 License
 Distributed under the **MIT** License.
 
