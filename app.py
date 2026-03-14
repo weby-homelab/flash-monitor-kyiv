@@ -322,10 +322,21 @@ def get_today_schedule_text():
         file_mtime = os.path.getmtime(schedule_file)
         dt_mtime = datetime.fromtimestamp(file_mtime, KYIV_TZ)
         
-        # Collect list of active sources for the footer
+        # Collect list of sources that actually provided SLOTS for today
         active_sources = []
-        if data.get('github'): active_sources.append("ДТЕК")
-        if data.get('yasno'): active_sources.append("YASNO")
+        
+        gh = data.get('github', {})
+        if gh:
+            g_gh = list(gh.keys())[0]
+            if gh[g_gh].get(today_str, {}).get('slots'):
+                active_sources.append("ДТЕК")
+                
+        ys = data.get('yasno', {})
+        if ys:
+            g_ys = list(ys.keys())[0]
+            if ys[g_ys].get(today_str, {}).get('slots'):
+                active_sources.append("YASNO")
+                
         sources_str = f" [{', '.join(active_sources)}]" if active_sources else ""
         
         output.append(f"<div class='updated-time'>Оновлено: {dt_mtime.strftime('%H:%M')}{sources_str}</div>")
