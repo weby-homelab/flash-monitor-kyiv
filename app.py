@@ -321,7 +321,14 @@ def get_today_schedule_text():
             
         file_mtime = os.path.getmtime(schedule_file)
         dt_mtime = datetime.fromtimestamp(file_mtime, KYIV_TZ)
-        output.append(f"<div class='updated-time'>Оновлено: {dt_mtime.strftime('%H:%M')}</div>")
+        
+        # Collect list of active sources for the footer
+        active_sources = []
+        if data.get('github'): active_sources.append("ДТЕК")
+        if data.get('yasno'): active_sources.append("YASNO")
+        sources_str = f" [{', '.join(active_sources)}]" if active_sources else ""
+        
+        output.append(f"<div class='updated-time'>Оновлено: {dt_mtime.strftime('%H:%M')}{sources_str}</div>")
         
         return "".join(output)
     except Exception as e:
