@@ -234,6 +234,23 @@ def format_duration(seconds):
     if m > 0: parts.append(f"{m} хв")
     return " ".join(parts) if parts else "0 хв"
 
+def get_best_source_internal(data, date_str):
+    """Internal helper to find source with slots or fallback to emergency."""
+    best_source = None
+    is_emergency = False
+    for s_name in ['yasno', 'github']:
+        src = data.get(s_name)
+        if not src: continue
+        group_key = list(src.keys())[0]
+        day_data = src[group_key].get(date_str)
+        if day_data:
+            if day_data.get('slots'):
+                return src, False
+            if day_data.get('status') == 'emergency':
+                is_emergency = True
+                if not best_source: best_source = src
+    return best_source, is_emergency
+
 def get_next_scheduled_event(event_time, look_for_light):
     """
     Finds the next scheduled transition to the target state.
@@ -243,17 +260,18 @@ def get_next_scheduled_event(event_time, look_for_light):
         if not os.path.exists(SCHEDULE_FILE): return None
         with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
         
-        source = data.get('yasno') or data.get('github')
+        now_dt = datetime.datetime.fromtimestamp(event_time, KYIV_TZ)
+        today_str = now_dt.strftime("%Y-%m-%d")
+        tomorrow_str = (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        
+        source, is_emergency = get_best_source_internal(data, today_str)
         if not source: return None
         
         group_key = list(source.keys())[0]
         schedule_data = source[group_key]
         
-        now_dt = datetime.datetime.fromtimestamp(event_time, KYIV_TZ)
-        today_str = now_dt.strftime("%Y-%m-%d")
-        tomorrow_str = (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        
-        if today_str not in schedule_data: return None
+        if today_str not in schedule_data or not schedule_data[today_str].get('slots'):
+            return None
         
         # Build 48-hour slot list
         slots = list(schedule_data[today_str]['slots'])
@@ -275,20 +293,15 @@ def get_next_scheduled_event(event_time, look_for_light):
                     target_idx = i
                     break
         
-        # If no transition found (maybe we are already in the last block of the day), 
-        # just find first occurrence, BUT only if we aren't currently in a block of that SAME state
-        # that started before or during current_slot_idx. If we are, we should really look for the 
-        # *next* block, not the remainder of the current one.
+        # Fallback search
         if target_idx == -1:
-            # If the current slot is NOT the state we are looking for, it's safe to just find the first occurrence
             if slots[current_slot_idx] != look_for_light:
                 for i in range(current_slot_idx + 1, len(slots)):
                     if slots[i] == look_for_light:
                         target_idx = i
                         break
                     
-        if target_idx == -1:
-            return None
+        if target_idx == -1: return None
         
         # Find end of that block
         end_idx = len(slots)
@@ -310,10 +323,8 @@ def get_next_scheduled_event(event_time, look_for_light):
         days_offset = target_idx // 48
         rem_idx = target_idx % 48
         
-        # Create target dt safely
         target_dt = now_dt.replace(hour=rem_idx // 2, minute=(30 if rem_idx % 2 else 0), second=0, microsecond=0)
-        if days_offset > 0:
-            target_dt += datetime.timedelta(days=days_offset)
+        if days_offset > 0: target_dt += datetime.timedelta(days=days_offset)
         
         diff_sec = (target_dt - now_dt).total_seconds()
         if diff_sec < 0: diff_sec = 0
@@ -394,17 +405,19 @@ def get_schedule_context():
         with open(SCHEDULE_FILE, 'r') as f:
             data = json.load(f)
         
-        source = data.get('yasno') or data.get('github')
+        now = datetime.datetime.now(KYIV_TZ)
+        today_str = now.strftime("%Y-%m-%d")
+        tomorrow_str = (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        
+        source, is_emergency = get_best_source_internal(data, today_str)
         if not source: return (None, None, "Невідомо", None)
         
         group_key = list(source.keys())[0]
         schedule_data = source[group_key]
         
-        now = datetime.datetime.now(KYIV_TZ)
-        today_str = now.strftime("%Y-%m-%d")
-        tomorrow_str = (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        
         if today_str not in schedule_data or not schedule_data[today_str].get('slots'):
+            if is_emergency:
+                return (None, None, "⚠️ Екстрені відключення", None)
             return (None, None, "Графік відсутній", None)
             
         # Combine today and tomorrow slots for a 48h view (96 slots)
@@ -412,46 +425,35 @@ def get_schedule_context():
         if tomorrow_str in schedule_data and schedule_data[tomorrow_str].get('slots'):
             slots.extend(schedule_data[tomorrow_str]['slots'])
         else:
-            # If no tomorrow data, pad with the last state of today
             slots.extend([slots[-1]] * 48)
             
         current_slot_idx = (now.hour * 2) + (1 if now.minute >= 30 else 0)
-        
-        # True = Light, False = Outage
         is_light_now = slots[current_slot_idx]
         
-        # Find end of current block (max 96 slots)
+        # Find end of current block
         end_idx = len(slots)
         for i in range(current_slot_idx + 1, len(slots)):
             if slots[i] != is_light_now:
                 end_idx = i
                 break
         
-        # Format end time
         def format_idx_to_time(idx):
             if idx >= 96: return "час очікується"
             day_offset = idx // 48
             rem_idx = idx % 48
             h = rem_idx // 2
             m = 30 if rem_idx % 2 else 0
-            
-            if day_offset == 0:
-                return f"{h:02d}:{m:02d}"
+            if day_offset == 0: return f"{h:02d}:{m:02d}"
             elif day_offset == 1:
                 if h == 0 and m == 0: return "24:00"
                 return f"завтра о {h:02d}:{m:02d}"
-            else:
-                return "післязавтра"
+            return "післязавтра"
 
         t_end = format_idx_to_time(end_idx)
-        
-        # Find next block range
         next_start_idx = end_idx
         next_duration = None
         
         if next_start_idx < len(slots):
-            # If we need to show the range of the NEXT block
-            # But the next block is in tomorrow and tomorrow is empty/padded
             if next_start_idx >= 48 and (tomorrow_str not in schedule_data or not schedule_data[tomorrow_str].get('slots')):
                 next_range = "час очікується"
             else:
@@ -460,19 +462,15 @@ def get_schedule_context():
                     if slots[i] == is_light_now:
                         next_end_idx = i
                         break
-                
                 ns_t = format_idx_to_time(next_start_idx)
                 ne_t = format_idx_to_time(next_end_idx)
                 next_range = f"{ns_t} - {ne_t}"
-                
-                # Calculate duration
                 dur_h = (next_end_idx - next_start_idx) * 0.5
                 next_duration = f"{dur_h:g}".replace('.', ',')
         else:
             next_range = "час очікується"
             
         return (is_light_now, t_end, next_range, next_duration)
-            
     except Exception as e:
         print(f"Schedule error: {e}")
         return (None, None, "Помилка", None)
@@ -501,72 +499,47 @@ def get_deviation_info(event_time, is_up):
     # is_up: True if light appeared, False if disappeared
     
     try:
-        if not os.path.exists(SCHEDULE_FILE):
-            return ""
-            
-        with open(SCHEDULE_FILE, 'r') as f:
-            data = json.load(f)
+        if not os.path.exists(SCHEDULE_FILE): return ""
+        with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
         
-        # Priority: Yasno -> Github
-        source = data.get('yasno') or data.get('github')
+        dt = datetime.datetime.fromtimestamp(event_time, KYIV_TZ)
+        date_str = dt.strftime("%Y-%m-%d")
+        
+        source, is_emergency = get_best_source_internal(data, date_str)
         if not source: return ""
         
         group_key = list(source.keys())[0]
         schedule_data = source[group_key]
-        
-        # Localize event time
-        dt = datetime.datetime.fromtimestamp(event_time, KYIV_TZ)
-        date_str = dt.strftime("%Y-%m-%d")
         
         if date_str not in schedule_data or not schedule_data[date_str].get('slots'):
             return ""
             
         slots = schedule_data[date_str]['slots']
         
-        # Find nearest transition of the target type
         best_diff = 9999
-        
         for i in range(49):
             state_before = slots[i-1] if i > 0 else (not slots[0])
             state_after = slots[i] if i < 48 else slots[47] 
-            
             if state_before != state_after:
                 transition_type = 'up' if (not state_before and state_after) else 'down'
-                
                 expected_type = 'up' if is_up else 'down'
                 if transition_type == expected_type:
-                    trans_h = i // 2
-                    trans_m = 30 if i % 2 else 0
-                    
+                    trans_h, trans_m = i // 2, (30 if i % 2 else 0)
                     trans_dt = dt.replace(hour=trans_h, minute=trans_m, second=0, microsecond=0)
                     diff = (dt - trans_dt).total_seconds() / 60
-                    
-                    if abs(diff) < abs(best_diff):
-                        best_diff = int(diff)
+                    if abs(diff) < abs(best_diff): best_diff = int(diff)
 
-        if abs(best_diff) > 180:
-            return ""
-
+        if abs(best_diff) > 180: return ""
         abs_diff = abs(best_diff)
-        h = abs_diff // 60
-        m = abs_diff % 60
-        
+        h, m = abs_diff // 60, abs_diff % 60
         dur_parts = []
-        if h > 0:
-            dur_parts.append(f"{h} год")
-        if m > 0:
-            dur_parts.append(f"{m} хв")
-        
+        if h > 0: dur_parts.append(f"{h} год")
+        if m > 0: dur_parts.append(f"{m} хв")
         dur_str = " ".join(dur_parts) if dur_parts else "0 хв"
-        
         action = "Увімкнули" if is_up else "Вимкнули"
         timing = "пізніше" if best_diff > 0 else "раніше"
-        
-        if best_diff == 0:
-            return f"• {action} точно за графіком"
-            
+        if best_diff == 0: return f"• {action} точно за графіком"
         return f"• {action} {timing} на {dur_str}"
-
     except Exception as e:
         print(f"Error in deviation calc: {e}")
         return ""
@@ -580,48 +553,30 @@ def get_nearest_schedule_switch(event_time, target_is_up):
     try:
         if not os.path.exists(SCHEDULE_FILE): return None
         with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
-        
-        source = data.get('yasno') or data.get('github')
-        if not source: return None
-        
-        group_key = list(source.keys())[0]
-        schedule_data = source[group_key]
-        
         dt = datetime.datetime.fromtimestamp(event_time, KYIV_TZ)
         date_str = dt.strftime("%Y-%m-%d")
-        
+        source, is_emergency = get_best_source_internal(data, date_str)
+        if not source: return None
+        group_key = list(source.keys())[0]
+        schedule_data = source[group_key]
         if date_str not in schedule_data or not schedule_data[date_str].get('slots'):
             return None
-            
         slots = schedule_data[date_str]['slots']
-        
         best_diff = 9999
         best_time_str = None
-        
         for i in range(49):
             state_before = slots[i-1] if i > 0 else slots[0]
             state_after = slots[i] if i < 48 else slots[47]
             if i == 0: state_before = not state_after
-            
             if state_before != state_after:
-                # Check if this transition matches our target
-                # OFF->ON (Up) is state_after=True
-                # ON->OFF (Down) is state_after=False
-                is_up_switch = state_after
-                
-                if is_up_switch == target_is_up:
-                    trans_h = i // 2
-                    trans_m = 30 if i % 2 else 0
+                if state_after == target_is_up:
+                    trans_h, trans_m = i // 2, (30 if i % 2 else 0)
                     trans_dt = dt.replace(hour=trans_h, minute=trans_m, second=0, microsecond=0)
-                    
                     diff = abs((dt - trans_dt).total_seconds())
                     if diff < best_diff:
                         best_diff = diff
                         best_time_str = f"{trans_h:02d}:{trans_m:02d}"
-                        
-        if best_diff > 10800: # If closest is more than 3 hours away, ignore
-            return None
-            
+        if best_diff > 10800: return None
         return best_time_str
     except:
         return None
@@ -760,9 +715,9 @@ def sync_schedules():
             success, has_changed = result
             
         if has_changed:
-            print("Schedule changes detected! Sending alert...")
-            msg = "⚠️ <b>Увага! Оновлено графік відключень!</b>\nДТЕК щойно вніс зміни у графік.\n<i>Актуальний розклад дивіться у повідомленні вище 👆</i>"
-            threading.Thread(target=send_telegram, args=(msg,)).start()
+            print("Schedule changes detected! (Notification skipped by request)")
+            # msg = "⚠️ <b>Увага! Оновлено графік відключень!</b>\nДТЕК щойно вніс зміни у графік.\n<i>Актуальний розклад дивіться у повідомленні вище 👆</i>"
+            # threading.Thread(target=send_telegram, args=(msg,)).start()
 
 def schedule_loop():
     """
