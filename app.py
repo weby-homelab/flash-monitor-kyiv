@@ -264,25 +264,50 @@ def get_today_schedule_text():
         with open(schedule_file, 'r') as f:
             data = json.load(f)
             
-        source = data.get('yasno') or data.get('github')
-        if not source: return "Дані не знайдені"
-        
-        group_key = list(source.keys())[0]
-        schedule_data = source[group_key]
-        
         now = datetime.now(KYIV_TZ)
         today_str = now.strftime("%Y-%m-%d")
         tomorrow_str = (now + timedelta(days=1)).strftime("%Y-%m-%d")
         
+        # --- SMART SOURCE SELECTION ---
+        # Look for source with slots. If none, look for emergency.
+        best_source = None
+        is_emergency = False
+        
+        sources_to_check = ['yasno', 'github']
+        for s_name in sources_to_check:
+            src = data.get(s_name)
+            if not src: continue
+            
+            grp = list(src.keys())[0]
+            day_data = src[grp].get(today_str)
+            if day_data:
+                if day_data.get('slots'):
+                    best_source = src
+                    break
+                if day_data.get('status') == 'emergency':
+                    is_emergency = True
+                    # Keep looking for other sources with actual slots
+                    if not best_source: best_source = src
+                    
+        if not best_source: return "Дані не знайдені"
+        
+        group_key = list(best_source.keys())[0]
+        schedule_data = best_source[group_key]
+        
         output = []
         
+        if is_emergency:
+            output.append("<div class='emergency-banner'>")
+            output.append("<div class='emergency-title'>⚠️ Екстрені відключення!</div>")
+            output.append("<div class='emergency-desc'>Графіки наразі не діють. Час увімкнення невідомий.</div>")
+            output.append("</div>")
+
         # Today
         if today_str in schedule_data and schedule_data[today_str].get('slots'):
             output.append(render_day_schedule_html(schedule_data[today_str]['slots'], now))
         
         # Tomorrow
         if tomorrow_str in schedule_data and schedule_data[tomorrow_str].get('slots'):
-            # Only show tomorrow if it has actual data (not just pending)
             slots = schedule_data[tomorrow_str]['slots']
             if slots and any(s is not None for s in slots):
                 output.append("<div class='schedule-divider'></div>")
