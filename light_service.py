@@ -719,7 +719,7 @@ def sync_schedules():
             trigger_daily_report_update()
             trigger_weekly_report_update()
             # Send alert about schedule change
-            send_telegram("⚠️ <b>Увага! Оновлено графіки відключень!</b>\nНові дані вже доступні на дашборді.")
+            send_telegram("⚠️ <b>Увага! Оновлено графіки відключень!</b>\nНові дані вже доступні в каналі та на сайті СВІТЛО⚡️ БЕЗПЕКА (FLASH.srvrs.top).")
             # msg = "⚠️ <b>Увага! Оновлено графік відключень!</b>\nДТЕК щойно вніс зміни у графік.\n<i>Актуальний розклад дивіться у повідомленні вище 👆</i>"
             # threading.Thread(target=send_telegram, args=(msg,)).start()
 
