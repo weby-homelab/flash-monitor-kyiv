@@ -271,46 +271,53 @@ def get_today_schedule_text():
         # --- SMART SOURCE SELECTION ---
         # Look for source with slots. If none, look for emergency.
         best_source = None
-        source_name = "НЕВІДОМО"
-        is_emergency = False
+        schedule_source_name = "НЕВІДОМО"
+        emergency_sources = []
         
-        sources_to_check = ['yasno', 'github']
-        for s_name in sources_to_check:
+        for s_name in ['yasno', 'github']:
             src = data.get(s_name)
             if not src: continue
             
             grp = list(src.keys())[0]
             day_data = src[grp].get(today_str)
-            if day_data:
-                if day_data.get('slots'):
+            if not day_data: continue
+            
+            name = "YASNO" if s_name == 'yasno' else "ДТЕК"
+            
+            if day_data.get('slots'):
+                if not best_source:
                     best_source = src
-                    source_name = "YASNO" if s_name == 'yasno' else "ДТЕК (GitHub Baskerville)"
-                    break
-                if day_data.get('status') == 'emergency':
-                    is_emergency = True
-                    # Keep looking for other sources with actual slots
-                    if not best_source: 
-                        best_source = src
-                        source_name = "YASNO" if s_name == 'yasno' else "ДТЕК (GitHub Baskerville)"
+                    schedule_source_name = "YASNO" if s_name == 'yasno' else "ДТЕК (GitHub Baskerville)"
+            
+            if day_data.get('status') == 'emergency':
+                emergency_sources.append(name)
                     
-        if not best_source: return "Дані не знайдені"
+        if not best_source and not emergency_sources: return "Дані не знайдені"
         
+        # If no schedule found but we have emergency, we use that source for the structure
+        if not best_source and emergency_sources:
+            # Pick the first emergency source as a baseline
+            for s_name in ['yasno', 'github']:
+                if data.get(s_name):
+                    best_source = data[s_name]
+                    break
+
         group_key = list(best_source.keys())[0]
         schedule_data = best_source[group_key]
         
         output = []
         
-        if is_emergency:
+        if emergency_sources:
             output.append("<div class='emergency-banner'>")
             output.append("<div class='emergency-title'>⚠️ Екстрені відключення!</div>")
             output.append("<div class='emergency-desc'>Графіки наразі не діють. Час увімкнення невідомий.</div>")
-            output.append("<div class='source-label'>Джерело: YASNO</div>")
+            output.append(f"<div class='source-label'>Джерело: {', '.join(emergency_sources)}</div>")
             output.append("</div>")
 
         # Today
         if today_str in schedule_data and schedule_data[today_str].get('slots'):
             output.append(render_day_schedule_html(schedule_data[today_str]['slots'], now))
-            output.append(f"<div class='source-label' style='margin-bottom: 24px;'>Джерело графіка: {source_name}</div>")
+            output.append(f"<div class='source-label' style='margin-bottom: 24px;'>Джерело графіка: {schedule_source_name}</div>")
         
         # Tomorrow
         if tomorrow_str in schedule_data and schedule_data[tomorrow_str].get('slots'):
