@@ -715,7 +715,11 @@ def sync_schedules():
             success, has_changed = result
             
         if has_changed:
-            print("Schedule changes detected! (Notification skipped by request)")
+            print("Schedule changes detected! Triggering report updates...")
+            trigger_daily_report_update()
+            trigger_weekly_report_update()
+            # Send alert about schedule change
+            send_telegram("⚠️ <b>Увага! Оновлено графіки відключень!</b>\nНові дані вже доступні на дашборді.")
             # msg = "⚠️ <b>Увага! Оновлено графік відключень!</b>\nДТЕК щойно вніс зміни у графік.\n<i>Актуальний розклад дивіться у повідомленні вище 👆</i>"
             # threading.Thread(target=send_telegram, args=(msg,)).start()
 
