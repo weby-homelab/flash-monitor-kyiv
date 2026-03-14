@@ -271,6 +271,7 @@ def get_today_schedule_text():
         # --- SMART SOURCE SELECTION ---
         # Look for source with slots. If none, look for emergency.
         best_source = None
+        source_name = "НЕВІДОМО"
         is_emergency = False
         
         sources_to_check = ['yasno', 'github']
@@ -283,11 +284,14 @@ def get_today_schedule_text():
             if day_data:
                 if day_data.get('slots'):
                     best_source = src
+                    source_name = "YASNO" if s_name == 'yasno' else "ДТЕК (GitHub Baskerville)"
                     break
                 if day_data.get('status') == 'emergency':
                     is_emergency = True
                     # Keep looking for other sources with actual slots
-                    if not best_source: best_source = src
+                    if not best_source: 
+                        best_source = src
+                        source_name = "YASNO" if s_name == 'yasno' else "ДТЕК (GitHub Baskerville)"
                     
         if not best_source: return "Дані не знайдені"
         
@@ -300,11 +304,13 @@ def get_today_schedule_text():
             output.append("<div class='emergency-banner'>")
             output.append("<div class='emergency-title'>⚠️ Екстрені відключення!</div>")
             output.append("<div class='emergency-desc'>Графіки наразі не діють. Час увімкнення невідомий.</div>")
+            output.append("<div class='source-label'>Джерело: YASNO</div>")
             output.append("</div>")
 
         # Today
         if today_str in schedule_data and schedule_data[today_str].get('slots'):
             output.append(render_day_schedule_html(schedule_data[today_str]['slots'], now))
+            output.append(f"<div class='source-label' style='margin-bottom: 24px;'>Джерело графіка: {source_name}</div>")
         
         # Tomorrow
         if tomorrow_str in schedule_data and schedule_data[tomorrow_str].get('slots'):
