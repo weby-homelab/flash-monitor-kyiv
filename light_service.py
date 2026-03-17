@@ -92,26 +92,28 @@ state = {
 
 state_lock = threading.RLock()
 
-def trigger_daily_report_update():
+def trigger_daily_report_update(is_final=False):
     """
     Triggers the generation and update of the daily report chart.
     Runs asynchronously to not block the main thread.
     """
     def run_script():
         try:
-            print("Triggering daily report update...")
+            print(f"Triggering daily report update (is_final={is_final})...")
             # Use absolute paths
             base_dir = os.path.dirname(os.path.abspath(__file__))
             python_exec = sys.executable
             script_path = os.path.join(base_dir, "generate_daily_report.py")
             
-            # Run without --no-send so it updates Telegram
-            subprocess.run([python_exec, script_path], check=True, cwd=base_dir)
+            # Run with --final if requested
+            args = [python_exec, script_path]
+            if is_final:
+                args.append("--final")
+            
+            subprocess.run(args, check=True, cwd=base_dir)
             
             # Also trigger weekly report update
             trigger_weekly_report_update()
-            
-            # Trigger text report update - REMOVED, now handled in schedule_loop
             
         except Exception as e:
             print(f"Failed to trigger daily report: {e}")
@@ -422,8 +424,10 @@ def get_schedule_context():
             
         # Combine today and tomorrow slots for a 48h view (96 slots)
         slots = list(schedule_data[today_str]['slots'])
+        has_tomorrow = False
         if tomorrow_str in schedule_data and schedule_data[tomorrow_str].get('slots'):
             slots.extend(schedule_data[tomorrow_str]['slots'])
+            has_tomorrow = True
         else:
             slots.extend([slots[-1]] * 48)
             
@@ -438,7 +442,8 @@ def get_schedule_context():
                 break
         
         def format_idx_to_time(idx):
-            if idx >= 96: return "час очікується"
+            if idx >= 96:
+                return "відключення не плануються 🔆" if has_tomorrow else "час невідомий 🤷‍♂️"
             day_offset = idx // 48
             rem_idx = idx % 48
             h = rem_idx // 2
@@ -454,8 +459,8 @@ def get_schedule_context():
         next_duration = None
         
         if next_start_idx < len(slots):
-            if next_start_idx >= 48 and (tomorrow_str not in schedule_data or not schedule_data[tomorrow_str].get('slots')):
-                next_range = "час очікується"
+            if next_start_idx >= 48 and not has_tomorrow:
+                next_range = "час невідомий 🤷‍♂️"
             else:
                 next_end_idx = len(slots)
                 for i in range(next_start_idx + 1, len(slots)):
@@ -464,11 +469,16 @@ def get_schedule_context():
                         break
                 ns_t = format_idx_to_time(next_start_idx)
                 ne_t = format_idx_to_time(next_end_idx)
-                next_range = f"{ns_t} - {ne_t}"
+                
+                if next_start_idx >= 96 or (next_start_idx >= 48 and next_end_idx >= 96 and is_light_now):
+                     next_range = "відключення не плануються 🔆" if has_tomorrow else "час невідомий 🤷‍♂️"
+                else:
+                     next_range = f"{ns_t} - {ne_t}"
+                     
                 dur_h = (next_end_idx - next_start_idx) * 0.5
                 next_duration = f"{dur_h:g}".replace('.', ',')
         else:
-            next_range = "час очікується"
+            next_range = "відключення не плануються 🔆" if has_tomorrow else "час невідомий 🤷‍♂️"
             
         return (is_light_now, t_end, next_range, next_duration)
     except Exception as e:
@@ -718,40 +728,71 @@ def sync_schedules():
             print("Schedule changes detected! Triggering report updates...")
             trigger_daily_report_update()
             trigger_weekly_report_update()
-            # Send alert about schedule change
-            send_telegram("⚠️ <b>Увага!</b>\n<b>Оновлено графіки відключень!</b>\nНові дані вже доступні в каналі та на сайті\n⚡️ FLASH.srvrs.top")
-            # msg = "⚠️ <b>Увага! Оновлено графік відключень!</b>\nДТЕК щойно вніс зміни у графік.\n<i>Актуальний розклад дивіться у повідомленні вище 👆</i>"
-            # threading.Thread(target=send_telegram, args=(msg,)).start()
+            
+            # Send alert ONLY if there are planned outages in the new schedule
+            should_alert = False
+            try:
+                if os.path.exists(SCHEDULE_FILE):
+                    with open(SCHEDULE_FILE, 'r') as f:
+                        data = json.load(f)
+                    
+                    # Check both github and yasno for any False slots
+                    for s_key in ['github', 'yasno']:
+                        sources = data.get(s_key, {})
+                        for group_name, days in sources.items():
+                            for date_str, day_data in days.items():
+                                slots = day_data.get('slots')
+                                if slots and any(s is False for s in slots):
+                                    should_alert = True
+                                    break
+                            if should_alert: break
+                        if should_alert: break
+            except Exception as e:
+                print(f"Error checking for outages in new schedule: {e}")
+                should_alert = True # Fallback to alert if check fails
+
+            if should_alert:
+                send_telegram("⚠️ <b>Увага!</b>\n<b>Оновлено графіки відключень!</b>\nНові дані вже доступні в каналі та на сайті\n⚡️ FLASH.srvrs.top")
+            else:
+                print("Schedule updated but no outages planned. Skipping alert.")
 
 def schedule_loop():
     """
     Periodically triggers report updates to keep charts and texts fresh.
     - Sync Schedules: every 10 mins
-    - Daily Image: every 10 mins
-    - Text Report: every 30 mins (handled inside main or by counter)
+    - Daily Image: every 10 mins (plus special 00:01 final and 00:10 start)
+    - Text Report: every 10 mins
     - Weekly Telegram: Monday 00:15
     """
-    print("Schedule loop started (10 min base interval)...")
-    counter = 0
+    print("Schedule loop started (60 sec precision)...")
     weekly_sent_date = None
     
     while True:
-        # 0. Sync schedules from external API
-        sync_schedules()
-        
-        # 1. Trigger Daily Image Update (every 10 mins)
-        try:
-            trigger_daily_report_update()
-        except: pass
-        
-        # 2. Trigger Text Report Update (every 10 mins)
-        try:
-            trigger_text_report_update()
-        except: pass
-            
-        # 3. Trigger Weekly Telegram Report (Monday around 00:10-00:20)
         now = datetime.datetime.now(KYIV_TZ)
-        if now.weekday() == 0 and now.hour == 0 and 10 <= now.minute < 20:
+        hour = now.hour
+        minute = now.minute
+
+        # 1. Special Midnight Logic
+        if hour == 0 and minute == 1:
+            # Final summary for yesterday as a NEW message
+            trigger_daily_report_update(is_final=True)
+            time.sleep(65) # Avoid double trigger in the same minute
+            continue
+            
+        if hour == 0 and minute == 10:
+            # Start of today's monitoring
+            trigger_daily_report_update(is_final=False)
+            time.sleep(65)
+            continue
+
+        # 2. Regular 10-minute tasks (at 0, 10, 20, 30, 40, 50 minutes, except 00:10)
+        if minute % 10 == 0:
+            sync_schedules()
+            trigger_daily_report_update(is_final=False)
+            trigger_text_report_update()
+            
+        # 3. Weekly Telegram Report (Monday around 00:15)
+        if now.weekday() == 0 and hour == 0 and 15 <= minute < 25:
             today_str = now.strftime("%Y-%m-%d")
             if weekly_sent_date != today_str:
                 try:
@@ -765,6 +806,5 @@ def schedule_loop():
                 except Exception as e:
                     print(f"Failed to trigger weekly telegram report: {e}")
             
-        counter += 1
-        time.sleep(600) # 10 minutes
+        time.sleep(60)
 

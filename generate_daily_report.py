@@ -460,12 +460,15 @@ def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
 
 if __name__ == "__main__":
     # If called without arguments, calculate target date
-    # Shift time back by 6 hours so that early morning updates (00:00-06:00) 
-    # will still update the previous day's report as a final summary.
-    # A new day's report will start appearing exactly at 06:00 AM.
+    # New logic: 
+    # 00:00 - 00:09 -> Updates yesterday's report (Final summary at 00:01)
+    # 00:10 - 23:59 -> Starts/updates today's report
     now = datetime.datetime.now(KYIV_TZ)
-    shifted_time = now - datetime.timedelta(hours=6)
-    target_date = shifted_time.date()
+    
+    if now.hour == 0 and now.minute < 10:
+        target_date = (now - datetime.timedelta(days=1)).date()
+    else:
+        target_date = now.date()
 
     # Simple argument parsing
     for arg in sys.argv[1:]:
@@ -516,16 +519,21 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Error saving stats json: {e}")
                
+    is_final = "--final" in sys.argv
+               
     if "--no-send" not in sys.argv:
         # Check if we can update an existing message
         last_id = get_last_report_id(target_date)
-        if last_id:
+        if last_id and not is_final:
             print(f"Updating existing report (ID: {last_id})...")
             sent = update_telegram_photo(last_id, filename, caption)
             if not sent:
                 print("Update failed, but NOT sending a new message to avoid spam.")
         else:
-            print("No report ID for today. Sending new report...")
+            if is_final:
+                print(f"Finalizing report for {target_date} as a NEW message...")
+            else:
+                print("No report ID for today. Sending new report...")
             send_telegram_photo(filename, caption, target_date)
     else:
         print("Telegram sending skipped (--no-send).")

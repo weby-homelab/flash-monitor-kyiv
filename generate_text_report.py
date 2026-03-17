@@ -128,6 +128,47 @@ def save_report_state(state):
             state = {k: state[k] for k in sorted_dates[-3:]}
         json.dump(state, f)
 
+def is_all_on(slots):
+    if not slots or len(slots) < 48: return False
+    return all(s is True for s in slots)
+
+def generate_holiday_report(today_str, tomorrow_str, data, group, icons):
+    # Check if today and tomorrow are fully ON
+    today_slots = None
+    tomorrow_slots = None
+    
+    for s_key in ['github', 'yasno']:
+        s_data = data.get(s_key, {}).get(group, {})
+        if not today_slots: today_slots = s_data.get(today_str, {}).get('slots')
+        if not tomorrow_slots: tomorrow_slots = s_data.get(tomorrow_str, {}).get('slots')
+    
+    today_all_on = is_all_on(today_slots)
+    tomorrow_all_on = is_all_on(tomorrow_slots)
+    
+    if not today_all_on and not tomorrow_all_on:
+        return None
+        
+    now = datetime.datetime.now(KYIV_TZ)
+    t_dt = datetime.datetime.strptime(today_str, "%Y-%m-%d")
+    tm_dt = datetime.datetime.strptime(tomorrow_str, "%Y-%m-%d")
+    
+    header = "Світла смуга триває! 🕊️💡"
+    
+    if today_all_on and tomorrow_all_on:
+        desc = "Сусіди, графіки на сьогодні та завтра нарешті «відпочивають». Маємо повні 48 годин світла без жодних перерв."
+        days_info = f"{t_dt.strftime('%d.%m')} ({DAYS_UA[t_dt.weekday()]}): Світло є 24 год. 🔆\n{tm_dt.strftime('%d.%m')} ({DAYS_UA[tm_dt.weekday()]}): Світло є 24 год. 🔆"
+    elif today_all_on:
+        desc = "Сусіди, графік на сьогодні «відпочиває». Маємо повні 24 години світла без жодних перерв."
+        days_info = f"{t_dt.strftime('%d.%m')} ({DAYS_UA[t_dt.weekday()]}): Світло є 24 год. 🔆"
+    else: # only tomorrow
+        return None # Fallback to standard for mixed days if today has outages
+
+    footer = "Дякуємо енергетикам і бажаємо всім максимально продуктивних та яскравих днів! 👋✨"
+    update_line = f"---\n🕐 Оновлено: {now.strftime('%H:%M')}"
+    
+    full_text = f"<b>{header}</b>\n\n{desc}\n\n{days_info}\n\n{footer}\n\n{update_line}"
+    return full_text
+
 def main():
     now = datetime.datetime.now(KYIV_TZ)
     current_time = now.time()
@@ -241,11 +282,17 @@ def main():
         return
         
     group_display = group.replace('GPV', '')
-    combined_content = "\n\n".join(all_day_contents)
-
-    updated_text = cfg.get('ui', {}).get('text', {}).get('updated', 'Оновлено')
-    footer = f"🕐 {updated_text}: {now.strftime('%H:%M')}"
-    full_text = f"📈 <b>Графік групи {group_display}</b>\n\n{combined_content}\n\n{footer}"
+    
+    # Try generating a holiday report if today is all-on
+    holiday_text = generate_holiday_report(today_str, tomorrow_str, data, group, icons)
+    
+    if holiday_text:
+        full_text = holiday_text
+    else:
+        combined_content = "\n\n".join(all_day_contents)
+        updated_text = cfg.get('ui', {}).get('text', {}).get('updated', 'Оновлено')
+        footer = f"🕐 {updated_text}: {now.strftime('%H:%M')}"
+        full_text = f"📈 <b>Графік групи {group_display}</b>\n\n{combined_content}\n\n{footer}"
     
     content_hash = hashlib.md5(full_text.encode()).hexdigest()
     

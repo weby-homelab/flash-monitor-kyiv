@@ -192,6 +192,10 @@ For sending Push signals, it is highly recommended to use the **HTTPS address of
 - **v1.17.3**: Smart Schedule Fallback logic and Emergency status support.
 - **v1.17.2**: Updated air raid alert format.
 
+## 📝 Changelog
+- **v1.17.5**: Added "Holiday Mode" for full-light days, smart dashboard fallback texts, and new rollover logic (final report at 00:01).
+- **v1.17.4**: Dynamic source attribution for Emergency status. Source filtering in dashboard footer.
+
 ## 📜 License
 Distributed under the **MIT** License.
 
