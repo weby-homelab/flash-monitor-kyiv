@@ -188,7 +188,13 @@ def get_power_events_data(limit=5):
                     elif wait_line:
                         latest_event_text = f"{wait_line}"
                     else:
-                        latest_event_text = f"• Наступне планове: {next_range}"
+                        if is_light_now and (next_range == "час невідомий 🤷‍♂️" or next_range == "час очікується" or next_range == "відключення не плануються 🔆"):
+                            if next_range == "відключення не плануються 🔆":
+                                latest_event_text = "• відключення не плануються 🔆"
+                            else:
+                                latest_event_text = "• час невідомий 🤷‍♂️"
+                        else:
+                            latest_event_text = f"• Наступне планове: {next_range}"
                     
     except Exception as e:
         print(f"Error reading events: {e}")
