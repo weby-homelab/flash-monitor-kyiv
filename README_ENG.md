@@ -69,7 +69,7 @@
 - **Event Editing:** Full access to event history for correcting recorded intervals.
 
 ### 🔇 Quiet Mode
-- **48/24 Logic:** The system automatically enters "Quiet Mode" if no actual outages have occurred in the last 48 hours and none are planned for the next 24 hours. This avoids unnecessary noise in Telegram when the energy situation is stable.
+- **24/24 Logic:** The system automatically enters "Quiet Mode" if no actual outages have occurred in the last 24 hours and none are planned for the next 24 hours. This avoids unnecessary noise in Telegram when the energy situation is stable.
 - **Confirmation Safety Net:** If a power outage occurs during Quiet Mode, the system will not send a notification to the channel immediately but will wait for your confirmation via private messages (Inline buttons).
 - **Auto-Exit:** Quiet Mode is automatically disabled as soon as any outage appears in the schedule or a confirmed power loss is detected.
 
