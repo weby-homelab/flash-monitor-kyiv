@@ -151,32 +151,25 @@ flowchart TD
 
 ---
 
-## 🐳 Швидкий запуск через Docker
+## 🚀 Швидкий запуск (Bare Metal)
 
-**Офіційний образ:** `webyhomelab/flash-monitor-kyiv:latest`
+Система розгортається безпосередньо в ОС як набір Systemd-сервісів.
 
-### Docker Compose
-```yaml
-services:
-  web:
-    image: webyhomelab/flash-monitor-kyiv:latest
-    container_name: flash-monitor-web
-    ports: ["5050:5050"]
-    volumes: ["./data:/app/data"]
-    environment:
-      - TELEGRAM_BOT_TOKEN=your_token
-      - TELEGRAM_CHANNEL_ID=your_channel_id
-      - DATA_DIR=/app/data
+### Клонування та налаштування
+```bash
+git clone -b classic https://github.com/weby-homelab/flash-monitor-kyiv.git
+cd flash-monitor-kyiv
+pip install -r requirements.txt
+cp .env.example .env # Налаштуйте ваші токени
+```
 
-  worker:
-    image: webyhomelab/flash-monitor-kyiv:latest
-    container_name: flash-monitor-worker
-    command: python run_background.py
-    volumes: ["./data:/app/data"]
-    environment:
-      - TELEGRAM_BOT_TOKEN=your_token
-      - TELEGRAM_CHANNEL_ID=your_channel_id
-      - DATA_DIR=/app/data
+### Керування сервісами
+```bash
+# Перезапуск після оновлень
+systemctl restart flash-monitor.service flash-background.service
+
+# Перегляд логів (включаючи Admin URL)
+journalctl -u flash-monitor.service -f
 ```
 
 ---
