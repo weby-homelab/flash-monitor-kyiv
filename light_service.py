@@ -956,7 +956,7 @@ def schedule_loop():
                                 script_path = os.path.join(base_dir, "generate_text_report.py")
                                 # Wait a bit for state to save and then run
                                 time.sleep(2)
-                                subprocess.run([python_exec, script_path], check=True, cwd=base_dir)
+                                subprocess.run([python_exec, script_path, "--force-new"], check=True, cwd=base_dir)
                             except Exception as e:
                                 print(f"Failed to trigger text report after quiet mode exit: {e}")
                         
