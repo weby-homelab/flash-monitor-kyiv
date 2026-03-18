@@ -9,7 +9,7 @@
 
 <br>
 
-# СВІТЛО⚡БЕЗПЕКА [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) DOCKER Edition
+# СВІТЛО⚡️ БЕЗПЕКА [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) DOCKER Edition
 
 <p align="center">
   <a href="https://hub.docker.com/r/webyhomelab/flash-monitor-kyiv"><img src="https://img.shields.io/docker/pulls/webyhomelab/flash-monitor-kyiv?logo=docker&logoColor=white" alt="Docker Pulls"></a>
@@ -22,12 +22,12 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡БЕЗПЕКА Dashboard Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡️ БЕЗПЕКА Dashboard Preview" width="100%">
 </p>
 
 **Автономна Docker-система моніторингу електропостачання та безпеки Києва.**
 
-**Проект забезпечує** повний контроль над енергетичною та безпековою ситуацією, аналізуючи реальні дані мережі та офіційні графіки Yasno/ДТЕК локально.
+Проект забезпечує повний контроль над енергетичною та безпековою ситуацією, аналізуючи реальні дані мережі та офіційні графіки Yasno/ДТЕК локально.
 
 🔗 **Живий моніторинг:** [flash.srvrs.top](https://flash.srvrs.top/)
 
@@ -69,7 +69,7 @@
 - **Редагування подій:** Повний доступ до історії подій для корекції зафіксованих інтервалів.
 
 ### 🔇 Інформаційний спокій (Quiet Mode)
-- **24/24 Logic:** Система автоматично переходить у "режим спокою", якщо останні 24 години не було фактичних відключень, і в найближчі 24 години за графіком їх теж не планується. Це дозволяє уникнути зайвого шуму в Telegram, коли ситуація в енергосистемі стабільна.
+- **24/24 Logic:** Система автоматично переходить у "режим спокою", якщо останні **24 години** не було фактичних відключень, і в найближчі **24 години** за графіком їх теж не планується. Це дозволяє уникнути зайвого шуму в Telegram, коли ситуація в енергосистемі стабільна.
 - **Confirmation Safety Net:** Якщо світло зникне під час режиму спокою, система не відправить сповіщення в канал миттєво, а зачекає на ваше підтвердження через приватні повідомлення (Inline-кнопки).
 - **Автовихід:** Режим спокою автоматично вимикається, як тільки в графіку з'являється будь-яке обмеження або фіксується підтверджене відключення.
 
@@ -100,6 +100,7 @@ flowchart TD
     subgraph Access ["📡 ACCESS LAYER"]
         IoT["⚡ <b>IoT SENSORS</b><br/>(Heartbeat Pulse)"]
         PWA["📱 <b>PWA DASHBOARD</b><br/>(Interactive UI)"]
+        ADM["💻 <b>ADMIN PANEL</b><br/>(Secure Control)"]
     end
 
     %% -- Network Layer --
@@ -130,6 +131,7 @@ flowchart TD
     %% -- Connections --
     IoT -->|Secure Push| CF
     PWA <-->|HTTPS| CF
+    ADM <-->|Secure Token| CF
     CF <-->|Reverse Proxy| WEB
     
     WEB <-->|State Sync| JSON
@@ -140,7 +142,7 @@ flowchart TD
     WEB -.->|Live Fetch| SAFE
 
     %% -- Applying Styles --
-    class IoT,PWA access
+    class IoT,PWA,ADM access
     class CF network
     class WEB,WORKER core
     class JSON storage
@@ -197,9 +199,9 @@ services:
 
 ---
 
----
-
 ## 📝 Історія оновлень
+- **v2.0.1**: Оптимізація логіки «Інформаційного спокою» (перехід на формулу 24/24). Виправлення дрібних помилок у текстах дашборду.
+- **v2.0.0**: Масштабне оновлення: додано веб-панель керування (Admin Panel) та інтелектуальний режим «Інформаційного спокою» з безпечним підтвердженням відключень.
 - **v1.17.5**: Додано режим «Світла смуга», розумне відображення статусів на дашборді та нову логіку фіналізації звітів о 00:01.
 - **v1.17.4**: Динамічна атрибуція джерел статусу Emergency (ДТЕК, YASNO або обидва). Інтелектуальна фільтрація джерел у футері (тільки ті, що надали графік).
 - **v1.17.3**: Розумний вибір джерела графіків (Smart Fallback) та підтримка статусу Emergency.
@@ -214,4 +216,3 @@ services:
 </p>
 
 ---
-
