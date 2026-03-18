@@ -63,6 +63,16 @@
 - **Evening/Instant Update:** Automatic dispatch of tomorrow's schedule immediately after its publication by DTEK.
 - **Smart Merge:** Correct merging and calculation of overnight power intervals.
 
+### 💻 Admin Panel
+- **Secret URL:** Upon each startup, the system generates a unique random path for administration. It can be found in the container logs (`docker logs flash-monitor`).
+- **Status Management:** Ability to instantly change the power status (On / Off / Unknown) manually if the automation fails.
+- **Event Editing:** Full access to event history for correcting recorded intervals.
+
+### 🔇 Quiet Mode
+- **48/48 Logic:** The system automatically enters "Quiet Mode" if no power outage schedules are available for 48 hours. This avoids unnecessary noise in Telegram when the energy situation is stable.
+- **Confirmation Safety Net:** If a power outage occurs during Quiet Mode, the system will not send a notification immediately but will wait for confirmation (a second pulse or manual intervention) to avoid false alarms from unstable IoT sensors.
+- **Auto-Exit:** Quiet Mode is automatically disabled as soon as DTEK publishes new schedules or the first real outage is detected.
+
 #### 📱 Real Message Examples
 - 📊 **[Daily "Plan vs Fact" Report (Smart Daily Report)](https://t.me/svitlobot_Symyrenka22B/1230)**
 - 📈 **[Weekly Analytics Summary](https://t.me/svitlobot_Symyrenka22B/1192)**

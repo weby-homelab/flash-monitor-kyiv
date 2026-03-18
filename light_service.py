@@ -24,6 +24,7 @@ load_dotenv()
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
+ADMIN_CHAT_ID = "6313526220"
 PORT = 8889
 # SECRET_KEY handled in state
 STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
@@ -87,7 +88,12 @@ state = {
     "went_down_at": 0,
     "came_up_at": 0,
     "secret_key": None,
-    "alert_status": "clear" # clear, active, region
+    "alert_status": "clear", # clear, active, region
+    "quiet_mode": "auto", # auto, forced_on, forced_off
+    "quiet_status": "active", # active, quiet
+    "pending_confirmation": False,
+    "stability_start": time.time(),
+    "admin_token": None
 }
 
 state_lock = threading.RLock()
@@ -206,6 +212,10 @@ def load_state():
     
     if not state.get("secret_key"):
         state["secret_key"] = secrets.token_urlsafe(16)
+        save_state()
+
+    if not state.get("admin_token"):
+        state["admin_token"] = secrets.token_urlsafe(16)
         save_state()
 
 def save_state():
@@ -390,7 +400,7 @@ def format_event_message(is_up, event_time, prev_event_time):
         interval_line = f"🗓 ({next_info['interval']})"
     else:
         # Ensure fallback message is user-friendly.
-        wait_line = f"{wait_prefix} 🤷‍♂️ час очікується"
+        wait_line = f"{wait_prefix} час невідомий 🤷‍♂️"
 
     msg = f"{header}\n"
     if dev_line: msg += f"{dev_line}\n"
@@ -503,6 +513,28 @@ def send_telegram(message):
             print(f"Telegram API Error: {r.status_code} {r.text}")
     except Exception as e:
         print(f"Failed to send Telegram message: {e}")
+
+def send_admin_confirmation(timestamp):
+    msg = "⚠️ Зафіксовано втрату зв'язку! Режим 'Інформаційний спокій' активний. Це вимкнення світла чи збій обладнання?"
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    payload = {
+        "chat_id": ADMIN_CHAT_ID,
+        "text": msg,
+        "parse_mode": "HTML",
+        "reply_markup": {
+            "inline_keyboard": [
+                [
+                    {"text": "🔴 Світло зникло", "callback_data": f"confirm_down_{timestamp}"},
+                    {"text": "🟢 Збій / Роботи", "callback_data": f"ignore_down_{timestamp}"}
+                ]
+            ]
+        }
+    }
+    try:
+        r = requests.post(url, json=payload, timeout=5)
+        print(f"DEBUG: Admin Confirmation Response: {r.status_code} {r.text}")
+    except Exception as e:
+        print(f"Failed to send admin confirmation: {e}")
 
 def get_deviation_info(event_time, is_up):
     # event_time: timestamp (float)
@@ -649,7 +681,12 @@ def monitor_loop():
                 # New compact message format
                 msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
 
-                threading.Thread(target=send_telegram, args=(msg,)).start()
+                if state.get('quiet_status') == 'quiet':
+                    state['pending_confirmation'] = True
+                    threading.Thread(target=send_admin_confirmation, args=(down_time_ts,)).start()
+                else:
+                    threading.Thread(target=send_telegram, args=(msg,)).start()
+                
                 save_state()
 
 def alerts_loop():
@@ -756,6 +793,67 @@ def sync_schedules():
             else:
                 print("Schedule updated but no outages planned. Skipping alert.")
 
+def check_quiet_mode_eligibility():
+    """
+    Checks if the system is eligible for Quiet Mode.
+    Past 48 hours must have no 'down' events in event_log.json.
+    Future 48 hours (today and tomorrow) in last_schedules.json must have no 'False' slots.
+    """
+    now = time.time()
+    cutoff_48h_ago = now - (48 * 3600)
+    
+    # 1. Check History (Past 48h)
+    try:
+        if os.path.exists(EVENT_LOG_FILE):
+            with open(EVENT_LOG_FILE, 'r') as f:
+                logs = json.load(f)
+                if isinstance(logs, list):
+                    for entry in logs:
+                        if entry.get("event") == "down" and entry.get("timestamp", 0) > cutoff_48h_ago:
+                            print(f"Quiet Mode: Ineligible due to past outage at {entry.get('date_str')}")
+                            return False
+    except Exception as e:
+        print(f"Error checking event log for quiet mode: {e}")
+        # If we can't read logs, better stay active
+        return False
+
+    # 2. Check Schedule (Future 48h)
+    try:
+        if os.path.exists(SCHEDULE_FILE):
+            with open(SCHEDULE_FILE, 'r') as f:
+                data = json.load(f)
+            
+            # Use today and tomorrow
+            now_dt = datetime.datetime.fromtimestamp(now, KYIV_TZ)
+            today_str = now_dt.strftime("%Y-%m-%d")
+            tomorrow_str = (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+            
+            found_outage = False
+            # Check all sources (github, yasno)
+            for s_key in ['github', 'yasno']:
+                sources = data.get(s_key, {})
+                for group_name, days in sources.items():
+                    for date_str in [today_str, tomorrow_str]:
+                        day_data = days.get(date_str)
+                        if day_data:
+                            slots = day_data.get('slots')
+                            if slots and any(s is False for s in slots):
+                                print(f"Quiet Mode: Ineligible due to planned outage on {date_str} in {s_key}/{group_name}")
+                                found_outage = True
+                                break
+                    if found_outage: break
+                if found_outage: break
+            
+            if found_outage:
+                return False
+        else:
+            return False # No schedule, stay active
+    except Exception as e:
+        print(f"Error checking schedule for quiet mode: {e}")
+        return False
+
+    return True
+
 def schedule_loop():
     """
     Periodically triggers report updates to keep charts and texts fresh.
@@ -790,6 +888,31 @@ def schedule_loop():
             sync_schedules()
             trigger_daily_report_update(is_final=False)
             trigger_text_report_update()
+
+            # Quiet Mode Logic (every 10 mins)
+            with state_lock:
+                q_mode = state.get("quiet_mode", "auto")
+                old_status = state.get("quiet_status", "active")
+                is_eligible = check_quiet_mode_eligibility()
+                
+                new_status = old_status
+                if q_mode == "forced_on":
+                    new_status = "quiet"
+                elif q_mode == "forced_off":
+                    new_status = "active"
+                else: # auto
+                    new_status = "quiet" if is_eligible else "active"
+                
+                if new_status != old_status:
+                    state["quiet_status"] = new_status
+                    if new_status == "quiet":
+                        msg = "🔇 Система перейшла в режим інформаційного спокою"
+                        state["stability_start"] = time.time()
+                    else:
+                        msg = "🔊 Увага! Виявлено зміни в графіку або фактичні відключення. Режим спокою вимкнено."
+                    
+                    threading.Thread(target=send_telegram, args=(msg,)).start()
+                    save_state()
             
         # 3. Weekly Telegram Report (Monday around 00:15)
         if now.weekday() == 0 and hour == 0 and 15 <= minute < 25:
