@@ -796,20 +796,20 @@ def sync_schedules():
 def check_quiet_mode_eligibility():
     """
     Checks if the system is eligible for Quiet Mode.
-    Past 48 hours must have no 'down' events in event_log.json.
+    Past 24 hours must have no 'down' events in event_log.json.
     Future 24 hours from now in last_schedules.json must have no 'False' slots.
     """
     now = time.time()
-    cutoff_48h_ago = now - (48 * 3600)
+    cutoff_24h_ago = now - (24 * 3600)
     
-    # 1. Check History (Past 48h)
+    # 1. Check History (Past 24h)
     try:
         if os.path.exists(EVENT_LOG_FILE):
             with open(EVENT_LOG_FILE, 'r') as f:
                 logs = json.load(f)
                 if isinstance(logs, list):
                     for entry in logs:
-                        if entry.get("event") == "down" and entry.get("timestamp", 0) > cutoff_48h_ago:
+                        if entry.get("event") == "down" and entry.get("timestamp", 0) > cutoff_24h_ago:
                             print(f"Quiet Mode: Ineligible due to past outage at {entry.get('date_str')}")
                             return False
     except Exception as e:

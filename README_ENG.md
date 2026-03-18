@@ -9,7 +9,7 @@
 
 <br>
 
-# СВІТЛО⚡БЕЗПЕКА (Light & Safety) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) BARE METAL Edition
+# СВІТЛО⚡️ БЕЗПЕКА (Light & Safety) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) BARE METAL Edition
 
 <p align="center">
   <a href="https://hub.docker.com/r/webyhomelab/flash-monitor-kyiv"><img src="https://img.shields.io/docker/pulls/webyhomelab/flash-monitor-kyiv?logo=docker&logoColor=white" alt="Docker Pulls"></a>
@@ -22,12 +22,12 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡БЕЗПЕКА Dashboard Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡️ БЕЗПЕКА Dashboard Preview" width="100%">
 </p>
 
 **Autonomous Power & Safety Monitoring System for Kyiv.**
 
-**This project provides** full control over the energy and security situation by analyzing real network data and official DTEK/Yasno schedules locally.
+This project provides full control over the energy and security situation by analyzing real network data and official DTEK/Yasno schedules locally.
 
 🔗 **Live Dashboard:** [flash.srvrs.top](https://flash.srvrs.top/)
 
@@ -69,7 +69,7 @@
 - **Event Editing:** Full access to event history for correcting recorded intervals.
 
 ### 🔇 Quiet Mode
-- **48/24 Logic:** The system automatically enters "Quiet Mode" if no actual outages have occurred in the last 48 hours and none are planned for the next 24 hours. This avoids unnecessary noise in Telegram when the energy situation is stable.
+- **24/24 Logic:** The system automatically enters "Quiet Mode" if no actual outages have occurred in the last **24 hours** and none are planned for the next **24 hours**. This avoids unnecessary noise in Telegram when the energy situation is stable.
 - **Confirmation Safety Net:** If a power outage occurs during Quiet Mode, the system will not send a notification to the channel immediately but will wait for your confirmation via private messages (Inline buttons).
 - **Auto-Exit:** Quiet Mode is automatically disabled as soon as any outage appears in the schedule or a confirmed power loss is detected.
 
@@ -100,6 +100,7 @@ flowchart TD
     subgraph Access ["📡 ACCESS LAYER"]
         IoT["⚡ <b>IoT SENSORS</b><br/>(Heartbeat Pulse)"]
         PWA["📱 <b>PWA DASHBOARD</b><br/>(Interactive UI)"]
+        ADM["💻 <b>ADMIN PANEL</b><br/>(Secure Control)"]
     end
 
     %% -- Network Layer --
@@ -130,6 +131,7 @@ flowchart TD
     %% -- Connections --
     IoT -->|Secure Push| CF
     PWA <-->|HTTPS| CF
+    ADM <-->|Secure Token| CF
     CF <-->|Reverse Proxy| WEB
     
     WEB <-->|State Sync| JSON
@@ -140,7 +142,7 @@ flowchart TD
     WEB -.->|Live Fetch| SAFE
 
     %% -- Applying Styles --
-    class IoT,PWA access
+    class IoT,PWA,ADM access
     class CF network
     class WEB,WORKER core
     class JSON storage
@@ -198,13 +200,12 @@ For sending Push signals, it is highly recommended to use the **HTTPS address of
 ---
 
 ## 📝 Update History
+- **v2.0.1**: Optimized Quiet Mode logic (24/24 formula). Fixed minor bugs in dashboard event texts.
+- **v2.0.0**: Major update: Introduced the Web Admin Panel and intelligent "Quiet Mode" with safety confirmation loop for power outages.
+- **v1.17.5**: Added "Holiday Mode" for full-light days, smart dashboard fallback texts, and new rollover logic (final report at 00:01).
 - **v1.17.4**: Dynamic Emergency Banner source attribution (DTEK, YASNO, or both). Intelligent footer source filtering (only shows source if it provided actual slots).
 - **v1.17.3**: Smart Schedule Fallback logic and Emergency status support.
 - **v1.17.2**: Updated air raid alert format.
-
-## 📝 Changelog
-- **v1.17.5**: Added "Holiday Mode" for full-light days, smart dashboard fallback texts, and new rollover logic (final report at 00:01).
-- **v1.17.4**: Dynamic source attribution for Emergency status. Source filtering in dashboard footer.
 
 ## 📜 License
 Distributed under the **MIT** License.
