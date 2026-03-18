@@ -190,7 +190,7 @@ def get_power_events_data(limit=5):
                     elif wait_line:
                         latest_event_text = f"{wait_line}"
                     else:
-                        if is_light_now and (next_range == "час невідомий 🤷‍♂️" or next_range == "час очікується" or next_range == "відключення не плануються 🔆"):
+                        if sched_light_now and (next_range == "час невідомий 🤷‍♂️" or next_range == "час очікується" or next_range == "відключення не плануються 🔆"):
                             if next_range == "відключення не плануються 🔆":
                                 latest_event_text = "• відключення не плануються 🔆"
                             else:

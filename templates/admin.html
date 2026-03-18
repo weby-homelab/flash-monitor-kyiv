@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -249,11 +249,11 @@
     <div class="admin-container">
         <header>
             <div>
-                <h1>Flash Monitor Admin</h1>
-                <p style="color: var(--text-secondary); font-size: 0.9rem;">v2.0 Control Panel</p>
+                <h1>Панель керування СВІТЛО⚡️ БЕЗПЕКА</h1>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">Панель керування v2.0</p>
             </div>
             <button class="btn btn-secondary" onclick="fetchData()">
-                <i class="fas fa-sync-alt"></i> Refresh
+                <i class="fas fa-sync-alt"></i> Оновити
             </button>
         </header>
 
@@ -262,24 +262,24 @@
             <div class="admin-section">
                 <div class="section-header">
                     <i class="fas fa-server"></i>
-                    System Status
+                    Статус системи
                 </div>
                 <div id="status-display">
                     <div class="form-group">
-                        <label>Current Status</label>
-                        <span id="sys-status" class="status-badge">Loading...</span>
+                        <label>Поточний статус</label>
+                        <span id="sys-status" class="status-badge">Завантаження...</span>
                     </div>
                     <div class="form-group">
-                        <label>Last Seen</label>
+                        <label>Останній сигнал</label>
                         <div id="sys-last-seen">-</div>
                     </div>
                     <div class="form-group">
-                        <label>Quiet Status</label>
+                        <label>Статус спокою</label>
                         <div id="sys-quiet-status">-</div>
                     </div>
                     <div style="margin-top: 20px; display: flex; gap: 10px;">
                         <button class="btn btn-danger" onclick="restartServices()">
-                            <i class="fas fa-power-off"></i> Restart Services
+                            <i class="fas fa-power-off"></i> Перезапустити сервіси
                         </button>
                     </div>
                 </div>
@@ -289,32 +289,32 @@
             <div class="admin-section">
                 <div class="section-header">
                     <i class="fas fa-volume-mute"></i>
-                    Quiet Mode
+                    Режим спокою
                 </div>
                 <div class="quiet-mode-options">
                     <label class="radio-group" id="q-auto">
                         <input type="radio" name="quiet_mode" value="auto">
                         <div>
-                            <div style="font-weight: 600;">Auto</div>
-                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Quiet if no outages planned/detected</div>
+                            <div style="font-weight: 600;">Автоматично</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Тиша, якщо немає планових вимкнень</div>
                         </div>
                     </label>
                     <label class="radio-group" id="q-on">
                         <input type="radio" name="quiet_mode" value="forced_on">
                         <div>
-                            <div style="font-weight: 600;">Forced ON</div>
-                            <div style="font-size: 0.75rem; color: var(--text-secondary);">System is always quiet (suppress alerts)</div>
+                            <div style="font-weight: 600;">Завжди ТИХО</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Система завжди мовчить (без сповіщень)</div>
                         </div>
                     </label>
                     <label class="radio-group" id="q-off">
                         <input type="radio" name="quiet_mode" value="forced_off">
                         <div>
-                            <div style="font-weight: 600;">Forced OFF</div>
-                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Always active (normal notifications)</div>
+                            <div style="font-weight: 600;">Завжди АКТИВНО</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Звичайні сповіщення за будь-яких умов</div>
                         </div>
                     </label>
                     <button class="btn btn-primary" onclick="saveQuietMode()" style="margin-top: 10px;">
-                        Save Changes
+                        Зберегти зміни
                     </button>
                 </div>
             </div>
@@ -323,41 +323,41 @@
             <div class="admin-section full-width">
                 <div class="section-header">
                     <i class="fas fa-cog"></i>
-                    Configuration (config.json)
+                    Конфігурація (config.json)
                 </div>
                 <div class="admin-grid" style="grid-template-columns: 1fr 1fr;">
                     <div>
                         <div class="form-group">
-                            <label>Region</label>
+                            <label>Регіон</label>
                             <input type="text" id="cfg-region">
                         </div>
                         <div class="form-group">
-                            <label>Groups (comma separated)</label>
+                            <label>Групи (через кому)</label>
                             <input type="text" id="cfg-groups">
                         </div>
                         <div class="form-group">
-                            <label>AQ Station ID</label>
+                            <label>ID станції AQ</label>
                             <input type="text" id="cfg-aq-station">
                         </div>
                     </div>
                     <div>
                         <div class="form-group">
-                            <label>AQ Location Name</label>
+                            <label>Назва локації AQ</label>
                             <input type="text" id="cfg-aq-name">
                         </div>
                         <div class="form-group">
-                            <label>Latitude</label>
+                            <label>Широта (Lat)</label>
                             <input type="text" id="cfg-lat">
                         </div>
                         <div class="form-group">
-                            <label>Longitude</label>
+                            <label>Довгота (Lon)</label>
                             <input type="text" id="cfg-lon">
                         </div>
                     </div>
                 </div>
                 <div style="margin-top: 10px;">
                     <button class="btn btn-primary" onclick="saveConfig()">
-                        Save Config
+                        Зберегти налаштування
                     </button>
                 </div>
             </div>
@@ -366,37 +366,37 @@
             <div class="admin-section full-width">
                 <div class="section-header">
                     <i class="fas fa-edit"></i>
-                    Recent Event Logs
+                    Редактор подій (Logs)
                 </div>
                 
                 <div id="log-add-form">
                     <div class="form-group">
-                        <label>Event Type</label>
+                        <label>Тип події</label>
                         <select id="log-add-event">
-                            <option value="up">UP (Light appeared)</option>
-                            <option value="down">DOWN (Light disappeared)</option>
+                            <option value="up">🟢 Світло з'явилося (UP)</option>
+                            <option value="down">🔴 Світло зникло (DOWN)</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Date (YYYY-MM-DD)</label>
+                        <label>Дата (РРРР-ММ-ДД)</label>
                         <input type="text" id="log-add-date" placeholder="2024-05-20">
                     </div>
                     <div class="form-group">
-                        <label>Time (HH:MM)</label>
+                        <label>Час (ГГ:ХХ)</label>
                         <input type="text" id="log-add-time" placeholder="14:30">
                     </div>
                     <button class="btn btn-primary" onclick="addLog()">
-                        <i class="fas fa-plus"></i> Add
+                        <i class="fas fa-plus"></i> Додати
                     </button>
                 </div>
 
                 <table>
                     <thead>
                         <tr>
-                            <th>Time</th>
-                            <th>Event</th>
+                            <th>Час</th>
+                            <th>Подія</th>
                             <th>Timestamp</th>
-                            <th>Actions</th>
+                            <th>Дії</th>
                         </tr>
                     </thead>
                     <tbody id="log-table-body">
@@ -407,7 +407,7 @@
         </div>
 
         <footer>
-            &copy; 2025 Flash Monitor v2.0 &bull; Running on Flask &bull; <span id="server-time"></span>
+            &copy; 2026 Flash Monitor v2.0 &bull; Побудовано на Flask &bull; <span id="server-time"></span>
         </footer>
     </div>
 
@@ -419,7 +419,7 @@
         async function fetchData() {
             try {
                 const response = await fetch(`/api/admin/data?t=${token}`);
-                if (!response.ok) throw new Error('Failed to fetch data: ' + response.statusText);
+                if (!response.ok) throw new Error('Помилка завантаження: ' + response.statusText);
                 const data = await response.json();
                 
                 currentConfig = data.config;
@@ -430,19 +430,19 @@
                 document.getElementById('server-time').innerText = new Date().toLocaleTimeString();
             } catch (err) {
                 console.error(err);
-                alert('Fetch Error: ' + err.message);
+                alert('Помилка: ' + err.message);
             }
         }
 
         function renderStatus(state) {
             const statusEl = document.getElementById('sys-status');
-            statusEl.innerText = state.status.toUpperCase();
+            statusEl.innerText = state.status === 'up' ? 'Є СВІТЛО' : 'НЕМАЄ СВІТЛА';
             statusEl.className = 'status-badge ' + (state.status === 'up' ? 'status-up' : 'status-down');
             
             const lastSeen = new Date(state.last_seen * 1000);
-            document.getElementById('sys-last-seen').innerText = state.last_seen ? lastSeen.toLocaleString() : 'Never';
+            document.getElementById('sys-last-seen').innerText = state.last_seen ? lastSeen.toLocaleString() : 'Ніколи';
             
-            document.getElementById('sys-quiet-status').innerText = (state.quiet_status || 'unknown').toUpperCase();
+            document.getElementById('sys-quiet-status').innerText = (state.quiet_status === 'quiet' ? 'ТИША (QUIET)' : 'АКТИВНО').toUpperCase();
             
             // Set radio button
             const radios = document.getElementsByName('quiet_mode');
@@ -473,9 +473,10 @@
             
             logs.forEach(log => {
                 const tr = document.createElement('tr');
+                const eventLabel = log.event === 'up' ? 'З\'ЯВИЛОСЯ' : 'ЗНИКЛО';
                 tr.innerHTML = `
                     <td>${log.date_str}</td>
-                    <td><span class="status-badge ${log.event === 'up' ? 'status-up' : 'status-down'}">${log.event.toUpperCase()}</span></td>
+                    <td><span class="status-badge ${log.event === 'up' ? 'status-up' : 'status-down'}">${eventLabel}</span></td>
                     <td style="font-family: monospace; font-size: 0.75rem;">${log.timestamp}</td>
                     <td class="log-actions">
                         <button class="btn btn-secondary btn-sm" onclick="deleteLog(${log.timestamp})" style="padding: 4px 8px; font-size: 0.7rem;">
@@ -506,14 +507,14 @@
                     body: JSON.stringify({mode})
                 });
                 if (response.ok) {
-                    alert('Quiet mode updated');
+                    alert('Режим спокою оновлено');
                     fetchData();
                 } else {
                     const err = await response.json();
-                    alert('Error: ' + err.msg);
+                    alert('Помилка: ' + err.msg);
                 }
             } catch (err) {
-                alert('Request failed');
+                alert('Запит не вдався');
             }
         }
 
@@ -537,14 +538,14 @@
                     body: JSON.stringify(config)
                 });
                 if (response.ok) {
-                    alert('Configuration saved');
+                    alert('Конфігурацію збережено');
                     fetchData();
                 } else {
                     const err = await response.json();
-                    alert('Error: ' + err.msg);
+                    alert('Помилка: ' + err.msg);
                 }
             } catch (err) {
-                alert('Request failed');
+                alert('Запит не вдався');
             }
         }
 
@@ -557,7 +558,7 @@
             const timestamp = dt.getTime() / 1000;
             
             if (isNaN(timestamp)) {
-                alert('Invalid date or time');
+                alert('Некоректна дата або час');
                 return;
             }
             
@@ -571,15 +572,15 @@
                     fetchData();
                 } else {
                     const err = await response.json();
-                    alert('Error: ' + err.msg);
+                    alert('Помилка: ' + err.msg);
                 }
             } catch (err) {
-                alert('Request failed');
+                alert('Запит не вдався');
             }
         }
 
         async function deleteLog(timestamp) {
-            if (!confirm('Delete this log entry?')) return;
+            if (!confirm('Видалити цей запис з логів?')) return;
             
             try {
                 const response = await fetch(`/api/admin/logs/${timestamp}?t=${token}`, {
@@ -589,27 +590,27 @@
                     fetchData();
                 } else {
                     const err = await response.json();
-                    alert('Error: ' + err.msg);
+                    alert('Помилка: ' + err.msg);
                 }
             } catch (err) {
-                alert('Request failed');
+                alert('Запит не вдався');
             }
         }
 
         async function restartServices() {
-            if (!confirm('Restart monitoring services? This will briefly interrupt data collection.')) return;
+            if (!confirm('Перезапустити сервіси моніторингу? Це короткочасно перерве збір даних.')) return;
             
             try {
                 const response = await fetch(`/api/admin/service/restart?t=${token}`, {
                     method: 'POST'
                 });
                 if (response.ok) {
-                    alert('Restart command sent successfully');
+                    alert('Команду на перезапуск надіслано');
                 } else {
-                    alert('Failed to restart services');
+                    alert('Не вдалося перезапустити сервіси');
                 }
             } catch (err) {
-                alert('Request failed');
+                alert('Запит не вдався');
             }
         }
 
