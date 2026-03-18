@@ -13,6 +13,7 @@ from urllib.parse import urlparse, parse_qs
 import sys
 import re
 import fcntl
+import hashlib
 from dotenv import load_dotenv
 
 from parser_service import update_local_schedules
@@ -93,7 +94,8 @@ state = {
     "quiet_status": "active", # active, quiet
     "pending_confirmation": False,
     "stability_start": time.time(),
-    "admin_token": None
+    "admin_token": None,
+    "last_schedule_hash": None
 }
 
 state_lock = threading.RLock()
@@ -784,14 +786,37 @@ def sync_schedules():
                                     break
                             if should_alert: break
                         if should_alert: break
+                    
+                    # Deduplicate: Check if effective slots are the same as last alerted
+                    if should_alert:
+                        # Extract slots structure for hashing
+                        slots_structure = {}
+                        for s_key in ['github', 'yasno']:
+                            sources = data.get(s_key, {})
+                            slots_structure[s_key] = {}
+                            for group_name, days in sources.items():
+                                slots_structure[s_key][group_name] = {
+                                    d: day_data.get('slots') for d, day_data in days.items()
+                                }
+                        
+                        current_hash = hashlib.md5(json.dumps(slots_structure, sort_keys=True).encode()).hexdigest()
+                        
+                        with state_lock:
+                            if current_hash == state.get("last_schedule_hash"):
+                                should_alert = False
+                                print("Schedule changed in sources, but effective slots are identical to last alerted. Skipping Telegram alert.")
+                            else:
+                                state["last_schedule_hash"] = current_hash
+                                save_state()
+
             except Exception as e:
-                print(f"Error checking for outages in new schedule: {e}")
+                print(f"Error checking for outages or deduplicating: {e}")
                 should_alert = True # Fallback to alert if check fails
 
             if should_alert:
                 send_telegram("⚠️ <b>Увага!</b>\n<b>Оновлено графіки відключень!</b>\nНові дані вже доступні в каналі та на сайті\n⚡️ FLASH.srvrs.top")
             else:
-                print("Schedule updated but no outages planned. Skipping alert.")
+                print("Schedule updated but alert skipped (deduplicated or no outages).")
 
 def check_quiet_mode_eligibility():
     """
@@ -922,6 +947,20 @@ def schedule_loop():
                         state["stability_start"] = time.time()
                     else:
                         msg = "🔊 Увага! Виявлено зміни в графіку або фактичні відключення. Режим спокою вимкнено."
+                        
+                        # Trigger detailed text report generation
+                        def trigger_report():
+                            try:
+                                base_dir = os.path.dirname(os.path.abspath(__file__))
+                                python_exec = sys.executable
+                                script_path = os.path.join(base_dir, "generate_text_report.py")
+                                # Wait a bit for state to save and then run
+                                time.sleep(2)
+                                subprocess.run([python_exec, script_path], check=True, cwd=base_dir)
+                            except Exception as e:
+                                print(f"Failed to trigger text report after quiet mode exit: {e}")
+                        
+                        threading.Thread(target=trigger_report).start()
                     
                     threading.Thread(target=send_telegram, args=(msg,)).start()
                     save_state()
