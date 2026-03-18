@@ -9,7 +9,7 @@
 
 <br>
 
-# СВІТЛО⚡БЕЗПЕКА (Light & Safety) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) DOCKER Edition
+# СВІТЛО⚡БЕЗПЕКА (Light & Safety) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) BARE METAL Edition
 
 <p align="center">
   <a href="https://hub.docker.com/r/webyhomelab/flash-monitor-kyiv"><img src="https://img.shields.io/docker/pulls/webyhomelab/flash-monitor-kyiv?logo=docker&logoColor=white" alt="Docker Pulls"></a>
@@ -18,14 +18,14 @@
   <a href="https://github.com/weby-homelab/flash-monitor-kyiv/issues"><img src="https://img.shields.io/github/issues/weby-homelab/flash-monitor-kyiv" alt="GitHub issues"></a>
   <a href="https://github.com/weby-homelab/flash-monitor-kyiv/blob/main/LICENSE"><img src="https://img.shields.io/github/license/weby-homelab/flash-monitor-kyiv" alt="License"></a>
   <img src="https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white" alt="Python Version">
-  <img src="https://img.shields.io/badge/Platform-Docker-2496ED?style=flat&logo=docker&logoColor=white" alt="Platform Docker">
+  <img src="https://img.shields.io/badge/Platform-Bare--Metal-E4405F?style=flat&logo=linux&logoColor=white" alt="Platform Bare Metal">
 </p>
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡БЕЗПЕКА Dashboard Preview" width="100%">
 </p>
 
-**Autonomous Docker-based Power & Safety Monitoring System for Kyiv.**
+**Autonomous Power & Safety Monitoring System for Kyiv.**
 
 **This project provides** full control over the energy and security situation by analyzing real network data and official DTEK/Yasno schedules locally.
 
@@ -64,7 +64,7 @@
 - **Smart Merge:** Correct merging and calculation of overnight power intervals.
 
 ### 💻 Admin Panel
-- **Secret URL:** Upon each startup, the system generates a unique random path for administration. It can be found in the container logs (`docker logs flash-monitor`).
+- **Secret URL:** Upon each startup, the system generates a unique random path for administration. It can be found in the service logs (`journalctl -u flash-monitor`).
 - **Status Management:** Ability to instantly change the power status (On / Off / Unknown) manually if the automation fails.
 - **Event Editing:** Full access to event history for correcting recorded intervals.
 
@@ -108,7 +108,7 @@ flowchart TD
     end
 
     %% -- Core Engine --
-    subgraph Core ["🚀 CORE ENGINE (Docker)"]
+    subgraph Core ["🚀 CORE ENGINE (Bare Metal)"]
         direction TB
         WEB["🧪 <b>FLASK SERVER</b><br/>(API & Web Engine)"]
         WORKER["⚙️ <b>BACKGROUND WORKER</b><br/>(Monitor & Scheduler)"]
@@ -193,7 +193,7 @@ For sending Push signals, it is highly recommended to use the **HTTPS address of
 ## 🛠 Tech Stack
 - **Backend:** Python 3.11, Flask, Gunicorn.
 - **Analytics:** Matplotlib, BeautifulSoup4.
-- **Infra:** Docker, PWA (Progressive Web App).
+- **Infra:** Systemd, PWA (Progressive Web App).
 
 ---
 
