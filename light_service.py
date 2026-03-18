@@ -834,7 +834,7 @@ def check_quiet_mode_eligibility():
                 logs = json.load(f)
                 if isinstance(logs, list):
                     for entry in logs:
-                        if entry.get("event") == "down" and entry.get("timestamp", 0) > cutoff_24h_ago:
+                        if entry.get("event") == "down" and entry.get("timestamp", 0) >= cutoff_24h_ago:
                             print(f"Quiet Mode: Ineligible due to past outage at {entry.get('date_str')}")
                             return False
     except Exception as e:

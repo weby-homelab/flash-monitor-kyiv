@@ -383,6 +383,24 @@ def update_telegram_photo(message_id, photo_path, caption):
             print(f"Error updating report: {e}")
             return False
 
+def delete_telegram_message(message_id):
+    url = f"https://api.telegram.org/bot{TOKEN}/deleteMessage"
+    data = {
+        'chat_id': CHAT_ID,
+        'message_id': message_id
+    }
+    try:
+        r = requests.post(url, data=data, timeout=10)
+        if r.status_code == 200:
+            print(f"Old report message {message_id} deleted successfully.")
+            return True
+        else:
+            print(f"Failed to delete old report message: {r.text}")
+            return False
+    except Exception as e:
+        print(f"Error deleting old report message: {e}")
+        return False
+
 def send_telegram_photo(photo_path, caption, target_date):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     with open(photo_path, 'rb') as f:
@@ -532,6 +550,9 @@ if __name__ == "__main__":
         else:
             if is_final:
                 print(f"Finalizing report for {target_date} as a NEW message...")
+                if last_id:
+                    print(f"Deleting yesterday's old report message (ID: {last_id})...")
+                    delete_telegram_message(last_id)
             else:
                 print("No report ID for today. Sending new report...")
             send_telegram_photo(filename, caption, target_date)

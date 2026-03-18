@@ -141,21 +141,21 @@ def generate_holiday_report(today_str, tomorrow_str, data, group, icons):
     for s_key in ['github', 'yasno']:
         s_data = data.get(s_key, {}).get(group, {})
         if not today_slots: today_slots = s_data.get(today_str, {}).get('slots')
-        if not tomorrow_slots: tomorrow_slots = s_data.get(tomorrow_str, {}).get('slots')
+        if tomorrow_str and not tomorrow_slots: tomorrow_slots = s_data.get(tomorrow_str, {}).get('slots')
     
     today_all_on = is_all_on(today_slots)
-    tomorrow_all_on = is_all_on(tomorrow_slots)
+    tomorrow_all_on = is_all_on(tomorrow_slots) if tomorrow_str else False
     
     if not today_all_on and not tomorrow_all_on:
         return None
         
     now = datetime.datetime.now(KYIV_TZ)
     t_dt = datetime.datetime.strptime(today_str, "%Y-%m-%d")
-    tm_dt = datetime.datetime.strptime(tomorrow_str, "%Y-%m-%d")
     
     header = "Світла смуга триває! 🕊️💡"
     
-    if today_all_on and tomorrow_all_on:
+    if today_all_on and tomorrow_all_on and tomorrow_str:
+        tm_dt = datetime.datetime.strptime(tomorrow_str, "%Y-%m-%d")
         desc = "Сусіди, графіки на сьогодні та завтра нарешті «відпочивають». Маємо повні 48 годин світла без жодних перерв."
         days_info = f"{t_dt.strftime('%d.%m')} ({DAYS_UA[t_dt.weekday()]}): Світло є 24 год. 🔆\n{tm_dt.strftime('%d.%m')} ({DAYS_UA[tm_dt.weekday()]}): Світло є 24 год. 🔆"
     elif today_all_on:
@@ -165,9 +165,8 @@ def generate_holiday_report(today_str, tomorrow_str, data, group, icons):
         return None # Fallback to standard for mixed days if today has outages
 
     footer = "Дякуємо енергетикам і бажаємо всім максимально продуктивних та яскравих днів! 👋✨"
-    update_line = f"---\n🕐 Оновлено: {now.strftime('%H:%M')}"
     
-    full_text = f"<b>{header}</b>\n\n{desc}\n\n{days_info}\n\n{footer}\n\n{update_line}"
+    full_text = f"<b>{header}</b>\n\n{desc}\n\n{days_info}\n\n{footer}"
     return full_text
 
 def main():
@@ -218,15 +217,17 @@ def main():
     target_slot = "morning"
     if evening_id:
         target_slot = "evening"
-    elif current_hour >= 22:
-        target_slot = "evening"
-    elif morning_id and has_tomorrow_now and not morning_had_tomorrow:
+    elif current_hour >= 20 and has_tomorrow_now:
         target_slot = "evening"
     
     all_day_contents = []
     
-    for d_idx, d_str in enumerate([today_str, tomorrow_str]):
-        is_today = (d_idx == 0)
+    days_to_process = [today_str]
+    if target_slot == "evening":
+        days_to_process.append(tomorrow_str)
+    
+    for d_idx, d_str in enumerate(days_to_process):
+        is_today = (d_str == today_str)
         dt = datetime.datetime.strptime(d_str, "%Y-%m-%d")
         
         source_blocks = []
@@ -286,17 +287,20 @@ def main():
     group_display = group.replace('GPV', '')
     
     # Try generating a holiday report if today is all-on
-    holiday_text = generate_holiday_report(today_str, tomorrow_str, data, group, icons)
+    holiday_tomorrow_str = tomorrow_str if target_slot == "evening" else None
+    holiday_text = generate_holiday_report(today_str, holiday_tomorrow_str, data, group, icons)
     
     if holiday_text:
-        full_text = holiday_text
+        base_text = holiday_text
     else:
         combined_content = "\n\n".join(all_day_contents)
-        updated_text = cfg.get('ui', {}).get('text', {}).get('updated', 'Оновлено')
-        footer = f"🕐 {updated_text}: {now.strftime('%H:%M')}"
-        full_text = f"📈 <b>Графік групи {group_display}</b>\n\n{combined_content}\n\n{footer}"
+        base_text = f"📈 <b>Графік групи {group_display}</b>\n\n{combined_content}"
     
-    content_hash = hashlib.md5(full_text.encode()).hexdigest()
+    content_hash = hashlib.md5(base_text.encode()).hexdigest()
+    
+    updated_text = cfg.get('ui', {}).get('text', {}).get('updated', 'Оновлено')
+    footer = f"🕐 {updated_text}: {now.strftime('%H:%M')}"
+    full_text = f"{base_text}\n\n{footer}"
     
     last_id = today_state.get(f"{target_slot}_id") if not force_new else None
     last_hash = today_state.get(f"{target_slot}_hash") if not force_new else None
