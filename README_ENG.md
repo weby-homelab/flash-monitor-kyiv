@@ -9,7 +9,7 @@
 
 <br>
 
-# СВІТЛО⚡️ БЕЗПЕКА (Light & Safety) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) BARE METAL Edition
+# LIGHT⚡️ SAFETY [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) BARE METAL Edition
 
 <p align="center">
   <a href="https://hub.docker.com/r/webyhomelab/flash-monitor-kyiv"><img src="https://img.shields.io/docker/pulls/webyhomelab/flash-monitor-kyiv?logo=docker&logoColor=white" alt="Docker Pulls"></a>
@@ -22,66 +22,66 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡️ БЕЗПЕКА Dashboard Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="LIGHT⚡️ SAFETY Dashboard Preview" width="100%">
 </p>
 
-**Autonomous Power & Safety Monitoring System for Kyiv.**
+**Autonomous power & safety monitoring system for Kyiv.**
 
-This project provides full control over the energy and security situation by analyzing real network data and official DTEK/Yasno schedules locally.
+The project provides full control over the energy and security situation by analyzing real network data and official Yasno/DTEK schedules locally.
 
-🔗 **Live Dashboard:** [flash.srvrs.top](https://flash.srvrs.top/)
+🔗 **Live monitoring:** [flash.srvrs.top](https://flash.srvrs.top/)
 
 ## 📚 Project Documentation
 | File | Description |
 | :--- | :--- |
-| 📖 **[Installation and Setup Guide](INSTRUCTIONS_INSTALL_ENG.md)** | Main guide for deploying the system (Docker, environment variables, API). |
-| 🔌 **[IoT Devices Setup](INSTRUCTIONS_ENG.md)** | Sketches and instructions for ESP8266/ESP32 microcontrollers (physical power presence sensors). |
-| 🛠️ **[Development Guide](DEVELOPMENT_ENG.md)** | Architectural rules, security protocols, and code deployment instructions. |
+| 📖 **[Installation and Setup](INSTRUCTIONS_INSTALL_ENG.md)** | Main guide for system deployment (Docker, variables, API). |
+| 🔌 **[IoT Device Guides](INSTRUCTIONS_ENG.md)** | Sketches and instructions for ESP8266/ESP32 microcontrollers (physical light sensors). |
+| 🛠️ **[Developer Guide](DEVELOPMENT_ENG.md)** | Architectural rules, security protocols, and code deployment instructions. |
 
 ---
 
-## 🚀 Key Features
+## 🚀 Main Features
 
 ### 💡 Smart Power Monitoring
-- **Smart Bootstrap:** Automatic deployment of current planned schedules for your specific group and region upon first launch.
-- **Heartbeat Tracking & Manual Trigger:** Real-time power monitoring via IoT signals (`/api/push`) and instant manual status control (`/api/down`).
-- **API Resilience:** Reliable local caching of schedules, protecting against DTEK/Yasno server downtimes.
-- **"Plan vs Fact" Analytics:** Automatic comparison of actual outages with planned schedules directly on the dashboard.
-- **Schedule Accuracy:** Calculation of deviations (late or early power restoration/outage) for every event.
-- **Visualization:** Generation of daily and weekly analytical charts in a signature style.
-- **UI/UX Design:** "Black-and-White" Glassmorphism theme with monospace fonts for clear, tabular reports.
+- **Smart Bootstrap:** Automatic deployment of current planned schedules for your group and region upon first launch.
+- **Heartbeat Tracking & Manual Trigger:** Real-time light monitoring via IoT signals (`/api/push`) and instant manual status control (`/api/down`).
+- **API Resilience:** Reliable local caching of schedules, protecting against DTEK/Yasno server failures.
+- **"Plan vs Fact" Analytics:** Automatic comparison of real outages with planned schedules directly on the dashboard.
+- **Schedule Accuracy:** Calculation of deviations (delay or early restoration) for each event.
+- **Visualization:** Generation of daily and weekly charts in a signature style.
+- **UI/UX Design:** "Black-and-White" theme with Glassmorphism effect and monospace fonts for clear reports.
 
-### 🛡️ Safety & Environment
-- **Air Raid Alerts:** Instant Telegram notifications about the start and end of air raid alerts in Kyiv.
-- **Live Map:** Integrated interactive map of alerts for Kyiv and the region.
-- **Air Quality (AQI):** Monitoring of PM2.5, PM10, and radiation background (location: Symyrenka).
+### 🛡️ Safety & Ecology
+- **Air Raid Alerts:** Instant status and Telegram notifications about the start and end of alerts in Kyiv.
+- **Live Map:** Integrated map of alerts for Kyiv and the region.
+- **Air Quality (AQI):** Monitoring of PM2.5, PM10, and radiation background (Location: Symyrenka).
 - **Weather:** Current temperature, humidity, and wind parameters.
 
 ### 🔔 Telegram Notifications
-- **Intelligent Reports:** Text-based schedule lists with right-aligned duration times (tabular-nums).
-- **Morning Report (06:00):** Comprehensive overview of the situation for today and tomorrow (if available).
+- **Intelligent Reports:** Text charts with right-aligned duration (tabular-nums).
+- **Morning Report (06:00):** Full overview of the situation for today and tomorrow (if available).
 - **Evening/Instant Update:** Automatic dispatch of tomorrow's schedule immediately after its publication by DTEK.
-- **Smart Merge:** Correct merging and calculation of overnight power intervals.
+- **Smart Merge:** Correct merging of overnight intervals.
 
 ### 💻 Admin Panel
 - **Secret URL:** Upon each startup, the system generates a unique random path for administration. It can be found in the service logs (`journalctl -u flash-monitor`).
 - **Status Management:** Ability to instantly change the power status (On / Off / Unknown) manually if the automation fails.
 - **Event Editing:** Full access to event history for correcting recorded intervals.
 
-### 🔇 Quiet Mode
-- **24/24 Logic:** The system automatically enters "Quiet Mode" if no actual outages have occurred in the last **24 hours** and none are planned for the next **24 hours**. This avoids unnecessary noise in Telegram when the energy situation is stable.
-- **Confirmation Safety Net:** If a power outage occurs during Quiet Mode, the system will not send a notification to the channel immediately but will wait for your confirmation via private messages (Inline buttons).
-- **Auto-Exit:** Quiet Mode is automatically disabled as soon as any outage appears in the schedule or a confirmed power loss is detected.
+### 🔇 Information Silence (Quiet Mode)
+- **24/24 Logic:** The system automatically enters "Quiet Mode" if there were no actual outages in the last **24 hours**, and none are planned for the next **24 hours**. This avoids unnecessary noise in Telegram when the power situation is stable.
+- **Confirmation Safety Net:** If light disappears during Quiet Mode, the system will not send a notification to the channel immediately but will wait for your confirmation via private messages (Inline buttons).
+- **Auto-Exit:** Quiet Mode is automatically disabled as soon as any restriction appears in the schedule or a confirmed outage is recorded.
 
-#### 📱 Real Message Examples
-- 📊 **[Daily "Plan vs Fact" Report (Smart Daily Report)](https://t.me/svitlobot_Symyrenka22B/1230)**
-- 📈 **[Weekly Analytics Summary](https://t.me/svitlobot_Symyrenka22B/1192)**
-- 🔴 **[Power Outage Alert with Schedule Accuracy](https://t.me/svitlobot_Symyrenka22B/1209)**
-- 🟢 **[Power Restoration Alert with Schedule Accuracy](https://t.me/svitlobot_Symyrenka22B/1212)**
-- ⚠️ **[Instant Alert on DTEK Schedule Change](https://t.me/svitlobot_Symyrenka22B/1222)**
-- 📈 **[DTEK and YASNO Schedules Publication](https://t.me/svitlobot_Symyrenka22B/1219)**
-- 🚨 **[Air Raid Alert Notification in Kyiv](https://t.me/svitlobot_Symyrenka22B/1196)**
-- ✅ **[Air Raid All-Clear Notification](https://t.me/svitlobot_Symyrenka22B/1197)**
+#### 📱 Real message examples
+- 📊 **[Daily "Plan vs Fact" Chart (Smart Daily Report)](https://t.me/svitlobot_Symyrenka22B/1230)**
+- 📈 **[Weekly outage analytics](https://t.me/svitlobot_Symyrenka22B/1192)**
+- 🔴 **[Outage notification with schedule accuracy](https://t.me/svitlobot_Symyrenka22B/1209)**
+- 🟢 **[Restoration notification with schedule accuracy](https://t.me/svitlobot_Symyrenka22B/1212)**
+- ⚠️ **[Instant alert about DTEK schedule change](https://t.me/svitlobot_Symyrenka22B/1222)**
+- 📈 **[Publication of DTEK and YASNO schedules](https://t.me/svitlobot_Symyrenka22B/1219)**
+- 🚨 **[Air raid alert in Kyiv](https://t.me/svitlobot_Symyrenka22B/1196)**
+- ✅ **[Air raid all-clear notification](https://t.me/svitlobot_Symyrenka22B/1197)**
 
 ---
 
@@ -153,7 +153,7 @@ flowchart TD
 
 ## 🐳 Quick Start via Docker
 
-**Official Image:** `webyhomelab/flash-monitor-kyiv:latest`
+**Official image:** `webyhomelab/flash-monitor-kyiv:latest`
 
 ### Docker Compose
 ```yaml
@@ -181,14 +181,14 @@ services:
 
 ---
 
-## 💡 Tip for IoT Sensors (Heartbeat)
+## 💡 Tip for IoT sensors (Heartbeat)
 
-For sending Push signals, it is highly recommended to use the **HTTPS address of your domain** (e.g., via Cloudflare Tunnel) instead of a direct IP address:
+To send Push signals, it is recommended to use the **HTTPS address of your domain** (for example, via Cloudflare Tunnel) instead of a direct IP address:
 
 *   **🛡️ Security:** HTTPS encrypts your secret key during transmission.
-*   **🧩 Flexibility:** If you change servers, you won't need to reflash your hardware sensors — simply update the tunnel settings.
+*   **🧩 Flexibility:** If you change the server, you don't need to reflash the sensors — just change the tunnel settings.
 
-**Example:** `https://flash.srvrs.top/api/push/your_secret_key`
+**Example:** `https://flash.srvrs.top/api/push/your_key`
 
 ---
 
@@ -200,15 +200,15 @@ For sending Push signals, it is highly recommended to use the **HTTPS address of
 ---
 
 ## 📝 Update History
-- **v2.0.1**: Optimized Quiet Mode logic (24/24 formula). Fixed minor bugs in dashboard event texts.
-- **v2.0.0**: Major update: Introduced the Web Admin Panel and intelligent "Quiet Mode" with safety confirmation loop for power outages.
-- **v1.17.5**: Added "Holiday Mode" for full-light days, smart dashboard fallback texts, and new rollover logic (final report at 00:01).
-- **v1.17.4**: Dynamic Emergency Banner source attribution (DTEK, YASNO, or both). Intelligent footer source filtering (only shows source if it provided actual slots).
-- **v1.17.3**: Smart Schedule Fallback logic and Emergency status support.
+- **v2.0.1**: Optimization of "Quiet Mode" logic (switch to 24/24 formula). Fixed minor errors in dashboard texts.
+- **v2.0.0**: Major update: added a web control panel (Admin Panel) and intelligent "Quiet Mode" with secure outage confirmation.
+- **v1.17.5**: Added "Holiday Mode", smart status display on the dashboard, and new report finalization logic at 00:01.
+- **v1.17.4**: Dynamic Emergency status source attribution (DTEK, YASNO, or both). Intelligent source filtering in the footer.
+- **v1.17.3**: Smart schedule source selection (Smart Fallback) and Emergency status support.
 - **v1.17.2**: Updated air raid alert format.
 
 ## 📜 License
-Distributed under the **MIT** License.
+Distributed under the **MIT** license.
 
 <p align="center">
   ✦ 2026 Weby Homelab ✦<br>
