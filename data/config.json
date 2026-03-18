@@ -1,0 +1,69 @@
+{
+  "settings": {
+    "region": "kyiv",
+    "timezone": "Europe/Kyiv",
+    "groups": ["GPV36.1"],
+    "style": "list",
+    "table_format": "code_lines",
+    "max_messages": 1,
+    "show_intervals_detail": false
+  },
+  "sources": {
+    "github": {
+      "enabled": true,
+      "name": "ДТЕК"
+    },
+    "yasno": {
+      "enabled": true,
+      "name": "Yasno",
+      "region_id": "25",
+      "dso_id": "902"
+    },
+    "air_quality": {
+      "seb_station": "17095",
+      "lat": "50.408",
+      "lon": "30.400",
+      "location_name": "Борщагівка (Симиренка)"
+    }
+  },
+  "ui": {
+    "icons": {
+      "calendar": "📆",
+      "clock": "🕐",
+      "on": "🔆",
+      "off": "✖️",
+      "on_list": "🔆",
+      "off_list": "✖️",
+      "emergency": "⚠️",
+      "pending": "⏳",
+      "separator": "⠅",
+      "light_on": "🔆",
+      "light_off": "✖️"
+    },
+    "text": {
+      "on_full": "Світло є",
+      "off_full": "Світла нема",
+      "on_detail": "Світло буде",
+      "off_detail": "Світла не буде",
+      "emergency": "Аварійне Відключення!",
+      "pending": "Очікується інформація про графік",
+      "updated": "Оновлено",
+      "hours_short": "год."
+    },
+    "format": {
+      "header_template": "🔆 Графік групи <b>{group}</b> 🔆",
+      "separator_source": "✧  ✧  ✧",
+      "separator_day": "■  ■  ■",
+      "separator_footer": " - ",
+      "table_separator": "-",
+      "detail_indent": "   "
+    },
+    "spacing": {
+      "before_separator_source": 1,
+      "before_separator_day": 1,
+      "before_summary": 1,
+      "before_footer": 0,
+      "after_footer_separator": 1
+    }
+  }
+}

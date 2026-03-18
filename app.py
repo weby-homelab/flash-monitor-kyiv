@@ -1,5 +1,5 @@
 import requests
-from flask import Flask, render_template, jsonify, send_from_directory, make_response
+from flask import Flask, render_template, jsonify, send_from_directory, make_response, request
 import json
 from datetime import datetime, timedelta
 import os
@@ -7,6 +7,7 @@ import time
 import re
 from bs4 import BeautifulSoup
 import threading
+import subprocess
 
 # Запуск ініціалізації для нових користувачів
 import bootstrap
@@ -20,6 +21,7 @@ from light_service import (
     format_event_message, get_next_scheduled_event,
     trigger_daily_report_update, trigger_weekly_report_update,
     get_air_raid_alert,
+    TOKEN, ADMIN_CHAT_ID,
     KYIV_TZ, FileLock, STATE_LOCK_FILE, DATA_DIR, EVENT_LOG_FILE
 )
 
@@ -431,6 +433,13 @@ def index():
     # Force dark theme preference for the dashboard
     return render_template('index.html')
 
+@app.route('/admin')
+def admin_panel():
+    token = request.args.get('t')
+    if token and token == state.get('admin_token'):
+        return render_template('admin.html')
+    return "Access Denied", 403
+
 @app.route('/api/status')
 def api_status():
     load_state()
@@ -529,9 +538,191 @@ def down_api(key):
         "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
     })
 
+@app.route('/api/tg/webhook', methods=['POST'])
+def tg_webhook():
+    data = request.get_json()
+    if not data: return "OK"
+    
+    if 'callback_query' in data:
+        cb = data['callback_query']
+        cb_data = cb.get('data', '')
+        msg_id = cb.get('message', {}).get('message_id')
+        chat_id = cb.get('message', {}).get('chat', {}).get('id')
+        
+        if cb_data.startswith('confirm_down_'):
+            load_state()
+            with state_lock:
+                state['quiet_status'] = 'active'
+                state['pending_confirmation'] = False
+                
+                # Send the public Telegram alert
+                try:
+                    timestamp = float(cb_data.split('_')[-1])
+                except:
+                    timestamp = time.time()
+                
+                msg = format_event_message(False, timestamp, state.get("came_up_at", 0))
+                threading.Thread(target=send_telegram, args=(msg,)).start()
+                save_state()
+            
+            # Answer callback
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
+                "callback_query_id": cb['id'],
+                "text": "🔴 Підтверджено"
+            })
+            
+            # Edit message
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "🔴 Світло зникло (Підтверджено)"
+            })
+
+        elif cb_data.startswith('ignore_down_'):
+            load_state()
+            with state_lock:
+                state['pending_confirmation'] = False
+                save_state()
+            
+            # Answer callback
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
+                "callback_query_id": cb['id'],
+                "text": "🟢 Ігноровано"
+            })
+            
+            # Edit message
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "🟢 Збій / Роботи (Ігноровано)"
+            })
+            
+    return "OK"
+
+# --- Admin APIs ---
+
+def check_admin_token():
+    t = request.args.get('t')
+    if not t or t != state.get('admin_token'):
+        return False
+    return True
+
+@app.route('/api/admin/data')
+def admin_data():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+    
+    config_path = "config.json"
+    config = {}
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+            
+    load_state()
+    
+    logs = []
+    if os.path.exists(EVENT_LOG_FILE):
+        with open(EVENT_LOG_FILE, 'r') as f:
+            logs = json.load(f)
+            
+    return jsonify({
+        "config": config,
+        "state": state,
+        "logs": logs[-20:][::-1] # Last 20, newest first
+    })
+
+@app.route('/api/admin/config', methods=['POST'])
+def admin_config_post():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+        
+    new_config = request.get_json()
+    if not new_config:
+        return jsonify({"status": "error", "msg": "Invalid JSON"}), 400
+        
+    try:
+        config_path = "config.json"
+        with open(config_path, 'w') as f:
+            json.dump(new_config, f, indent=2)
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e)}), 500
+
+@app.route('/api/admin/quiet/mode', methods=['POST'])
+def admin_quiet_mode():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+        
+    data = request.get_json()
+    mode = data.get('mode')
+    if mode not in ['auto', 'forced_on', 'forced_off']:
+        return jsonify({"status": "error", "msg": "Invalid mode"}), 400
+        
+    with state_lock:
+        load_state()
+        state['quiet_mode'] = mode
+        save_state()
+        
+    return jsonify({"status": "ok"})
+
+@app.route('/api/admin/logs/add', methods=['POST'])
+def admin_logs_add():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+        
+    data = request.get_json()
+    event = data.get('event')
+    timestamp = data.get('timestamp')
+    
+    if not event or not timestamp:
+        return jsonify({"status": "error", "msg": "Missing event or timestamp"}), 400
+        
+    try:
+        log_event(event, float(timestamp))
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e)}), 500
+
+@app.route('/api/admin/logs/<float:timestamp>', methods=['DELETE'])
+def admin_logs_delete(timestamp):
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+        
+    try:
+        with FileLock(STATE_LOCK_FILE):
+            if os.path.exists(EVENT_LOG_FILE):
+                with open(EVENT_LOG_FILE, 'r') as f:
+                    logs = json.load(f)
+                
+                # Filter out the log with given timestamp (within small margin for float)
+                new_logs = [log for log in logs if abs(log.get('timestamp', 0) - timestamp) > 0.1]
+                
+                with open(EVENT_LOG_FILE, 'w') as f:
+                    json.dump(new_logs, f, indent=2)
+                    
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e)}), 500
+
+@app.route('/api/admin/service/restart', methods=['POST'])
+def admin_service_restart():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+        
+    try:
+        def restart():
+            time.sleep(1)
+            subprocess.run(["systemctl", "restart", "flash-monitor.service", "flash-background.service"])
+            
+        threading.Thread(target=restart).start()
+        return jsonify({"status": "ok", "msg": "Services restarting..."})
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e)}), 500
+
 # Initialize State
 load_state()
 print(f"Push URL configured for key: {state.get('secret_key')}")
+print(f"Admin URL: /admin?t={state.get('admin_token')}")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050)

@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash Monitor Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --accent-color: #3b82f6;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .admin-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: -1px;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .admin-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .admin-section.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .section-header i {
+            margin-right: 12px;
+            color: var(--accent-color);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        input[type="text"], input[type="number"], select, textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-up { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status-down { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            text-align: left;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            padding: 12px 8px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 12px 8px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .log-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .quiet-mode-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .radio-group:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .radio-group.active {
+            border-color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .radio-group input {
+            cursor: pointer;
+        }
+
+        #log-add-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 12px;
+            align-items: end;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 768px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <div>
+                <h1>Flash Monitor Admin</h1>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">v2.0 Control Panel</p>
+            </div>
+            <button class="btn btn-secondary" onclick="fetchData()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </header>
+
+        <div class="admin-grid">
+            <!-- System Status -->
+            <div class="admin-section">
+                <div class="section-header">
+                    <i class="fas fa-server"></i>
+                    System Status
+                </div>
+                <div id="status-display">
+                    <div class="form-group">
+                        <label>Current Status</label>
+                        <span id="sys-status" class="status-badge">Loading...</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Last Seen</label>
+                        <div id="sys-last-seen">-</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Quiet Status</label>
+                        <div id="sys-quiet-status">-</div>
+                    </div>
+                    <div style="margin-top: 20px; display: flex; gap: 10px;">
+                        <button class="btn btn-danger" onclick="restartServices()">
+                            <i class="fas fa-power-off"></i> Restart Services
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiet Mode -->
+            <div class="admin-section">
+                <div class="section-header">
+                    <i class="fas fa-volume-mute"></i>
+                    Quiet Mode
+                </div>
+                <div class="quiet-mode-options">
+                    <label class="radio-group" id="q-auto">
+                        <input type="radio" name="quiet_mode" value="auto">
+                        <div>
+                            <div style="font-weight: 600;">Auto</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Quiet if no outages planned/detected</div>
+                        </div>
+                    </label>
+                    <label class="radio-group" id="q-on">
+                        <input type="radio" name="quiet_mode" value="forced_on">
+                        <div>
+                            <div style="font-weight: 600;">Forced ON</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">System is always quiet (suppress alerts)</div>
+                        </div>
+                    </label>
+                    <label class="radio-group" id="q-off">
+                        <input type="radio" name="quiet_mode" value="forced_off">
+                        <div>
+                            <div style="font-weight: 600;">Forced OFF</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Always active (normal notifications)</div>
+                        </div>
+                    </label>
+                    <button class="btn btn-primary" onclick="saveQuietMode()" style="margin-top: 10px;">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+
+            <!-- Configuration -->
+            <div class="admin-section full-width">
+                <div class="section-header">
+                    <i class="fas fa-cog"></i>
+                    Configuration (config.json)
+                </div>
+                <div class="admin-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div>
+                        <div class="form-group">
+                            <label>Region</label>
+                            <input type="text" id="cfg-region">
+                        </div>
+                        <div class="form-group">
+                            <label>Groups (comma separated)</label>
+                            <input type="text" id="cfg-groups">
+                        </div>
+                        <div class="form-group">
+                            <label>AQ Station ID</label>
+                            <input type="text" id="cfg-aq-station">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label>AQ Location Name</label>
+                            <input type="text" id="cfg-aq-name">
+                        </div>
+                        <div class="form-group">
+                            <label>Latitude</label>
+                            <input type="text" id="cfg-lat">
+                        </div>
+                        <div class="form-group">
+                            <label>Longitude</label>
+                            <input type="text" id="cfg-lon">
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-primary" onclick="saveConfig()">
+                        Save Config
+                    </button>
+                </div>
+            </div>
+
+            <!-- Log Editor -->
+            <div class="admin-section full-width">
+                <div class="section-header">
+                    <i class="fas fa-edit"></i>
+                    Recent Event Logs
+                </div>
+                
+                <div id="log-add-form">
+                    <div class="form-group">
+                        <label>Event Type</label>
+                        <select id="log-add-event">
+                            <option value="up">UP (Light appeared)</option>
+                            <option value="down">DOWN (Light disappeared)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date (YYYY-MM-DD)</label>
+                        <input type="text" id="log-add-date" placeholder="2024-05-20">
+                    </div>
+                    <div class="form-group">
+                        <label>Time (HH:MM)</label>
+                        <input type="text" id="log-add-time" placeholder="14:30">
+                    </div>
+                    <button class="btn btn-primary" onclick="addLog()">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Event</th>
+                            <th>Timestamp</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body">
+                        <!-- Rows added by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer>
+            &copy; 2025 Flash Monitor v2.0 &bull; Running on Flask &bull; <span id="server-time"></span>
+        </footer>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('t');
+        let currentConfig = {};
+
+        async function fetchData() {
+            try {
+                const response = await fetch(`/api/admin/data?t=${token}`);
+                if (!response.ok) throw new Error('Failed to fetch data: ' + response.statusText);
+                const data = await response.json();
+                
+                currentConfig = data.config;
+                renderStatus(data.state);
+                renderConfig(data.config);
+                renderLogs(data.logs);
+                
+                document.getElementById('server-time').innerText = new Date().toLocaleTimeString();
+            } catch (err) {
+                console.error(err);
+                alert('Fetch Error: ' + err.message);
+            }
+        }
+
+        function renderStatus(state) {
+            const statusEl = document.getElementById('sys-status');
+            statusEl.innerText = state.status.toUpperCase();
+            statusEl.className = 'status-badge ' + (state.status === 'up' ? 'status-up' : 'status-down');
+            
+            const lastSeen = new Date(state.last_seen * 1000);
+            document.getElementById('sys-last-seen').innerText = state.last_seen ? lastSeen.toLocaleString() : 'Never';
+            
+            document.getElementById('sys-quiet-status').innerText = (state.quiet_status || 'unknown').toUpperCase();
+            
+            // Set radio button
+            const radios = document.getElementsByName('quiet_mode');
+            for (let r of radios) {
+                r.checked = (r.value === state.quiet_mode);
+                const parent = r.closest('.radio-group');
+                if (r.checked) parent.classList.add('active');
+                else parent.classList.remove('active');
+            }
+        }
+
+        function renderConfig(config) {
+            if (config.settings) {
+                document.getElementById('cfg-region').value = config.settings.region || '';
+                document.getElementById('cfg-groups').value = (config.settings.groups || []).join(', ');
+            }
+            if (config.sources && config.sources.air_quality) {
+                document.getElementById('cfg-aq-station').value = config.sources.air_quality.seb_station || '';
+                document.getElementById('cfg-aq-name').value = config.sources.air_quality.location_name || '';
+                document.getElementById('cfg-lat').value = config.sources.air_quality.lat || '';
+                document.getElementById('cfg-lon').value = config.sources.air_quality.lon || '';
+            }
+        }
+
+        function renderLogs(logs) {
+            const tbody = document.getElementById('log-table-body');
+            tbody.innerHTML = '';
+            
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${log.date_str}</td>
+                    <td><span class="status-badge ${log.event === 'up' ? 'status-up' : 'status-down'}">${log.event.toUpperCase()}</span></td>
+                    <td style="font-family: monospace; font-size: 0.75rem;">${log.timestamp}</td>
+                    <td class="log-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="deleteLog(${log.timestamp})" style="padding: 4px 8px; font-size: 0.7rem;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Pre-fill add log form with today
+            const now = new Date();
+            document.getElementById('log-add-date').value = now.toISOString().split('T')[0];
+            document.getElementById('log-add-time').value = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+        }
+
+        async function saveQuietMode() {
+            const radios = document.getElementsByName('quiet_mode');
+            let mode = 'auto';
+            for (let r of radios) {
+                if (r.checked) mode = r.value;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/quiet/mode?t=${token}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({mode})
+                });
+                if (response.ok) {
+                    alert('Quiet mode updated');
+                    fetchData();
+                } else {
+                    const err = await response.json();
+                    alert('Error: ' + err.msg);
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        async function saveConfig() {
+            const config = JSON.parse(JSON.stringify(currentConfig));
+            if (!config.settings) config.settings = {};
+            if (!config.sources) config.sources = {};
+            if (!config.sources.air_quality) config.sources.air_quality = {};
+
+            config.settings.region = document.getElementById('cfg-region').value;
+            config.settings.groups = document.getElementById('cfg-groups').value.split(',').map(s => s.trim());
+            config.sources.air_quality.seb_station = document.getElementById('cfg-aq-station').value;
+            config.sources.air_quality.location_name = document.getElementById('cfg-aq-name').value;
+            config.sources.air_quality.lat = document.getElementById('cfg-lat').value;
+            config.sources.air_quality.lon = document.getElementById('cfg-lon').value;
+            
+            try {
+                const response = await fetch(`/api/admin/config?t=${token}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+                if (response.ok) {
+                    alert('Configuration saved');
+                    fetchData();
+                } else {
+                    const err = await response.json();
+                    alert('Error: ' + err.msg);
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        async function addLog() {
+            const event = document.getElementById('log-add-event').value;
+            const dateStr = document.getElementById('log-add-date').value;
+            const timeStr = document.getElementById('log-add-time').value;
+            
+            const dt = new Date(dateStr + 'T' + timeStr);
+            const timestamp = dt.getTime() / 1000;
+            
+            if (isNaN(timestamp)) {
+                alert('Invalid date or time');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/logs/add?t=${token}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({event, timestamp})
+                });
+                if (response.ok) {
+                    fetchData();
+                } else {
+                    const err = await response.json();
+                    alert('Error: ' + err.msg);
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        async function deleteLog(timestamp) {
+            if (!confirm('Delete this log entry?')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/logs/${timestamp}?t=${token}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    fetchData();
+                } else {
+                    const err = await response.json();
+                    alert('Error: ' + err.msg);
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        async function restartServices() {
+            if (!confirm('Restart monitoring services? This will briefly interrupt data collection.')) return;
+            
+            try {
+                const response = await fetch(`/api/admin/service/restart?t=${token}`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    alert('Restart command sent successfully');
+                } else {
+                    alert('Failed to restart services');
+                }
+            } catch (err) {
+                alert('Request failed');
+            }
+        }
+
+        // Initial load
+        fetchData();
+        
+        // Auto-refresh status every 30s
+        setInterval(() => {
+            fetchData();
+        }, 30000);
+        
+        // Visual sugar for radio buttons
+        document.querySelectorAll('.radio-group').forEach(group => {
+            group.addEventListener('click', () => {
+                const radio = group.querySelector('input');
+                radio.checked = true;
+                document.querySelectorAll('.radio-group').forEach(g => g.classList.remove('active'));
+                group.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
