@@ -797,7 +797,7 @@ def check_quiet_mode_eligibility():
     """
     Checks if the system is eligible for Quiet Mode.
     Past 48 hours must have no 'down' events in event_log.json.
-    Future 48 hours (today and tomorrow) in last_schedules.json must have no 'False' slots.
+    Future 24 hours from now in last_schedules.json must have no 'False' slots.
     """
     now = time.time()
     cutoff_48h_ago = now - (48 * 3600)
@@ -814,40 +814,52 @@ def check_quiet_mode_eligibility():
                             return False
     except Exception as e:
         print(f"Error checking event log for quiet mode: {e}")
-        # If we can't read logs, better stay active
         return False
 
-    # 2. Check Schedule (Future 48h)
+    # 2. Check Schedule (Future 24h)
     try:
         if os.path.exists(SCHEDULE_FILE):
             with open(SCHEDULE_FILE, 'r') as f:
                 data = json.load(f)
             
-            # Use today and tomorrow
             now_dt = datetime.datetime.fromtimestamp(now, KYIV_TZ)
             today_str = now_dt.strftime("%Y-%m-%d")
             tomorrow_str = (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+            current_slot_idx = (now_dt.hour * 2) + (1 if now_dt.minute >= 30 else 0)
             
             found_outage = False
-            # Check all sources (github, yasno)
             for s_key in ['github', 'yasno']:
                 sources = data.get(s_key, {})
                 for group_name, days in sources.items():
-                    for date_str in [today_str, tomorrow_str]:
-                        day_data = days.get(date_str)
-                        if day_data:
-                            slots = day_data.get('slots')
-                            if slots and any(s is False for s in slots):
-                                print(f"Quiet Mode: Ineligible due to planned outage on {date_str} in {s_key}/{group_name}")
-                                found_outage = True
-                                break
+                    # Construct a list of slots for today and tomorrow to look ahead 24h (48 slots)
+                    all_slots = []
+                    today_data = days.get(today_str)
+                    if today_data and today_data.get('slots'):
+                        all_slots.extend(today_data['slots'])
+                    else:
+                        all_slots.extend([True] * 48) # Assume light if no data
+                        
+                    tomorrow_data = days.get(tomorrow_str)
+                    if tomorrow_data and tomorrow_data.get('slots'):
+                        all_slots.extend(tomorrow_data['slots'])
+                    else:
+                        # If no tomorrow schedule yet, we only check until end of today
+                        all_slots.extend([True] * 48)
+
+                    # Check next 48 slots starting from current
+                    look_ahead_limit = min(current_slot_idx + 48, len(all_slots))
+                    for i in range(current_slot_idx, look_ahead_limit):
+                        if all_slots[i] is False:
+                            print(f"Quiet Mode: Ineligible due to planned outage in the next 24h in {s_key}/{group_name}")
+                            found_outage = True
+                            break
                     if found_outage: break
                 if found_outage: break
             
             if found_outage:
                 return False
         else:
-            return False # No schedule, stay active
+            return False 
     except Exception as e:
         print(f"Error checking schedule for quiet mode: {e}")
         return False
