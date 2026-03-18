@@ -4,6 +4,7 @@ import datetime
 from zoneinfo import ZoneInfo
 import requests
 import hashlib
+import sys
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -170,6 +171,7 @@ def generate_holiday_report(today_str, tomorrow_str, data, group, icons):
     return full_text
 
 def main():
+    force_new = "--force-new" in sys.argv
     now = datetime.datetime.now(KYIV_TZ)
     current_time = now.time()
     current_hour = now.hour
@@ -296,8 +298,8 @@ def main():
     
     content_hash = hashlib.md5(full_text.encode()).hexdigest()
     
-    last_id = today_state.get(f"{target_slot}_id")
-    last_hash = today_state.get(f"{target_slot}_hash")
+    last_id = today_state.get(f"{target_slot}_id") if not force_new else None
+    last_hash = today_state.get(f"{target_slot}_hash") if not force_new else None
 
     if last_id:
         if last_hash != content_hash:
