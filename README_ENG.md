@@ -155,25 +155,32 @@ flowchart TD
 
 ---
 
-## 🚀 Quick Start (Bare Metal)
+## 🐳 Quick Start via Docker
 
-The system is deployed directly in the OS as a set of Systemd services.
+**Official image:** `webyhomelab/flash-monitor-kyiv:latest`
 
-### Cloning and Setup
-```bash
-git clone -b classic https://github.com/weby-homelab/flash-monitor-kyiv.git
-cd flash-monitor-kyiv
-pip install -r requirements.txt
-cp .env.example .env # Configure your tokens
-```
+### Docker Compose
+```yaml
+services:
+  web:
+    image: webyhomelab/flash-monitor-kyiv:latest
+    container_name: flash-monitor-web
+    ports: ["5050:5050"]
+    volumes: ["./data:/app/data"]
+    environment:
+      - TELEGRAM_BOT_TOKEN=your_token
+      - TELEGRAM_CHANNEL_ID=your_channel_id
+      - DATA_DIR=/app/data
 
-### Service Management
-```bash
-# Restart after updates
-systemctl restart flash-monitor.service flash-background.service
-
-# View logs (including Admin URL)
-journalctl -u flash-monitor.service -f
+  worker:
+    image: webyhomelab/flash-monitor-kyiv:latest
+    container_name: flash-monitor-worker
+    command: python run_background.py
+    volumes: ["./data:/app/data"]
+    environment:
+      - TELEGRAM_BOT_TOKEN=your_token
+      - TELEGRAM_CHANNEL_ID=your_channel_id
+      - DATA_DIR=/app/data
 ```
 
 ---
