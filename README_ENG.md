@@ -204,6 +204,7 @@ To send Push signals, it is recommended to use the **HTTPS address of your domai
 ---
 
 ## 📝 Update History
+- **v2.1.1**: Optimization of graphical and text reports: auto-deletion of yesterday's graphical reports at 00:01, fix for text report deduplication, and hiding tomorrow's schedules until the evening slot.
 - **v2.0.1**: Optimization of "Quiet Mode" logic (switch to 24/24 formula). Fixed minor errors in dashboard texts.
 - **v2.0.0**: Major update: added a web control panel (Admin Panel) and intelligent "Quiet Mode" with secure outage confirmation.
 - **v1.17.5**: Added "Holiday Mode", smart status display on the dashboard, and new report finalization logic at 00:01.
