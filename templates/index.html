@@ -64,8 +64,10 @@
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         html, body { 
             width: 100%;
-            height: 100%;
+            margin: 0;
+            padding: 0;
             overflow-x: hidden; 
+            overflow-y: auto; /* Ensure vertical scrolling is enabled */
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
@@ -76,7 +78,7 @@
             background-color: var(--bg-color); 
             color: var(--text-primary); 
             font-family: 'Inter', sans-serif; 
-            min-height: 100vh; 
+            min-height: 100vh; /* Allow it to grow beyond viewport */
             display: flex; 
             flex-direction: column; 
             align-items: center; 
