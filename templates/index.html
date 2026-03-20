@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     
     <!-- SEO & Metadata -->
     <title>СВІТЛО⚡БЕЗПЕКА (Київ) — Моніторинг світла та тривог</title>
@@ -63,17 +63,36 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         html, body { 
-            max-width: 100%; 
+            width: 100%;
+            height: 100%;
             overflow-x: hidden; 
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none;  /* IE/Edge */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
         html::-webkit-scrollbar, body::-webkit-scrollbar { 
-            display: none; /* Chrome/Safari/Webkit */
+            display: none;
         }
-        body { background-color: var(--bg-color); color: var(--text-primary); font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 60px; background-attachment: fixed; transition: background-color 0.3s; }
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-primary); 
+            font-family: 'Inter', sans-serif; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: env(safe-area-inset-top, 24px) 16px env(safe-area-inset-bottom, 60px); 
+            background-attachment: fixed; 
+            transition: background-color 0.3s; 
+        }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 10% 10%, rgba(167, 139, 250, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.08) 0%, transparent 40%); z-index: -1; }
-        .container { width: 100%; max-width: 480px; }
+        
+        .container { 
+            width: 100%; 
+            max-width: 480px; 
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
         
         header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .logo { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); }
@@ -98,7 +117,7 @@
         .bell-btn.off { opacity: 0.5; grayscale: 1; }
         .bell-btn:active { transform: scale(0.9); }
 
-        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; margin-bottom: 16px; backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); box-shadow: var(--card-shadow); position: relative; overflow: hidden; transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s; }
+        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; margin-bottom: 16px; backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); box-shadow: var(--card-shadow); position: relative; overflow: hidden; transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s; width: 100%; }
         .card-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-secondary); margin-bottom: 16px; display: block; font-weight: 700; }
         .status-row { display: flex; align-items: center; gap: 16px; width: 100%; }
         .status-icon { font-size: 2.2rem; }
@@ -118,11 +137,11 @@
         .weather-info { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-secondary); }
         .rad-norm { color: var(--success); font-weight: 700; }
         
-        .section-header { margin: 24px 0 12px; font-size: 0.7rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; display: flex; align-items: center; gap: 12px; }
+        .section-header { margin: 24px 0 12px; font-size: 0.7rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; display: flex; align-items: center; gap: 12px; width: 100%; }
         .section-header::after { content: ''; height: 1px; flex-grow: 1; background: var(--card-border); }
         
-        .chart-wrap { border-radius: 24px; overflow: hidden; border: 1px solid var(--card-border); margin-top: 12px; background: #000; cursor: pointer; box-shadow: var(--card-shadow); }
-        .chart-wrap img { width: 100%; display: block; }
+        .chart-wrap { border-radius: 24px; overflow: hidden; border: 1px solid var(--card-border); margin-top: 12px; background: #000; cursor: pointer; box-shadow: var(--card-shadow); width: 100%; }
+        .chart-wrap img { width: 100%; height: auto; display: block; }
         .schedule-text { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; font-weight: 500; box-shadow: var(--card-shadow); color: var(--text-primary); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); }
         
         .schedule-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
