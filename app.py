@@ -263,7 +263,9 @@ def render_day_schedule_html(slots, date_obj):
 
 def get_today_schedule_text():
     try:
-        config_path = "config.json"
+        config_path = os.path.join(DATA_DIR, "config.json")
+        if not os.path.exists(config_path):
+            config_path = "config.json"
         data_dir = os.environ.get("DATA_DIR", ".")
         schedule_file = os.path.join(data_dir, "last_schedules.json")
         if not os.path.exists(schedule_file):
@@ -362,11 +364,13 @@ def get_today_schedule_text():
 
 def get_air_quality():
     try:
-        config_path = "config.json"
+        config_path = os.path.join(DATA_DIR, "config.json")
+        if not os.path.exists(config_path):
+            config_path = "config.json"
         if not os.path.exists(config_path):
             return {"status": "error", "text": "Config missing"}
             
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             cfg = json.load(f)
             
         aq_cfg = cfg.get("sources", {}).get("air_quality", {})
@@ -455,10 +459,12 @@ def api_status():
     alert_data = get_air_raid_alert()
     
     # Extract group name
-    config_path = "config.json"
+    config_path = os.path.join(DATA_DIR, "config.json")
+    if not os.path.exists(config_path):
+        config_path = "config.json"
     group_name = "---"
     if os.path.exists(config_path):
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             cfg = json.load(f)
             groups = cfg.get("settings", {}).get("groups", [])
             if groups:
@@ -742,10 +748,12 @@ def admin_data():
     if not check_admin_token():
         return jsonify({"status": "error", "msg": "Access Denied"}), 403
     
-    config_path = "config.json"
+    config_path = os.path.join(DATA_DIR, "config.json")
+    if not os.path.exists(config_path):
+        config_path = "config.json"
     config = {}
     if os.path.exists(config_path):
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
             
     load_state()
@@ -771,9 +779,11 @@ def admin_config_post():
         return jsonify({"status": "error", "msg": "Invalid JSON"}), 400
         
     try:
-        config_path = "config.json"
-        with open(config_path, 'w') as f:
-            json.dump(new_config, f, indent=2)
+        config_path = os.path.join(DATA_DIR, "config.json")
+        if not os.path.exists(config_path):
+            config_path = "config.json"
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(new_config, f, indent=2, ensure_ascii=False)
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"status": "error", "msg": str(e)}), 500
