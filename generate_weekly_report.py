@@ -16,7 +16,7 @@ load_dotenv()
 from generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ, load_schedule_slots
 
 # --- Configuration ---
-DATA_DIR = os.environ.get("DATA_DIR", ".")
+DATA_DIR = os.environ.get("DATA_DIR", "data")
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
