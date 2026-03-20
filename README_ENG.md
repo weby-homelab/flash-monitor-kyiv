@@ -204,6 +204,11 @@ To send Push signals, it is recommended to use the **HTTPS address of your domai
 ---
 
 ## 📝 Update History
+- **v2.4.0**: Implemented Safety Net (push signal loss detection) with interactive Telegram buttons (Down / Technical Failure / Ignore) and auto-fallback. Added dynamic push interval configuration (20-60s) via Admin Panel. Completely redesigned Web Admin Panel UI: mobile-first Glassmorphism, improved responsiveness, touch-friendly buttons, and scrollable tables.
+- **v2.3.2**: Protective History Merge in parser_service.py (preventing False to True overwrites in historical schedules).
+- **v2.3.0**: UI Fix & Consolidation. Restored functional schedule layout, fixed scrolling, moved all dynamic state/config files to `data/`.
+- **v2.2.0**: Security Hardening Release. Token-based auth, input validation, DOM safety.
+- **v2.1.2**: Smart Deduplication v2 (hashing only slots with outages).
 - **v2.1.1**: Optimization of graphical and text reports: auto-deletion of yesterday's graphical reports at 00:01, fix for text report deduplication, and hiding tomorrow's schedules until the evening slot.
 - **v2.0.1**: Optimization of "Quiet Mode" logic (switch to 24/24 formula). Fixed minor errors in dashboard texts.
 - **v2.0.0**: Major update: added a web control panel (Admin Panel) and intelligent "Quiet Mode" with secure outage confirmation.

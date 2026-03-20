@@ -32,7 +32,7 @@
                 radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
             color: var(--text-primary);
             min-height: 100vh;
-            padding: 40px 20px;
+            padding: 20px 10px;
         }
 
         .admin-container {
@@ -41,38 +41,42 @@
             margin: 0 auto;
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 24px;
-            padding: 40px;
+            padding: 24px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
         header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
+            align-items: flex-start;
+            margin-bottom: 30px;
             border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 20px;
+            padding-bottom: 15px;
+            gap: 15px;
         }
 
         header h1 {
-            font-size: 1.8rem;
+            font-size: 1.3rem;
             font-weight: 600;
-            letter-spacing: -1px;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
         }
 
         .admin-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            gap: 20px;
         }
 
         .admin-section {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--glass-border);
             border-radius: 16px;
-            padding: 24px;
+            padding: 20px;
+            height: fit-content;
         }
 
         .admin-section.full-width {
@@ -82,65 +86,69 @@
         .section-header {
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
-            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-size: 1rem;
             font-weight: 600;
         }
 
         .section-header i {
-            margin-right: 12px;
+            margin-right: 10px;
             color: var(--accent-color);
+            width: 20px;
+            text-align: center;
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         label {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            margin-bottom: 6px;
+            margin-bottom: 5px;
         }
 
         input[type="text"], input[type="number"], select, textarea {
             width: 100%;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.07);
             border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            padding: 10px 14px;
+            border-radius: 10px;
+            padding: 12px 14px;
             color: var(--text-primary);
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.2s;
         }
 
         input:focus {
             border-color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 12px 20px;
+            border-radius: 10px;
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
             border: none;
             gap: 8px;
+            white-space: nowrap;
         }
 
         .btn-primary {
             background: var(--accent-color);
             color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
 
-        .btn-primary:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
+        .btn-primary:active {
+            transform: scale(0.98);
         }
 
         .btn-danger {
@@ -154,7 +162,7 @@
         }
 
         .status-badge {
-            padding: 4px 12px;
+            padding: 5px 14px;
             border-radius: 100px;
             font-size: 0.75rem;
             font-weight: 600;
@@ -164,11 +172,147 @@
         .status-up { background: rgba(16, 185, 129, 0.2); color: #10b981; }
         .status-down { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
 
+        @keyframes blink-alarm {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.02); background: rgba(239, 68, 68, 0.6); color: white; }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .alarm-active {
+            animation: blink-alarm 1s infinite;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .sn-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sn-btn {
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .sn-btn:hover { background: rgba(255, 255, 255, 0.1); }
+        .sn-btn-down { border-color: var(--danger-color); color: var(--danger-color); }
+        .sn-btn-tech { border-color: var(--accent-color); color: var(--accent-color); }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 10px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            min-width: 500px;
         }
+
+        th {
+            text-align: left;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            padding: 14px 10px;
+            border-bottom: 1px solid var(--glass-border);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 14px 10px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .log-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .quiet-mode-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .radio-group:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .radio-group.active {
+            border-color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        #log-add-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+        }
+
+        @media (min-width: 768px) {
+            #log-add-form {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr auto;
+                align-items: end;
+            }
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            opacity: 0.5;
+            padding-bottom: 20px;
+        }
+
+        @media (max-width: 767px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+            header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
 
         th {
             text-align: left;
@@ -277,9 +421,32 @@
                         <label>Статус спокою</label>
                         <div id="sys-quiet-status">-</div>
                     </div>
-                    <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <div class="form-group" id="sn-status-group" style="display: none;">
+                        <label>Safety Net</label>
+                        <span id="sn-badge" class="status-badge" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; font-weight: 800; border: 2px solid #ef4444;">ВТРАТА ПУША 🚨</span>
+                        
+                        <div class="sn-actions">
+                            <button class="sn-btn sn-btn-down" onclick="safetyNetReact('down')">
+                                <i class="fas fa-plug-circle-xmark"></i> Світло зникло
+                            </button>
+                            <button class="sn-btn sn-btn-tech" onclick="safetyNetReact('tech')">
+                                <i class="fas fa-screwdriver-wrench"></i> Технічний збій
+                            </button>
+                            <button class="sn-btn" onclick="safetyNetReact('dontknow')">
+                                <i class="fas fa-question-circle"></i> Не знаю
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group" id="mute-status-group" style="display: none;">
+                        <label>Технічна пауза до</label>
+                        <div id="sys-mute-until" style="color: var(--accent-color); font-weight: 600;">-</div>
+                    </div>
+                    <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                         <button class="btn btn-danger" onclick="restartServices()">
-                            <i class="fas fa-power-off"></i> Перезапустити сервіси
+                            <i class="fas fa-power-off"></i> Перезапуск
+                        </button>
+                        <button id="btn-unmute" class="btn btn-secondary" onclick="unmuteMonitor()" style="display: none;">
+                            <i class="fas fa-play"></i> Увімкнути моніторинг
                         </button>
                     </div>
                 </div>
@@ -325,7 +492,7 @@
                     <i class="fas fa-cog"></i>
                     Конфігурація (config.json)
                 </div>
-                <div class="admin-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="admin-grid" style="grid-template-columns: 1fr 1fr 1fr;">
                     <div>
                         <div class="form-group">
                             <label>Регіон</label>
@@ -336,14 +503,18 @@
                             <input type="text" id="cfg-groups">
                         </div>
                         <div class="form-group">
-                            <label>ID станції AQ</label>
-                            <input type="text" id="cfg-aq-station">
+                            <label>ID чату адміна</label>
+                            <input type="text" id="cfg-admin-chat">
+                        </div>
+                        <div class="form-group">
+                            <label>Частота Пушу (сек, 20-60)</label>
+                            <input type="number" id="cfg-push-interval" min="20" max="60">
                         </div>
                     </div>
                     <div>
                         <div class="form-group">
-                            <label>Назва локації AQ</label>
-                            <input type="text" id="cfg-aq-name">
+                            <label>Таймаут Safety Net (сек)</label>
+                            <input type="number" id="cfg-sn-timeout">
                         </div>
                         <div class="form-group">
                             <label>Широта (Lat)</label>
@@ -352,6 +523,16 @@
                         <div class="form-group">
                             <label>Довгота (Lon)</label>
                             <input type="text" id="cfg-lon">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label>ID станції AQ</label>
+                            <input type="text" id="cfg-aq-station">
+                        </div>
+                        <div class="form-group">
+                            <label>Назва локації AQ</label>
+                            <input type="text" id="cfg-aq-name">
                         </div>
                     </div>
                 </div>
@@ -444,6 +625,26 @@
             
             document.getElementById('sys-quiet-status').innerText = (state.quiet_status === 'quiet' ? 'ТИША (QUIET)' : 'АКТИВНО').toUpperCase();
             
+            // Safety Net Pending
+            if (state.safety_net_pending) {
+                document.getElementById('sn-status-group').style.display = 'block';
+                document.getElementById('sn-badge').classList.add('alarm-active');
+            } else {
+                document.getElementById('sn-status-group').style.display = 'none';
+                document.getElementById('sn-badge').classList.remove('alarm-active');
+            }
+
+            // Mute Status
+            const now = Date.now() / 1000;
+            if (state.muted_until && state.muted_until > now) {
+                document.getElementById('mute-status-group').style.display = 'block';
+                document.getElementById('sys-mute-until').innerText = new Date(state.muted_until * 1000).toLocaleTimeString();
+                document.getElementById('btn-unmute').style.display = 'inline-flex';
+            } else {
+                document.getElementById('mute-status-group').style.display = 'none';
+                document.getElementById('btn-unmute').style.display = 'none';
+            }
+
             // Set radio button
             const radios = document.getElementsByName('quiet_mode');
             for (let r of radios) {
@@ -458,6 +659,9 @@
             if (config.settings) {
                 document.getElementById('cfg-region').value = config.settings.region || '';
                 document.getElementById('cfg-groups').value = (config.settings.groups || []).join(', ');
+                document.getElementById('cfg-admin-chat').value = config.settings.admin_chat_id || '';
+                document.getElementById('cfg-sn-timeout').value = config.settings.safety_net_timeout || 35;
+                document.getElementById('cfg-push-interval').value = config.settings.push_interval || 30;
             }
             if (config.sources && config.sources.air_quality) {
                 document.getElementById('cfg-aq-station').value = config.sources.air_quality.seb_station || '';
@@ -526,6 +730,10 @@
 
             config.settings.region = document.getElementById('cfg-region').value;
             config.settings.groups = document.getElementById('cfg-groups').value.split(',').map(s => s.trim());
+            config.settings.admin_chat_id = document.getElementById('cfg-admin-chat').value;
+            config.settings.safety_net_timeout = parseInt(document.getElementById('cfg-sn-timeout').value);
+            config.settings.push_interval = parseInt(document.getElementById('cfg-push-interval').value);
+            
             config.sources.air_quality.seb_station = document.getElementById('cfg-aq-station').value;
             config.sources.air_quality.location_name = document.getElementById('cfg-aq-name').value;
             config.sources.air_quality.lat = document.getElementById('cfg-lat').value;
@@ -539,6 +747,44 @@
                 });
                 if (response.ok) {
                     alert('Конфігурацію збережено');
+                    fetchData();
+                } else {
+                    const err = await response.json();
+                    alert('Помилка: ' + err.msg);
+                }
+            } catch (err) {
+                alert('Запит не вдався');
+            }
+        }
+
+        async function unmuteMonitor() {
+            try {
+                const response = await fetch(`/api/admin/quiet/mode?t=${token}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({mode: 'auto', unmute: true})
+                });
+                if (response.ok) {
+                    fetchData();
+                }
+            } catch (err) {}
+        }
+
+        async function safetyNetReact(action) {
+            let value = null;
+            if (action === 'tech') {
+                const mins = prompt('На скільки хвилин вимкнути моніторинг?', '30');
+                if (!mins) return;
+                value = parseInt(mins);
+            }
+
+            try {
+                const response = await fetch(`/api/admin/safety_net/react?t=${token}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({action, value})
+                });
+                if (response.ok) {
                     fetchData();
                 } else {
                     const err = await response.json();
