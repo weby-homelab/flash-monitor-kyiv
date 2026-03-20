@@ -182,8 +182,20 @@ def update_local_schedules(config_path: str, output_path: str):
             schedule_data = source[group_key]
             history_updated = False
             for date_str, day_data in schedule_data.items():
-                if day_data.get("slots"):
-                    history[date_str] = {"slots": day_data["slots"]}
+                new_slots = day_data.get("slots")
+                if new_slots:
+                    # Protective Merge: If day exists in history, preserve ALL existing False (outage) slots.
+                    # Never allow a Light slot (True) to overwrite an Outage slot (False) in history.
+                    if date_str in history:
+                        old_slots = history[date_str].get("slots", [True] * 48)
+                        # Create a merged array: False wins over True
+                        merged_slots = [
+                            (old_slots[i] if old_slots[i] is False else new_slots[i])
+                            for i in range(min(len(old_slots), len(new_slots)))
+                        ]
+                        history[date_str] = {"slots": merged_slots}
+                    else:
+                        history[date_str] = {"slots": new_slots}
                     history_updated = True
 
             if history_updated:
