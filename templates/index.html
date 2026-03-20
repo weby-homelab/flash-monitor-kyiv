@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, shrink-to-fit=no">
     
-    <!-- SEO & Metadata -->
-    <title>v2.2.7 | СВІТЛО⚡БЕЗПЕКА (Київ)</title>
-    <meta name="description" content="Автономний моніторинг електропостачання, повітряних тривог та якості повітря у Києві в реальному часі. Дані Yasno, ДТЕК та SaveEcoBot.">
+    <title>v2.2.8 | СВІТЛО⚡БЕЗПЕКА (Київ)</title>
     
-    <!-- PWA Cache Busting v2.2.7 -->
     <meta name="theme-color" content="#050505">
-    <link rel="manifest" href="/manifest.json?v=2.2.7">
-    <link rel="icon" type="image/png" href="/static/favicon.png?v=2.2.7">
-    <link rel="apple-touch-icon" href="/static/icon-512.png?v=2.2.7">
+    <link rel="manifest" href="/manifest.json?v=2.2.8">
+    <link rel="icon" type="image/png" href="/static/favicon.png?v=2.2.8">
+    <link rel="apple-touch-icon" href="/static/icon-512.png?v=2.2.8">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -29,8 +26,8 @@
             --danger: #f87171;
             --warning: #fbbf24;
             --blur: 25px;
-            --color-graph-fact-on: #14b8a6;
-            --color-graph-fact-off: #f43f5e;
+            --color-on: #14b8a6;
+            --color-off: #f43f5e;
         }
         @media (prefers-color-scheme: light) {
             :root {
@@ -43,10 +40,11 @@
                 --accent: #8b5cf6;
                 --success: #059669;
                 --danger: #dc2626;
-                --color-graph-fact-on: #0f766e;
-                --color-graph-fact-off: #be123c;
+                --color-on: #0f766e;
+                --color-off: #be123c;
             }
         }
+        
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
         html { 
@@ -54,7 +52,7 @@
             height: auto;
             min-height: 100%;
             overflow-x: hidden; 
-            overflow-y: auto !important;
+            overflow-y: auto;
             background-color: #050505;
         }
         
@@ -63,10 +61,9 @@
             color: var(--text-primary); 
             font-family: 'Inter', sans-serif; 
             width: 100%;
-            height: auto;
             min-height: 100vh;
             margin: 0;
-            display: block !important; /* No flexbox to avoid squashing */
+            display: block; 
             padding: env(safe-area-inset-top, 24px) 16px env(safe-area-inset-bottom, 60px); 
             background-attachment: scroll; 
             transition: background-color 0.3s; 
@@ -76,11 +73,9 @@
         
         .container { 
             width: 100%; 
-            max-width: 600px; /* SET TO 600px */
+            max-width: 600px; 
             margin: 0 auto;
             position: relative;
-            display: block;
-            height: auto;
         }
         
         header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
@@ -97,83 +92,106 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 1.2rem;
             backdrop-filter: blur(10px);
             transition: all 0.2s;
-            box-shadow: var(--card-shadow);
         }
-        .bell-btn.off { opacity: 0.5; grayscale: 1; }
-        .bell-btn:active { transform: scale(0.9); }
+        .bell-btn.off { opacity: 0.5; }
 
-        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; margin-bottom: 16px; backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); box-shadow: var(--card-shadow); position: relative; overflow: hidden; transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s; width: 100%; height: auto; }
-        .card-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-secondary); margin-bottom: 16px; display: block; font-weight: 700; }
-        .status-row { display: flex; align-items: center; gap: 16px; width: 100%; }
+        .card { 
+            background: var(--card-bg); 
+            border: 1px solid var(--card-border); 
+            border-radius: 28px; 
+            padding: 24px; 
+            margin-bottom: 16px; 
+            backdrop-filter: blur(var(--blur)); 
+            -webkit-backdrop-filter: blur(var(--blur)); 
+            box-shadow: var(--card-shadow);
+            width: 100%;
+        }
+        
+        .status-row { display: flex; align-items: center; gap: 16px; }
         .status-icon { font-size: 2.2rem; }
         .status-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 2px; }
-        .status-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.4; font-weight: 500; }
-        .status-on { border-color: rgba(52, 211, 153, 0.3); }
-        .status-off { border-color: rgba(248, 113, 113, 0.3); }
-        .alert-active { border-color: var(--danger); background: rgba(248, 113, 113, 0.15); animation: pulse-danger 2s infinite; }
-        
-        @keyframes pulse-danger { 0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(248, 113, 113, 0); } 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); } }
+        .status-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.4; }
         
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .grid-item { background: rgba(0,0,0,0.03); padding: 16px; border-radius: 20px; border: 1px solid var(--card-border); }
-        @media (prefers-color-scheme: dark) { .grid-item { background: rgba(255,255,255,0.03); } }
+        .grid-item { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 20px; border: 1px solid var(--card-border); }
+        @media (prefers-color-scheme: light) { .grid-item { background: rgba(0,0,0,0.03); } }
         .grid-val { font-size: 1.25rem; font-weight: 700; }
         .grid-label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
         
-        .weather-info { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-secondary); }
-        .rad-norm { color: var(--success); font-weight: 700; }
-        
-        .section-header { margin: 24px 0 12px; font-size: 0.7rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; display: flex; align-items: center; gap: 12px; width: 100%; }
+        .section-header { margin: 24px 0 12px; font-size: 0.7rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.15em; display: flex; align-items: center; gap: 12px; }
         .section-header::after { content: ''; height: 1px; flex-grow: 1; background: var(--card-border); }
         
-        .chart-wrap { border-radius: 24px; overflow: hidden; border: 1px solid var(--card-border); margin-top: 12px; background: #000; cursor: pointer; box-shadow: var(--card-shadow); width: 100%; }
+        .chart-wrap { border-radius: 24px; overflow: hidden; border: 1px solid var(--card-border); margin-top: 12px; background: #000; cursor: pointer; }
         .chart-wrap img { width: 100%; height: auto; display: block; }
-        .schedule-text { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; font-weight: 500; box-shadow: var(--card-shadow); color: var(--text-primary); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); }
+
+        /* SCHEDULE STYLES - RESTORED */
+        .schedule-text { 
+            background: var(--card-bg); 
+            border: 1px solid var(--card-border); 
+            border-radius: 28px; 
+            padding: 24px; 
+            font-size: 0.95rem; 
+            line-height: 1.7; 
+            color: var(--text-primary);
+        }
+        .schedule-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+        .col-header { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--card-border); }
+        .col-header.on { color: var(--color-on); }
+        .col-header.off { color: var(--color-off); }
         
-        footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; padding-bottom: 20px; }
-        footer a { color: inherit; text-decoration: none; font-weight: 700; }
+        .schedule-date { font-weight: 700; margin-bottom: 16px; font-size: 1rem; }
+        .schedule-line { display: flex; align-items: center; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+        .schedule-line.on { color: var(--color-on); }
+        .schedule-line.off { color: var(--color-off); }
+        .schedule-time { width: 45px; text-align: center; font-weight: 600; }
+        .time-sep { width: 15px; text-align: center; opacity: 0.5; }
+        .schedule-duration { margin-left: 8px; font-size: 0.8rem; opacity: 0.7; }
         
-        #modal { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); padding: 16px; align-items: center; justify-content: center; }
-        #modal img { max-width: 100%; max-height: 90vh; border-radius: 16px; }
+        .schedule-summary { border-top: 1px dashed var(--card-border); margin-top: 16px; padding-top: 16px; display: flex; gap: 20px; }
+        .light-hours { color: var(--color-on); font-weight: 700; }
+        .no-light-hours { color: var(--color-off); font-weight: 700; }
+        .source-label { font-size: 0.7rem; text-transform: uppercase; opacity: 0.5; margin-top: 8px; display: block; }
+
+        footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; padding-bottom: 40px; }
+        #modal { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); align-items: center; justify-content: center; }
+        #modal img { max-width: 95%; max-height: 90vh; border-radius: 12px; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <div class="logo">СВІТЛО<span>⚡</span>БЕЗПЕКА</div>
-            <div id="bell-btn" class="bell-btn off" onclick="toggleNotifications()" title="Увімкнути сповіщення">🔕</div>
+            <div id="bell-btn" class="bell-btn off" onclick="toggleNotifications()">🔕</div>
         </header>
         
         <div id="light-card" class="card"><div class="status-row"><div class="status-icon" id="light-icon">⏳</div><div class="status-info"><div class="status-title" id="light-text">Завантаження</div><div class="status-desc" id="light-event">...</div></div></div></div>
         
         <div id="alert-card" class="card"><div class="status-row"><div class="status-icon" id="alert-icon">🛡️</div><div class="status-info"><div class="status-title" id="alert-val">---</div><div class="status-desc" id="alert-status">...</div></div></div></div>
-        <div class="card" style="padding: 0; height: 320px; border: none; background: #000;"><iframe id="alert-map" src="https://alerts.in.ua/?minimal=true" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen></iframe></div>
+        <div class="card" style="padding: 0; height: 320px; border: none; background: #000; overflow: hidden;"><iframe id="alert-map" src="https://alerts.in.ua/?minimal=true" width="100%" height="100%" frameborder="0"></iframe></div>
         
-        <div class="section-header" id="aqi-loc">Якість повітря</div>
+        <div class="section-header">Якість повітря</div>
         <div class="card">
             <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px;"><span id="aqi-num" style="font-size: 3.5rem; font-weight: 800; line-height: 1;">--</span><div><div id="aqi-text" style="font-size: 1.2rem; font-weight: 700;">---</div><div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">AQI INDEX</div></div></div>
             <div class="grid">
                 <div class="grid-item"><div class="grid-val" id="pm25">--</div><div class="grid-label">PM2.5</div></div>
                 <div class="grid-item"><div class="grid-val" id="pm10">--</div><div class="grid-label">PM10</div></div>
-                <div class="grid-item"><div class="grid-val" id="temp">--</div><div class="grid-label">Температура</div></div>
-                <div class="grid-item"><div class="grid-val" id="hum">--</div><div class="grid-label">Вологість</div></div>
+                <div class="grid-item"><div class="grid-val" id="temp">--</div><div class="grid-label">Темп.</div></div>
+                <div class="grid-item"><div class="grid-val" id="hum">--</div><div class="grid-label">Волог.</div></div>
             </div>
-            <div class="weather-info"><span id="wind-status">---</span><span id="rad-container">☢️ <span id="rad-val">--</span> мкЗв/год <span class="rad-norm">(норма)</span></span></div>
         </div>
         
-        <div class="section-header">Аналітика за сьогодні</div>
-        <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)"><img id="main-chart" src="/static/chart.png"></div>
-        <div class="section-header">Тижневий звіт</div>
-        <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)"><img id="weekly-chart" src="/static/weekly.png"></div>
-        <div class="section-header" id="group-schedule-header">Графік</div>
+        <div class="section-header">Графік</div>
         <div id="schedule-text" class="schedule-text">...</div>
+
+        <div class="section-header">Аналітика</div>
+        <div class="chart-wrap" onclick="zoomImage(this.querySelector('img').src)"><img id="main-chart" src="/static/chart.png"></div>
+        <div class="chart-wrap" style="margin-top: 16px;" onclick="zoomImage(this.querySelector('img').src)"><img id="weekly-chart" src="/static/weekly.png"></div>
         
         <footer>
-            v2.2.7 | Оновлено: <span id="last-update">--:--:--</span><br>
-            © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv" target="_blank">Weby Homelab</a>
+            v2.2.8 | Оновлено: <span id="last-update">--:--:--</span><br>
+            © 2026 Weby Homelab
         </footer>
     </div>
     <div id="modal" onclick="this.style.display='none'"><img id="modal-img" src=""></div>
@@ -184,10 +202,6 @@
         let notificationsEnabled = localStorage.getItem('notifications') === 'true';
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-        function triggerHaptic(pattern = 10) {
-            try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
-        }
-
         function updateBellUI() {
             const btn = document.getElementById('bell-btn');
             if (btn) {
@@ -197,14 +211,11 @@
         }
 
         async function toggleNotifications() {
-            triggerHaptic([15, 30, 15]);
             if (!notificationsEnabled) {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
                     notificationsEnabled = true;
                     localStorage.setItem('notifications', 'true');
-                } else {
-                    alert("Будь ласка, дозвольте сповіщення у налаштуваннях");
                 }
             } else {
                 notificationsEnabled = false;
@@ -213,94 +224,52 @@
             updateBellUI();
         }
 
-        function playDing() { if (notificationsEnabled) audio.play().catch(e => {}); }
-
-        function sendPush(title, body) {
-            if (notificationsEnabled && Notification.permission === 'granted') {
-                new Notification(title, { body, icon: '/static/icon-192.png' });
-            }
-        }
-
         function zoomImage(src) { 
-            triggerHaptic(20);
             document.getElementById('modal-img').src = src; 
             document.getElementById('modal').style.display = 'flex'; 
         }
         
-        function getTheme() { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
-        
         function refreshCharts() {
             const t = Date.now();
-            const theme = getTheme();
-            const suffix = theme === 'light' ? '_light' : '';
-            document.getElementById('main-chart').src = `/static/chart${suffix}.png?t=${t}`;
-            document.getElementById('weekly-chart').src = `/static/weekly${suffix}.png?t=${t}`;
+            const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            const sfx = theme === 'light' ? '_light' : '';
+            document.getElementById('main-chart').src = `/static/chart${sfx}.png?t=${t}`;
+            document.getElementById('weekly-chart').src = `/static/weekly${sfx}.png?t=${t}`;
         }
 
         function update() {
             fetch('/api/status').then(r => r.json()).then(data => {
                 const lCard = document.getElementById('light-card');
-                const currentLight = data.light;
-                
                 if (lCard) {
-                    if (currentLight === 'on') { 
-                        lCard.className = 'card status-on'; 
-                        document.getElementById('light-icon').innerText = '💡'; 
-                        document.getElementById('light-text').innerText = "Світло Є!"; 
-                    } else {
-                        lCard.className = 'card status-off';
-                        document.getElementById('light-icon').innerText = '✖️';
-                        document.getElementById('light-text').innerText = 'Світло зникло!';
-                    }
+                    lCard.className = data.light === 'on' ? 'card status-on' : 'card status-off';
+                    document.getElementById('light-icon').innerText = data.light === 'on' ? '💡' : '✖️';
+                    document.getElementById('light-text').innerText = data.light === 'on' ? "Світло Є!" : "Світло зникло!";
                 }
+                document.getElementById('light-event').innerHTML = data.light_event;
                 
-                const lightEventEl = document.getElementById('light-event');
-                if (lightEventEl) lightEventEl.innerHTML = data.light_event;
-                
-                if (lastLightStatus && currentLight !== lastLightStatus) {
-                    playDing();
-                    sendPush("⚡ СВІТЛО⚡БЕЗПЕКА", currentLight === 'on' ? "Світло з'явилося!" : "Світло зникло!");
+                if (lastLightStatus && data.light !== lastLightStatus) {
+                    if (notificationsEnabled) audio.play().catch(e=>{});
                     refreshCharts();
                 }
-                lastLightStatus = currentLight;
-
-                if (data.group) { 
-                    const gh = document.getElementById('group-schedule-header');
-                    if (gh) gh.innerText = 'Графік групи ' + data.group; 
-                }
+                lastLightStatus = data.light;
 
                 const aCard = document.getElementById('alert-card');
-                const isAlert = !!data.alert.city;
+                const isA = !!data.alert.city;
                 if (aCard) {
-                    if (isAlert) { 
-                        aCard.className = 'card alert-active'; 
-                        document.getElementById('alert-icon').innerText = '🚨'; 
-                        document.getElementById('alert-val').innerText = 'ТРИВОГА'; 
-                        document.getElementById('alert-status').innerText = 'Київ. Пройдіть в укриття!'; 
-                    } else { 
-                        aCard.className = 'card'; 
-                        document.getElementById('alert-icon').innerText = '🛡️'; 
-                        document.getElementById('alert-val').innerText = 'СПОКІЙНО'; 
-                        document.getElementById('alert-status').innerText = 'Київ. Тривоги немає'; 
-                    }
+                    aCard.className = isA ? 'card alert-active' : 'card';
+                    document.getElementById('alert-icon').innerText = isA ? '🚨' : '🛡️';
+                    document.getElementById('alert-val').innerText = isA ? 'ТРИВОГА' : 'СПОКІЙНО';
+                    document.getElementById('alert-status').innerText = isA ? 'Київ. В УКРИТТЯ!' : 'Київ. Спокійно';
                 }
-
-                if (lastAlertStatus !== null && isAlert !== lastAlertStatus) {
-                    playDing();
-                    sendPush("🚨 ПОВІТРЯНА ТРИВОГА", isAlert ? "Початок тривоги!" : "Відбій тривоги");
-                }
-                lastAlertStatus = isAlert;
                 
                 document.getElementById('aqi-num').innerText = data.aqi.aqi;
                 document.getElementById('aqi-text').innerText = data.aqi.text;
                 document.getElementById('aqi-num').style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
-                if (data.aqi.location) document.getElementById('aqi-loc').innerText = data.aqi.location;
                 document.getElementById('pm25').innerText = data.aqi.pm25;
                 document.getElementById('pm10').innerText = data.aqi.pm10;
                 document.getElementById('temp').innerText = data.aqi.temp + '°C';
                 document.getElementById('hum').innerText = data.aqi.hum + '%';
-                document.getElementById('wind-status').innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
-                document.getElementById('rad-val').innerText = data.radiation.level;
+                
                 document.getElementById('schedule-text').innerHTML = data.schedule_text;
                 document.getElementById('last-update').innerText = data.timestamp;
             });
@@ -309,10 +278,7 @@
         updateBellUI();
         setInterval(update, 30000); 
         update();
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js?v=2.2.7');
-        }
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js?v=2.2.8');
     </script>
 </body>
 </html>
