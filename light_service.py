@@ -789,23 +789,32 @@ def sync_schedules():
                     
                     # Deduplicate: Check if effective slots are the same as last alerted
                     if should_alert:
-                        # Extract slots structure for hashing
+                        # Extract slots structure for hashing (Deduplication v2)
+                        # We only care about days that actually have outages.
+                        # This prevents alerts when a "pending" day becomes "all-light" (normal).
                         slots_structure = {}
                         for s_key in ['github', 'yasno']:
                             sources = data.get(s_key, {})
                             slots_structure[s_key] = {}
                             for group_name, days in sources.items():
-                                slots_structure[s_key][group_name] = {
-                                    d: day_data.get('slots') for d, day_data in days.items()
-                                }
+                                day_slots = {}
+                                for d, day_data in days.items():
+                                    slots = day_data.get('slots')
+                                    # Only include the day in hash if it has actual outages (at least one False)
+                                    if slots and any(s is False for s in slots):
+                                        day_slots[d] = slots
+                                if day_slots:
+                                    slots_structure[s_key][group_name] = day_slots
                         
                         current_hash = hashlib.md5(json.dumps(slots_structure, sort_keys=True).encode()).hexdigest()
+                        last_hash = state.get("last_schedule_hash")
                         
                         with state_lock:
-                            if current_hash == state.get("last_schedule_hash"):
+                            if current_hash == last_hash:
                                 should_alert = False
-                                print("Schedule changed in sources, but effective slots are identical to last alerted. Skipping Telegram alert.")
+                                print(f"Schedule changed in sources, but outages are identical (Hash: {current_hash}). Skipping Telegram alert.")
                             else:
+                                print(f"Schedule changed: New Hash {current_hash} (was {last_hash}). Proceeding with alert.")
                                 state["last_schedule_hash"] = current_hash
                                 save_state()
 
