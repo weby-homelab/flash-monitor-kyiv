@@ -1,69 +1,74 @@
 {
   "settings": {
+    "admin_chat_id": "6313526220",
+    "groups": [
+      "GPV36.1"
+    ],
+    "max_messages": 1,
+    "push_interval": 30,
     "region": "kyiv",
-    "timezone": "Europe/Kyiv",
-    "groups": ["GPV36.1"],
+    "safety_net_timeout": 35,
+    "show_intervals_detail": false,
     "style": "list",
     "table_format": "code_lines",
-    "max_messages": 1,
-    "show_intervals_detail": false
+    "timezone": "Europe/Kyiv"
   },
   "sources": {
+    "air_quality": {
+      "lat": "50.408",
+      "location_name": "\u0411\u043e\u0440\u0449\u0430\u0433\u0456\u0432\u043a\u0430 (\u0421\u0438\u043c\u0438\u0440\u0435\u043d\u043a\u0430)",
+      "lon": "30.400",
+      "seb_station": "17095"
+    },
     "github": {
       "enabled": true,
-      "name": "ДТЕК"
+      "name": "\u0414\u0422\u0415\u041a"
     },
     "yasno": {
+      "dso_id": "902",
       "enabled": true,
       "name": "Yasno",
-      "region_id": "25",
-      "dso_id": "902"
-    },
-    "air_quality": {
-      "seb_station": "17095",
-      "lat": "50.408",
-      "lon": "30.400",
-      "location_name": "Борщагівка (Симиренка)"
+      "region_id": "25"
     }
   },
   "ui": {
-    "icons": {
-      "calendar": "📆",
-      "clock": "🕐",
-      "on": "🔆",
-      "off": "✖️",
-      "on_list": "🔆",
-      "off_list": "✖️",
-      "emergency": "⚠️",
-      "pending": "⏳",
-      "separator": "⠅",
-      "light_on": "🔆",
-      "light_off": "✖️"
-    },
-    "text": {
-      "on_full": "Світло є",
-      "off_full": "Світла нема",
-      "on_detail": "Світло буде",
-      "off_detail": "Світла не буде",
-      "emergency": "Аварійне Відключення!",
-      "pending": "Очікується інформація про графік",
-      "updated": "Оновлено",
-      "hours_short": "год."
-    },
     "format": {
-      "header_template": "🔆 Графік групи <b>{group}</b> 🔆",
-      "separator_source": "✧  ✧  ✧",
-      "separator_day": "■  ■  ■",
+      "detail_indent": "   ",
+      "header_template": "\ud83d\udd06 \u0413\u0440\u0430\u0444\u0456\u043a \u0433\u0440\u0443\u043f\u0438 <b>{group}</b> \ud83d\udd06",
+      "separator_day": "\u25a0  \u25a0  \u25a0",
       "separator_footer": " - ",
-      "table_separator": "-",
-      "detail_indent": "   "
+      "separator_source": "\u2727  \u2727  \u2727",
+      "table_separator": "-"
+    },
+    "icons": {
+      "calendar": "\ud83d\udcc6",
+      "clock": "\ud83d\udd50",
+      "emergency": "\u26a0\ufe0f",
+      "light_off": "\u2716\ufe0f",
+      "light_on": "\ud83d\udd06",
+      "off": "\u2716\ufe0f",
+      "off_list": "\u2716\ufe0f",
+      "on": "\ud83d\udd06",
+      "on_list": "\ud83d\udd06",
+      "pending": "\u23f3",
+      "separator": "\u2805"
     },
     "spacing": {
-      "before_separator_source": 1,
-      "before_separator_day": 1,
-      "before_summary": 1,
+      "after_footer_separator": 1,
       "before_footer": 0,
-      "after_footer_separator": 1
+      "before_separator_day": 1,
+      "before_separator_source": 1,
+      "before_summary": 1
+    },
+    "text": {
+      "emergency": "\u0410\u0432\u0430\u0440\u0456\u0439\u043d\u0435 \u0412\u0456\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u043d\u044f!",
+      "hours_short": "\u0433\u043e\u0434.",
+      "off_detail": "\u0421\u0432\u0456\u0442\u043b\u0430 \u043d\u0435 \u0431\u0443\u0434\u0435",
+      "off_full": "\u0421\u0432\u0456\u0442\u043b\u0430 \u043d\u0435\u043c\u0430",
+      "on_detail": "\u0421\u0432\u0456\u0442\u043b\u043e \u0431\u0443\u0434\u0435",
+      "on_full": "\u0421\u0432\u0456\u0442\u043b\u043e \u0454",
+      "pending": "\u041e\u0447\u0456\u043a\u0443\u0454\u0442\u044c\u0441\u044f \u0456\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0456\u044f \u043f\u0440\u043e \u0433\u0440\u0430\u0444\u0456\u043a",
+      "updated": "\u041e\u043d\u043e\u0432\u043b\u0435\u043d\u043e"
     }
   }
 }

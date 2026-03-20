@@ -20,7 +20,7 @@ from light_service import (
     get_deviation_info, get_nearest_schedule_switch,
     format_event_message, get_next_scheduled_event,
     trigger_daily_report_update, trigger_weekly_report_update,
-    get_air_raid_alert,
+    get_air_raid_alert, get_push_interval,
     TOKEN, ADMIN_CHAT_ID,
     KYIV_TZ, FileLock, STATE_LOCK_FILE, DATA_DIR, EVENT_LOG_FILE
 )
@@ -490,6 +490,9 @@ def push_api(key):
             load_state()  # Reload to get latest changes from other workers
             previous_status = state.get("status", "unknown")
             state["last_seen"] = current_time
+            state["safety_net_pending"] = False # Reset on heartbeat
+            state["safety_net_sent_at"] = 0     # Reset on heartbeat
+            state["safety_net_triggered_for"] = 0 # Reset on heartbeat
             
             if previous_status == "down" or previous_status == "unknown":
                 state["status"] = "up"
@@ -553,28 +556,34 @@ def tg_webhook():
         msg_id = cb.get('message', {}).get('message_id')
         chat_id = cb.get('message', {}).get('chat', {}).get('id')
         
-        if cb_data.startswith('confirm_down_'):
+        if cb_data.startswith('confirm_down_') or cb_data.startswith('sn_down_'):
             load_state()
             with state_lock:
                 state['quiet_status'] = 'active'
                 state['pending_confirmation'] = False
-                
+                state['safety_net_pending'] = False
+
                 # Send the public Telegram alert
                 try:
                     timestamp = float(cb_data.split('_')[-1])
                 except:
                     timestamp = time.time()
-                
+
                 msg = format_event_message(False, timestamp, state.get("came_up_at", 0))
                 threading.Thread(target=send_telegram, args=(msg,)).start()
+
+                # Update status
+                state["status"] = "down"
+                state["went_down_at"] = timestamp
+                log_event("down", timestamp)
                 save_state()
-            
+
             # Answer callback
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
                 "text": "🔴 Підтверджено"
             })
-            
+
             # Edit message
             requests.post(f"https://api.telegram.org/bot{TOKEN}/editMessageText", json={
                 "chat_id": chat_id,
@@ -587,18 +596,134 @@ def tg_webhook():
             with state_lock:
                 state['pending_confirmation'] = False
                 save_state()
-            
-            # Answer callback
+
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
                 "text": "🟢 Ігноровано"
             })
-            
-            # Edit message
+
             requests.post(f"https://api.telegram.org/bot{TOKEN}/editMessageText", json={
                 "chat_id": chat_id,
                 "message_id": msg_id,
                 "text": "🟢 Збій / Роботи (Ігноровано)"
+            })
+
+        elif cb_data.startswith('sn_tech_'):
+            # Show mute options
+            timestamp = cb_data.split('_')[-1]
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "🛠 На скільки часу вимкнути моніторинг?",
+                "reply_markup": {
+                    "inline_keyboard": [
+                        [
+                            {"text": "5 хв", "callback_data": f"mute_5_{timestamp}"},
+                            {"text": "15 хв", "callback_data": f"mute_15_{timestamp}"},
+                            {"text": "30 хв", "callback_data": f"mute_30_{timestamp}"}
+                        ],
+                        [
+                            {"text": "1 год", "callback_data": f"mute_60_{timestamp}"},
+                            {"text": "2 год", "callback_data": f"mute_120_{timestamp}"}
+                        ],
+                        [
+                            {"text": "⬅️ Назад", "callback_data": f"sn_back_{timestamp}"}
+                        ]
+                    ]
+                }
+            })
+
+        elif cb_data.startswith('mute_'):
+            parts = cb_data.split('_')
+            minutes = int(parts[1])
+            load_state()
+            with state_lock:
+                state['muted_until'] = time.time() + (minutes * 60)
+                state['safety_net_pending'] = False
+                save_state()
+
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
+                "callback_query_id": cb['id'],
+                "text": f"🛠 Моніторинг вимкнено на {minutes} хв"
+            })
+
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": f"🛠 Технічний збій. Моніторинг призупинено до {datetime.fromtimestamp(state['muted_until'], KYIV_TZ).strftime('%H:%M')}"
+            })
+
+        elif cb_data.startswith('sn_dontknow_'):
+            load_state()
+            with state_lock:
+                state['safety_net_pending'] = False
+                save_state()
+
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
+                "callback_query_id": cb['id'],
+                "text": "🤷‍♂️ Чекаємо 3 хв"
+            })
+
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "🤷‍♂️ Невідомо. Чекаємо стандартний таймаут 3 хвилини."
+            })
+
+        elif cb_data.startswith('sn_down_'):
+            # Confirm DOWN instantly
+            load_state()
+            with state_lock:
+                state['safety_net_pending'] = False
+                state["status"] = "down"
+                
+                # Apply standard correction (last_seen + configured interval)
+                last_seen = state.get("last_seen", time.time())
+                down_time_ts = last_seen + get_push_interval()
+                
+                state["went_down_at"] = down_time_ts
+                log_event("down", down_time_ts)
+                
+                msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
+                threading.Thread(target=send_telegram, args=(msg,)).start()
+                save_state()
+
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
+                "callback_query_id": cb['id'],
+                "text": "🔴 Підтверджено зникнення"
+            })
+
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": "🔴 Світло зникло (Підтверджено адміном)"
+            })
+
+        elif cb_data.startswith('sn_back_'):
+            timestamp = cb_data.split('_')[-1]
+            # Restore safety net buttons
+            msg = "🚨 <b>SAFETY NET: ВТРАТА ПУША!</b>\n\nВже 35 сек немає зв'язку. Що сталося?"
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/editMessageText", json={
+                "chat_id": chat_id,
+                "message_id": msg_id,
+                "text": msg,
+                "parse_mode": "HTML",
+                "reply_markup": {
+                    "inline_keyboard": [
+                        [
+                            {"text": "🔴 Світло зникло?", "callback_data": f"sn_down_{timestamp}"},
+                            {"text": "🛠 Технічний збій?", "callback_data": f"sn_tech_{timestamp}"}
+                        ],
+                        [
+                            {"text": "🤷‍♂️ Не знаю!", "callback_data": f"sn_dontknow_{timestamp}"}
+                        ]
+                    ]
+                }
+            })
+            
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
+                "callback_query_id": cb['id'],
+                "text": "Назад"
             })
             
     return "OK"
@@ -660,14 +785,52 @@ def admin_quiet_mode():
         
     data = request.get_json()
     mode = data.get('mode')
+    unmute = data.get('unmute', False)
+
     if mode not in ['auto', 'forced_on', 'forced_off']:
         return jsonify({"status": "error", "msg": "Invalid mode"}), 400
-        
+
     with state_lock:
         load_state()
         state['quiet_mode'] = mode
+        if unmute:
+            state['muted_until'] = 0
+            state['safety_net_pending'] = False
         save_state()
+    return jsonify({"status": "ok"})
+
+@app.route('/api/admin/safety_net/react', methods=['POST'])
+def admin_safety_net_react():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+
+    data = request.get_json()
+    action = data.get('action')
+    value = data.get('value') # For tech mute duration
+
+    with state_lock:
+        load_state()
+        if action == 'down':
+            state['safety_net_pending'] = False
+            state["status"] = "down"
+            # Apply standard correction (last_seen + configured interval)
+            last_seen = state.get("last_seen", time.time())
+            down_time_ts = last_seen + get_push_interval()
+            state["went_down_at"] = down_time_ts
+            log_event("down", down_time_ts)
+            msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
+            threading.Thread(target=send_telegram, args=(msg,)).start()
         
+        elif action == 'tech':
+            minutes = int(value or 30)
+            state['muted_until'] = time.time() + (minutes * 60)
+            state['safety_net_pending'] = False
+            
+        elif action == 'dontknow':
+            state['safety_net_pending'] = False
+            
+        save_state()
+
     return jsonify({"status": "ok"})
 
 @app.route('/api/admin/logs/add', methods=['POST'])

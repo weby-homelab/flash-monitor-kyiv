@@ -24,9 +24,34 @@ load_dotenv()
 # --- Configuration ---
 DATA_DIR = os.environ.get("DATA_DIR", "data")
 os.makedirs(DATA_DIR, exist_ok=True)
+def get_config():
+    try:
+        config_path = os.path.join(DATA_DIR, "config.json")
+        if not os.path.exists(config_path):
+            config_path = "config.json"
+            
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                return json.load(f)
+    except:
+        pass
+    return {}
+
+def get_admin_chat_id():
+    cfg = get_config()
+    return str(cfg.get("settings", {}).get("admin_chat_id", "6313526220"))
+
+def get_safety_net_timeout():
+    cfg = get_config()
+    return int(cfg.get("settings", {}).get("safety_net_timeout", 35))
+
+def get_push_interval():
+    cfg = get_config()
+    return int(cfg.get("settings", {}).get("push_interval", 30))
+
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
-ADMIN_CHAT_ID = "6313526220"
+ADMIN_CHAT_ID = get_admin_chat_id()
 PORT = 8889
 # SECRET_KEY handled in state
 STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
@@ -94,6 +119,10 @@ state = {
     "quiet_mode": "auto", # auto, forced_on, forced_off
     "quiet_status": "active", # active, quiet
     "pending_confirmation": False,
+    "safety_net_pending": False, # New: tracking safety net message
+    "safety_net_sent_at": 0,    # New: tracking when safety net was sent
+    "safety_net_triggered_for": 0, # New: tracking last_seen to avoid re-triggering
+    "muted_until": 0,            # New: for "Technical Failure" mute
     "stability_start": time.time(),
     "admin_token": None,
     "last_schedule_hash": None
@@ -521,7 +550,7 @@ def send_admin_confirmation(timestamp):
     msg = "⚠️ Зафіксовано втрату зв'язку! Режим 'Інформаційний спокій' активний. Це вимкнення світла чи збій обладнання?"
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {
-        "chat_id": ADMIN_CHAT_ID,
+        "chat_id": get_admin_chat_id(),
         "text": msg,
         "parse_mode": "HTML",
         "reply_markup": {
@@ -538,6 +567,31 @@ def send_admin_confirmation(timestamp):
         print(f"DEBUG: Admin Confirmation Response: {r.status_code} {r.text}")
     except Exception as e:
         print(f"Failed to send admin confirmation: {e}")
+
+def send_safety_net_admin(timestamp):
+    msg = "🚨 <b>SAFETY NET: ВТРАТА ПУША!</b>\n\nВже 35 сек немає зв'язку. Що сталося?"
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    payload = {
+        "chat_id": get_admin_chat_id(),
+        "text": msg,
+        "parse_mode": "HTML",
+        "reply_markup": {
+            "inline_keyboard": [
+                [
+                    {"text": "🔴 Світло зникло?", "callback_data": f"sn_down_{timestamp}"},
+                    {"text": "🛠 Технічний збій?", "callback_data": f"sn_tech_{timestamp}"}
+                ],
+                [
+                    {"text": "🤷‍♂️ Не знаю!", "callback_data": f"sn_dontknow_{timestamp}"}
+                ]
+            ]
+        }
+    }
+    try:
+        r = requests.post(url, json=payload, timeout=5)
+        print(f"DEBUG: Safety Net Response: {r.status_code} {r.text}")
+    except Exception as e:
+        print(f"Failed to send safety net admin: {e}")
 
 def get_deviation_info(event_time, is_up):
     # event_time: timestamp (float)
@@ -661,7 +715,7 @@ def get_air_raid_alert():
 def monitor_loop():
     print("Monitor loop started...")
     while True:
-        time.sleep(60) # Check every minute
+        time.sleep(5) # Check every 5 seconds for fast response
         
         # Reload state to sync with other workers/processes
         load_state()
@@ -671,13 +725,38 @@ def monitor_loop():
             last_seen = state["last_seen"]
             status = state["status"]
             
-            # Timeout threshold: 3 minutes (180 seconds)
+            # Check if we are muted (Technical failure mode)
+            if state.get("muted_until", 0) > current_time:
+                continue
+
+            # 1. Safety Net Trigger (e.g. at 35s gap)
+            safety_net_timeout = get_safety_net_timeout()
+            if status == "up" and (current_time - last_seen) > safety_net_timeout and \
+               not state.get("safety_net_pending") and state.get("safety_net_triggered_for") != last_seen:
+                
+                # Only trigger if we haven't reached the 180s mark yet
+                if (current_time - last_seen) < 180:
+                    state["safety_net_pending"] = True
+                    state["safety_net_sent_at"] = current_time
+                    state["safety_net_triggered_for"] = last_seen
+                    save_state()
+                    threading.Thread(target=send_safety_net_admin, args=(current_time,)).start()
+            
+            # 2. Auto-close Safety Net waiting after 30 seconds
+            sent_at = state.get("safety_net_sent_at", 0)
+            if state.get("safety_net_pending") and (current_time - sent_at) > 30:
+                state["safety_net_pending"] = False
+                save_state()
+                # Just wait for the hard 180s timeout now
+
+            # 3. Hard Timeout: 3 minutes (180 seconds)
             if status == "up" and (current_time - last_seen) > 180:
                 # Timeout detected!
                 state["status"] = "down"
+                state["safety_net_pending"] = False # Reset if it was still pending
                 
-                # Assume outage happened 1 min after last ping
-                down_time_ts = last_seen + 60
+                # Assume outage happened shortly after last ping (using configured push_interval)
+                down_time_ts = last_seen + get_push_interval()
                 state["went_down_at"] = down_time_ts
                 log_event("down", down_time_ts)
                 
