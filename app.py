@@ -435,7 +435,8 @@ def index():
 
 @app.route('/admin')
 def admin_panel():
-    token = request.args.get('t')
+    # Support token in URL params OR in X-Admin-Token header
+    token = request.args.get('t') or request.headers.get('X-Admin-Token')
     if token and token == state.get('admin_token'):
         return render_template('admin.html')
     return "Access Denied", 403
@@ -477,8 +478,9 @@ def api_status():
 
 @app.route('/api/push/<key>')
 def push_api(key):
-    # We do a quick check first without locking, just in case
-    if key != state.get('secret_key'):
+    # Support key in path OR X-Secret-Key header
+    secret_key = request.headers.get('X-Secret-Key') or key
+    if secret_key != state.get('secret_key'):
         return jsonify({"status": "error", "msg": "invalid_key"}), 403
         
     current_time = time.time()
@@ -511,7 +513,9 @@ def push_api(key):
 
 @app.route('/api/down/<key>')
 def down_api(key):
-    if key != state.get('secret_key'):
+    # Support key in path OR X-Secret-Key header
+    secret_key = request.headers.get('X-Secret-Key') or key
+    if secret_key != state.get('secret_key'):
         return jsonify({"status": "error", "msg": "invalid_key"}), 403
         
     current_time = time.time()
@@ -602,7 +606,8 @@ def tg_webhook():
 # --- Admin APIs ---
 
 def check_admin_token():
-    t = request.args.get('t')
+    # Support token in URL params OR in X-Admin-Token header
+    t = request.args.get('t') or request.headers.get('X-Admin-Token')
     if not t or t != state.get('admin_token'):
         return False
     return True
@@ -721,8 +726,6 @@ def admin_service_restart():
 
 # Initialize State
 load_state()
-print(f"Push URL configured for key: {state.get('secret_key')}")
-print(f"Admin URL: /admin?t={state.get('admin_token')}")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050)
