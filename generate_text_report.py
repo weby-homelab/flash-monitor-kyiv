@@ -11,18 +11,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- Configuration ---
-DATA_DIR = os.environ.get("DATA_DIR", ".")
+DATA_DIR = os.environ.get("DATA_DIR", "data")
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
-CONFIG_FILE = "config.json"
+CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 TEXT_REPORT_ID_FILE = os.path.join(DATA_DIR, "text_report_id.json")
 
 def get_timezone():
     try:
-        config_path = os.path.join(DATA_DIR, "config.json")
-        if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
                 cfg = json.load(f)
                 tz_name = cfg.get("settings", {}).get("timezone", "Europe/Kyiv")
                 return ZoneInfo(tz_name)

@@ -22,7 +22,8 @@ from parser_service import update_local_schedules
 load_dotenv()
 
 # --- Configuration ---
-DATA_DIR = os.environ.get("DATA_DIR", ".")
+DATA_DIR = os.environ.get("DATA_DIR", "data")
+os.makedirs(DATA_DIR, exist_ok=True)
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 ADMIN_CHAT_ID = "6313526220"
