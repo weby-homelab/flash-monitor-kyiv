@@ -758,7 +758,7 @@ def admin_data():
     return jsonify({
         "config": config,
         "state": state,
-        "logs": logs[-20:][::-1] # Last 20, newest first
+        "logs": logs[-10:][::-1] # Last 10, newest first
     })
 
 @app.route('/api/admin/config', methods=['POST'])

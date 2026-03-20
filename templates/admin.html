@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flash Monitor Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #0a0a0a;
@@ -16,14 +16,10 @@
             --accent-color: #3b82f6;
             --danger-color: #ef4444;
             --success-color: #10b981;
+            --warning-color: #f59e0b;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
         body {
             background-color: var(--bg-color);
@@ -51,23 +47,18 @@
         header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             margin-bottom: 30px;
             border-bottom: 1px solid var(--glass-border);
             padding-bottom: 15px;
             gap: 15px;
         }
 
-        header h1 {
-            font-size: 1.3rem;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            line-height: 1.2;
-        }
+        header h1 { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; }
 
         .admin-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
         }
 
@@ -76,12 +67,9 @@
             border: 1px solid var(--glass-border);
             border-radius: 16px;
             padding: 20px;
-            height: fit-content;
         }
 
-        .admin-section.full-width {
-            grid-column: 1 / -1;
-        }
+        .admin-section.full-width { grid-column: 1 / -1; }
 
         .section-header {
             display: flex;
@@ -91,40 +79,24 @@
             font-weight: 600;
         }
 
-        .section-header i {
-            margin-right: 10px;
-            color: var(--accent-color);
-            width: 20px;
-            text-align: center;
-        }
+        .section-header i { margin-right: 10px; color: var(--accent-color); width: 20px; text-align: center; }
 
-        .form-group {
-            margin-bottom: 14px;
-        }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px; }
 
-        label {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
-        }
-
-        input[type="text"], input[type="number"], select, textarea {
+        input[type="text"], input[type="number"], select {
             width: 100%;
             background: rgba(255, 255, 255, 0.07);
             border: 1px solid var(--glass-border);
             border-radius: 10px;
-            padding: 12px 14px;
+            padding: 12px;
             color: var(--text-primary);
             font-size: 0.95rem;
             outline: none;
             transition: all 0.2s;
         }
 
-        input:focus {
-            border-color: var(--accent-color);
-            background: rgba(255, 255, 255, 0.1);
-        }
+        input:focus { border-color: var(--accent-color); background: rgba(255, 255, 255, 0.1); }
 
         .btn {
             display: inline-flex;
@@ -138,31 +110,15 @@
             transition: all 0.2s;
             border: none;
             gap: 8px;
-            white-space: nowrap;
         }
 
-        .btn-primary {
-            background: var(--accent-color);
-            color: white;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-
-        .btn-danger {
-            background: var(--danger-color);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-        }
+        .btn-primary { background: var(--accent-color); color: white; }
+        .btn-danger { background: var(--danger-color); color: white; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
         .status-badge {
-            padding: 5px 14px;
+            padding: 5px 12px;
             border-radius: 100px;
             font-size: 0.75rem;
             font-weight: 600;
@@ -173,219 +129,48 @@
         .status-down { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
 
         @keyframes blink-alarm {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.02); background: rgba(239, 68, 68, 0.6); color: white; }
-            100% { opacity: 1; transform: scale(1); }
+            0% { background: rgba(239, 68, 68, 0.2); }
+            50% { background: rgba(239, 68, 68, 0.6); }
+            100% { background: rgba(239, 68, 68, 0.2); }
         }
 
         .alarm-active {
             animation: blink-alarm 1s infinite;
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+            border: 2px solid var(--danger-color) !important;
         }
 
-        .sn-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
+        .sn-actions { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
         .sn-btn {
-            padding: 10px 14px;
-            font-size: 0.85rem;
+            padding: 10px;
+            font-size: 0.8rem;
             border-radius: 8px;
             cursor: pointer;
             border: 1px solid var(--glass-border);
             background: rgba(255, 255, 255, 0.05);
             color: white;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
             flex: 1;
-            min-width: 120px;
-            justify-content: center;
+            min-width: 100px;
+            text-align: center;
         }
-
-        .sn-btn:hover { background: rgba(255, 255, 255, 0.1); }
         .sn-btn-down { border-color: var(--danger-color); color: var(--danger-color); }
         .sn-btn-tech { border-color: var(--accent-color); color: var(--accent-color); }
 
-        .table-container {
-            overflow-x: auto;
-            margin-top: 10px;
-            border-radius: 12px;
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 500px;
-        }
-
-        th {
-            text-align: left;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            padding: 14px 10px;
-            border-bottom: 1px solid var(--glass-border);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        td {
-            padding: 14px 10px;
-            font-size: 0.85rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .log-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .quiet-mode-options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .table-container { overflow-x: auto; margin-top: 10px; border-radius: 12px; }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        th { text-align: left; font-size: 0.75rem; color: var(--text-secondary); padding: 12px; border-bottom: 1px solid var(--glass-border); }
+        td { padding: 12px; font-size: 0.85rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 
         .radio-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 14px;
-            border-radius: 12px;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: all 0.2s;
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(255, 255, 255, 0.03); padding: 12px;
+            border-radius: 12px; cursor: pointer; border: 1px solid transparent;
+            margin-bottom: 8px;
         }
-
-        .radio-group:hover {
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        .radio-group.active {
-            border-color: var(--accent-color);
-            background: rgba(59, 130, 246, 0.1);
-        }
-
-        #log-add-form {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 16px;
-        }
-
-        @media (min-width: 768px) {
-            #log-add-form {
-                display: grid;
-                grid-template-columns: 1fr 1fr 1fr auto;
-                align-items: end;
-            }
-        }
-
-        footer {
-            margin-top: 40px;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            opacity: 0.5;
-            padding-bottom: 20px;
-        }
+        .radio-group.active { border-color: var(--accent-color); background: rgba(59, 130, 246, 0.1); }
 
         @media (max-width: 767px) {
-            .admin-grid {
-                grid-template-columns: 1fr;
-            }
-            header {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-            }
-            .btn {
-                width: 100%;
-            }
-        }
-    </style>
-
-        th {
-            text-align: left;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            padding: 12px 8px;
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        td {
-            padding: 12px 8px;
-            font-size: 0.85rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .log-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .quiet-mode-options {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .radio-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            border: 1px solid transparent;
-        }
-
-        .radio-group:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .radio-group.active {
-            border-color: var(--accent-color);
-            background: rgba(59, 130, 246, 0.1);
-        }
-
-        .radio-group input {
-            cursor: pointer;
-        }
-
-        #log-add-form {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr auto;
-            gap: 12px;
-            align-items: end;
-            margin-bottom: 20px;
-            padding: 16px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-        }
-
-        footer {
-            margin-top: 40px;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            opacity: 0.6;
-        }
-
-        @media (max-width: 768px) {
-            .admin-grid {
-                grid-template-columns: 1fr;
-            }
+            header { flex-direction: column; text-align: center; }
+            .btn { width: 100%; }
         }
     </style>
 </head>
@@ -393,8 +178,8 @@
     <div class="admin-container">
         <header>
             <div>
-                <h1>Панель керування СВІТЛО⚡️ БЕЗПЕКА</h1>
-                <p style="color: var(--text-secondary); font-size: 0.9rem;">Панель керування v2.0</p>
+                <h1>СВІТЛО⚡️ БЕЗПЕКА</h1>
+                <p style="color: var(--text-secondary); font-size: 0.8rem;">Панель керування v2.4.0</p>
             </div>
             <button class="btn btn-secondary" onclick="fetchData()">
                 <i class="fas fa-sync-alt"></i> Оновити
@@ -402,194 +187,84 @@
         </header>
 
         <div class="admin-grid">
-            <!-- System Status -->
+            <!-- Status -->
             <div class="admin-section">
-                <div class="section-header">
-                    <i class="fas fa-server"></i>
-                    Статус системи
+                <div class="section-header"><i class="fas fa-server"></i> Статус</div>
+                <div class="form-group">
+                    <label>Поточний стан</label>
+                    <span id="sys-status" class="status-badge">...</span>
                 </div>
-                <div id="status-display">
-                    <div class="form-group">
-                        <label>Поточний статус</label>
-                        <span id="sys-status" class="status-badge">Завантаження...</span>
+                <div class="form-group">
+                    <label>Останній сигнал</label>
+                    <div id="sys-last-seen" style="font-weight: 600;">-</div>
+                </div>
+                <div class="form-group">
+                    <label>Режим сповіщень</label>
+                    <div id="sys-quiet-status" style="font-weight: 800; font-size: 0.9rem;">-</div>
+                </div>
+                <div class="form-group" id="sn-status-group" style="display: none;">
+                    <label>Safety Net</label>
+                    <div id="sn-badge" class="status-badge" style="text-align: center; padding: 10px;">ВТРАТА ПУША 🚨</div>
+                    <div class="sn-actions">
+                        <button class="sn-btn sn-btn-down" onclick="safetyNetReact('down')">Зникло</button>
+                        <button class="sn-btn sn-btn-tech" onclick="safetyNetReact('tech')">Збій</button>
+                        <button class="sn-btn" onclick="safetyNetReact('dontknow')">Не знаю</button>
                     </div>
-                    <div class="form-group">
-                        <label>Останній сигнал</label>
-                        <div id="sys-last-seen">-</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Статус спокою</label>
-                        <div id="sys-quiet-status">-</div>
-                    </div>
-                    <div class="form-group" id="sn-status-group" style="display: none;">
-                        <label>Safety Net</label>
-                        <span id="sn-badge" class="status-badge" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; font-weight: 800; border: 2px solid #ef4444;">ВТРАТА ПУША 🚨</span>
-                        
-                        <div class="sn-actions">
-                            <button class="sn-btn sn-btn-down" onclick="safetyNetReact('down')">
-                                <i class="fas fa-plug-circle-xmark"></i> Світло зникло
-                            </button>
-                            <button class="sn-btn sn-btn-tech" onclick="safetyNetReact('tech')">
-                                <i class="fas fa-screwdriver-wrench"></i> Технічний збій
-                            </button>
-                            <button class="sn-btn" onclick="safetyNetReact('dontknow')">
-                                <i class="fas fa-question-circle"></i> Не знаю
-                            </button>
-                        </div>
-                    </div>
-                    <div class="form-group" id="mute-status-group" style="display: none;">
-                        <label>Технічна пауза до</label>
-                        <div id="sys-mute-until" style="color: var(--accent-color); font-weight: 600;">-</div>
-                    </div>
-                    <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button class="btn btn-danger" onclick="restartServices()">
-                            <i class="fas fa-power-off"></i> Перезапуск
-                        </button>
-                        <button id="btn-unmute" class="btn btn-secondary" onclick="unmuteMonitor()" style="display: none;">
-                            <i class="fas fa-play"></i> Увімкнути моніторинг
-                        </button>
-                    </div>
+                </div>
+                <div class="form-group" id="mute-status-group" style="display: none;">
+                    <label>Пауза до</label>
+                    <div id="sys-mute-until" style="color: var(--accent-color); font-weight: 800;">-</div>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 8px;">
+                    <button class="btn btn-danger btn-sm" onclick="restartServices()">Перезапуск</button>
+                    <button id="btn-unmute" class="btn btn-secondary btn-sm" onclick="unmuteMonitor()" style="display: none;">Увімкнути</button>
                 </div>
             </div>
 
             <!-- Quiet Mode -->
             <div class="admin-section">
-                <div class="section-header">
-                    <i class="fas fa-volume-mute"></i>
-                    Режим спокою
-                </div>
-                <div class="quiet-mode-options">
-                    <label class="radio-group" id="q-auto">
-                        <input type="radio" name="quiet_mode" value="auto">
-                        <div>
-                            <div style="font-weight: 600;">Автоматично</div>
-                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Тиша, якщо немає планових вимкнень</div>
-                        </div>
-                    </label>
-                    <label class="radio-group" id="q-on">
-                        <input type="radio" name="quiet_mode" value="forced_on">
-                        <div>
-                            <div style="font-weight: 600;">Завжди ТИХО</div>
-                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Система завжди мовчить (без сповіщень)</div>
-                        </div>
-                    </label>
-                    <label class="radio-group" id="q-off">
-                        <input type="radio" name="quiet_mode" value="forced_off">
-                        <div>
-                            <div style="font-weight: 600;">Завжди АКТИВНО</div>
-                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Звичайні сповіщення за будь-яких умов</div>
-                        </div>
-                    </label>
-                    <button class="btn btn-primary" onclick="saveQuietMode()" style="margin-top: 10px;">
-                        Зберегти зміни
-                    </button>
-                </div>
+                <div class="section-header"><i class="fas fa-volume-mute"></i> Спокій</div>
+                <label class="radio-group" id="q-auto"><input type="radio" name="quiet_mode" value="auto"> <div><b>Авто</b><br><small>Тиша без графіків</small></div></label>
+                <label class="radio-group" id="q-on"><input type="radio" name="quiet_mode" value="forced_on"> <div><b>Тихо</b><br><small>Без сповіщень</small></div></label>
+                <label class="radio-group" id="q-off"><input type="radio" name="quiet_mode" value="forced_off"> <div><b>Активно</b><br><small>Всі сповіщення</small></div></label>
+                <button class="btn btn-primary" onclick="saveQuietMode()" style="width: 100%; margin-top: 5px;">Зберегти</button>
             </div>
 
-            <!-- Configuration -->
+            <!-- Config -->
             <div class="admin-section full-width">
-                <div class="section-header">
-                    <i class="fas fa-cog"></i>
-                    Конфігурація (config.json)
+                <div class="section-header"><i class="fas fa-cog"></i> Налаштування</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="form-group"><label>Регіон</label><input type="text" id="cfg-region"></div>
+                    <div class="form-group"><label>Групи</label><input type="text" id="cfg-groups"></div>
+                    <div class="form-group"><label>Admin Chat ID</label><input type="text" id="cfg-admin-chat"></div>
+                    <div class="form-group"><label>Пуш (сек)</label><input type="number" id="cfg-push-interval"></div>
+                    <div class="form-group"><label>Safety Net (сек)</label><input type="number" id="cfg-sn-timeout"></div>
+                    <div class="form-group"><label>Lat</label><input type="text" id="cfg-lat"></div>
+                    <div class="form-group"><label>Lon</label><input type="text" id="cfg-lon"></div>
+                    <div class="form-group"><label>AQ ID</label><input type="text" id="cfg-aq-station"></div>
+                    <div class="form-group"><label>AQ Name</label><input type="text" id="cfg-aq-name"></div>
                 </div>
-                <div class="admin-grid" style="grid-template-columns: 1fr 1fr 1fr;">
-                    <div>
-                        <div class="form-group">
-                            <label>Регіон</label>
-                            <input type="text" id="cfg-region">
-                        </div>
-                        <div class="form-group">
-                            <label>Групи (через кому)</label>
-                            <input type="text" id="cfg-groups">
-                        </div>
-                        <div class="form-group">
-                            <label>ID чату адміна</label>
-                            <input type="text" id="cfg-admin-chat">
-                        </div>
-                        <div class="form-group">
-                            <label>Частота Пушу (сек, 20-60)</label>
-                            <input type="number" id="cfg-push-interval" min="20" max="60">
-                        </div>
-                    </div>
-                    <div>
-                        <div class="form-group">
-                            <label>Таймаут Safety Net (сек)</label>
-                            <input type="number" id="cfg-sn-timeout">
-                        </div>
-                        <div class="form-group">
-                            <label>Широта (Lat)</label>
-                            <input type="text" id="cfg-lat">
-                        </div>
-                        <div class="form-group">
-                            <label>Довгота (Lon)</label>
-                            <input type="text" id="cfg-lon">
-                        </div>
-                    </div>
-                    <div>
-                        <div class="form-group">
-                            <label>ID станції AQ</label>
-                            <input type="text" id="cfg-aq-station">
-                        </div>
-                        <div class="form-group">
-                            <label>Назва локації AQ</label>
-                            <input type="text" id="cfg-aq-name">
-                        </div>
-                    </div>
-                </div>
-                <div style="margin-top: 10px;">
-                    <button class="btn btn-primary" onclick="saveConfig()">
-                        Зберегти налаштування
-                    </button>
-                </div>
+                <button class="btn btn-primary" onclick="saveConfig()" style="margin-top: 10px;">Зберегти налаштування</button>
             </div>
 
-            <!-- Log Editor -->
+            <!-- Logs -->
             <div class="admin-section full-width">
-                <div class="section-header">
-                    <i class="fas fa-edit"></i>
-                    Редактор подій (Logs)
+                <div class="section-header"><i class="fas fa-history"></i> Історія подій (10 останніх)</div>
+                <div id="log-add-form" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px;">
+                    <select id="log-add-event" style="flex: 1;"><option value="up">🟢 З'явилося</option><option value="down">🔴 Зникло</option></select>
+                    <input type="text" id="log-add-date" style="flex: 1;">
+                    <input type="text" id="log-add-time" style="flex: 1;">
+                    <button class="btn btn-primary" onclick="addLog()"><i class="fas fa-plus"></i></button>
                 </div>
-                
-                <div id="log-add-form">
-                    <div class="form-group">
-                        <label>Тип події</label>
-                        <select id="log-add-event">
-                            <option value="up">🟢 Світло з'явилося (UP)</option>
-                            <option value="down">🔴 Світло зникло (DOWN)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Дата (РРРР-ММ-ДД)</label>
-                        <input type="text" id="log-add-date" placeholder="2024-05-20">
-                    </div>
-                    <div class="form-group">
-                        <label>Час (ГГ:ХХ)</label>
-                        <input type="text" id="log-add-time" placeholder="14:30">
-                    </div>
-                    <button class="btn btn-primary" onclick="addLog()">
-                        <i class="fas fa-plus"></i> Додати
-                    </button>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Час</th><th>Подія</th><th>Timestamp</th><th>Дії</th></tr></thead>
+                        <tbody id="log-table-body"></tbody>
+                    </table>
                 </div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Час</th>
-                            <th>Подія</th>
-                            <th>Timestamp</th>
-                            <th>Дії</th>
-                        </tr>
-                    </thead>
-                    <tbody id="log-table-body">
-                        <!-- Rows added by JS -->
-                    </tbody>
-                </table>
             </div>
         </div>
-
-        <footer>
-            &copy; 2026 Flash Monitor v2.0 &bull; Побудовано на Flask &bull; <span id="server-time"></span>
-        </footer>
+        <footer id="footer-info"></footer>
     </div>
 
     <script>
@@ -600,70 +275,64 @@
         async function fetchData() {
             try {
                 const response = await fetch(`/api/admin/data?t=${token}`);
-                if (!response.ok) throw new Error('Помилка завантаження: ' + response.statusText);
                 const data = await response.json();
-                
                 currentConfig = data.config;
                 renderStatus(data.state);
                 renderConfig(data.config);
                 renderLogs(data.logs);
-                
-                document.getElementById('server-time').innerText = new Date().toLocaleTimeString();
-            } catch (err) {
-                console.error(err);
-                alert('Помилка: ' + err.message);
-            }
+                document.getElementById('footer-info').innerText = `© 2026 Weby Homelab • ${new Date().toLocaleTimeString()}`;
+            } catch (err) { console.error(err); }
         }
 
         function renderStatus(state) {
             const statusEl = document.getElementById('sys-status');
             statusEl.innerText = state.status === 'up' ? 'Є СВІТЛО' : 'НЕМАЄ СВІТЛА';
             statusEl.className = 'status-badge ' + (state.status === 'up' ? 'status-up' : 'status-down');
+            document.getElementById('sys-last-seen').innerText = state.last_seen ? new Date(state.last_seen * 1000).toLocaleString() : 'Ніколи';
             
-            const lastSeen = new Date(state.last_seen * 1000);
-            document.getElementById('sys-last-seen').innerText = state.last_seen ? lastSeen.toLocaleString() : 'Ніколи';
+            const quietEl = document.getElementById('sys-quiet-status');
+            if (state.quiet_status === 'quiet') {
+                quietEl.innerText = '🔇 ТИХИЙ РЕЖИМ';
+                quietEl.style.color = 'var(--accent-color)';
+            } else {
+                quietEl.innerText = '🔔 АКТИВНИЙ';
+                quietEl.style.color = 'var(--success-color)';
+            }
             
-            document.getElementById('sys-quiet-status').innerText = (state.quiet_status === 'quiet' ? 'ТИША (QUIET)' : 'АКТИВНО').toUpperCase();
-            
-            // Safety Net Pending
+            const snGroup = document.getElementById('sn-status-group');
             if (state.safety_net_pending) {
-                document.getElementById('sn-status-group').style.display = 'block';
+                snGroup.style.display = 'block';
                 document.getElementById('sn-badge').classList.add('alarm-active');
             } else {
-                document.getElementById('sn-status-group').style.display = 'none';
-                document.getElementById('sn-badge').classList.remove('alarm-active');
+                snGroup.style.display = 'none';
             }
 
-            // Mute Status
             const now = Date.now() / 1000;
+            const muteGroup = document.getElementById('mute-status-group');
             if (state.muted_until && state.muted_until > now) {
-                document.getElementById('mute-status-group').style.display = 'block';
+                muteGroup.style.display = 'block';
                 document.getElementById('sys-mute-until').innerText = new Date(state.muted_until * 1000).toLocaleTimeString();
                 document.getElementById('btn-unmute').style.display = 'inline-flex';
             } else {
-                document.getElementById('mute-status-group').style.display = 'none';
+                muteGroup.style.display = 'none';
                 document.getElementById('btn-unmute').style.display = 'none';
             }
 
-            // Set radio button
             const radios = document.getElementsByName('quiet_mode');
             for (let r of radios) {
                 r.checked = (r.value === state.quiet_mode);
-                const parent = r.closest('.radio-group');
-                if (r.checked) parent.classList.add('active');
-                else parent.classList.remove('active');
+                r.closest('.radio-group').classList.toggle('active', r.checked);
             }
         }
 
         function renderConfig(config) {
-            if (config.settings) {
-                document.getElementById('cfg-region').value = config.settings.region || '';
-                document.getElementById('cfg-groups').value = (config.settings.groups || []).join(', ');
-                document.getElementById('cfg-admin-chat').value = config.settings.admin_chat_id || '';
-                document.getElementById('cfg-sn-timeout').value = config.settings.safety_net_timeout || 35;
-                document.getElementById('cfg-push-interval').value = config.settings.push_interval || 30;
-            }
-            if (config.sources && config.sources.air_quality) {
+            if (!config.settings) return;
+            document.getElementById('cfg-region').value = config.settings.region || '';
+            document.getElementById('cfg-groups').value = (config.settings.groups || []).join(', ');
+            document.getElementById('cfg-admin-chat').value = config.settings.admin_chat_id || '';
+            document.getElementById('cfg-sn-timeout').value = config.settings.safety_net_timeout || 35;
+            document.getElementById('cfg-push-interval').value = config.settings.push_interval || 30;
+            if (config.sources?.air_quality) {
                 document.getElementById('cfg-aq-station').value = config.sources.air_quality.seb_station || '';
                 document.getElementById('cfg-aq-name').value = config.sources.air_quality.location_name || '';
                 document.getElementById('cfg-lat').value = config.sources.air_quality.lat || '';
@@ -673,210 +342,74 @@
 
         function renderLogs(logs) {
             const tbody = document.getElementById('log-table-body');
-            tbody.innerHTML = '';
-            
-            logs.forEach(log => {
-                const tr = document.createElement('tr');
-                const eventLabel = log.event === 'up' ? 'З\'ЯВИЛОСЯ' : 'ЗНИКЛО';
-                tr.innerHTML = `
+            tbody.innerHTML = logs.map(log => `
+                <tr>
                     <td>${log.date_str}</td>
-                    <td><span class="status-badge ${log.event === 'up' ? 'status-up' : 'status-down'}">${eventLabel}</span></td>
-                    <td style="font-family: monospace; font-size: 0.75rem;">${log.timestamp}</td>
-                    <td class="log-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="deleteLog(${log.timestamp})" style="padding: 4px 8px; font-size: 0.7rem;">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            
-            // Pre-fill add log form with today
+                    <td><span class="status-badge ${log.event === 'up' ? 'status-up' : 'status-down'}">${log.event === 'up' ? 'З\'ЯВИЛОСЯ' : 'ЗНИКЛО'}</span></td>
+                    <td style="font-family: monospace; font-size: 0.7rem;">${log.timestamp}</td>
+                    <td><button class="btn btn-secondary btn-sm" onclick="deleteLog(${log.timestamp})"><i class="fas fa-trash"></i></button></td>
+                </tr>
+            `).join('');
             const now = new Date();
             document.getElementById('log-add-date').value = now.toISOString().split('T')[0];
-            document.getElementById('log-add-time').value = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('log-add-time').value = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
         }
 
         async function saveQuietMode() {
-            const radios = document.getElementsByName('quiet_mode');
-            let mode = 'auto';
-            for (let r of radios) {
-                if (r.checked) mode = r.value;
-            }
-            
-            try {
-                const response = await fetch(`/api/admin/quiet/mode?t=${token}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({mode})
-                });
-                if (response.ok) {
-                    alert('Режим спокою оновлено');
-                    fetchData();
-                } else {
-                    const err = await response.json();
-                    alert('Помилка: ' + err.msg);
-                }
-            } catch (err) {
-                alert('Запит не вдався');
-            }
+            const mode = Array.from(document.getElementsByName('quiet_mode')).find(r => r.checked)?.value;
+            await fetch(`/api/admin/quiet/mode?t=${token}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({mode}) });
+            fetchData();
         }
 
         async function saveConfig() {
             const config = JSON.parse(JSON.stringify(currentConfig));
-            if (!config.settings) config.settings = {};
-            if (!config.sources) config.sources = {};
-            if (!config.sources.air_quality) config.sources.air_quality = {};
-
             config.settings.region = document.getElementById('cfg-region').value;
             config.settings.groups = document.getElementById('cfg-groups').value.split(',').map(s => s.trim());
             config.settings.admin_chat_id = document.getElementById('cfg-admin-chat').value;
             config.settings.safety_net_timeout = parseInt(document.getElementById('cfg-sn-timeout').value);
             config.settings.push_interval = parseInt(document.getElementById('cfg-push-interval').value);
-            
+            if (!config.sources.air_quality) config.sources.air_quality = {};
             config.sources.air_quality.seb_station = document.getElementById('cfg-aq-station').value;
             config.sources.air_quality.location_name = document.getElementById('cfg-aq-name').value;
             config.sources.air_quality.lat = document.getElementById('cfg-lat').value;
             config.sources.air_quality.lon = document.getElementById('cfg-lon').value;
-            
-            try {
-                const response = await fetch(`/api/admin/config?t=${token}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(config)
-                });
-                if (response.ok) {
-                    alert('Конфігурацію збережено');
-                    fetchData();
-                } else {
-                    const err = await response.json();
-                    alert('Помилка: ' + err.msg);
-                }
-            } catch (err) {
-                alert('Запит не вдався');
-            }
-        }
-
-        async function unmuteMonitor() {
-            try {
-                const response = await fetch(`/api/admin/quiet/mode?t=${token}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({mode: 'auto', unmute: true})
-                });
-                if (response.ok) {
-                    fetchData();
-                }
-            } catch (err) {}
+            await fetch(`/api/admin/config?t=${token}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(config) });
+            alert('Збережено'); fetchData();
         }
 
         async function safetyNetReact(action) {
-            let value = null;
-            if (action === 'tech') {
-                const mins = prompt('На скільки хвилин вимкнути моніторинг?', '30');
-                if (!mins) return;
-                value = parseInt(mins);
-            }
+            let value = action === 'tech' ? prompt('Хвилин?', '30') : null;
+            if (action === 'tech' && !value) return;
+            await fetch(`/api/admin/safety_net/react?t=${token}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({action, value}) });
+            fetchData();
+        }
 
-            try {
-                const response = await fetch(`/api/admin/safety_net/react?t=${token}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({action, value})
-                });
-                if (response.ok) {
-                    fetchData();
-                } else {
-                    const err = await response.json();
-                    alert('Помилка: ' + err.msg);
-                }
-            } catch (err) {
-                alert('Запит не вдався');
-            }
+        async function unmuteMonitor() {
+            await fetch(`/api/admin/quiet/mode?t=${token}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({mode: 'auto', unmute: true}) });
+            fetchData();
         }
 
         async function addLog() {
             const event = document.getElementById('log-add-event').value;
-            const dateStr = document.getElementById('log-add-date').value;
-            const timeStr = document.getElementById('log-add-time').value;
-            
-            const dt = new Date(dateStr + 'T' + timeStr);
-            const timestamp = dt.getTime() / 1000;
-            
-            if (isNaN(timestamp)) {
-                alert('Некоректна дата або час');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/admin/logs/add?t=${token}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({event, timestamp})
-                });
-                if (response.ok) {
-                    fetchData();
-                } else {
-                    const err = await response.json();
-                    alert('Помилка: ' + err.msg);
-                }
-            } catch (err) {
-                alert('Запит не вдався');
-            }
+            const ts = new Date(document.getElementById('log-add-date').value + 'T' + document.getElementById('log-add-time').value).getTime() / 1000;
+            await fetch(`/api/admin/logs/add?t=${token}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({event, timestamp: ts}) });
+            fetchData();
         }
 
-        async function deleteLog(timestamp) {
-            if (!confirm('Видалити цей запис з логів?')) return;
-            
-            try {
-                const response = await fetch(`/api/admin/logs/${timestamp}?t=${token}`, {
-                    method: 'DELETE'
-                });
-                if (response.ok) {
-                    fetchData();
-                } else {
-                    const err = await response.json();
-                    alert('Помилка: ' + err.msg);
-                }
-            } catch (err) {
-                alert('Запит не вдався');
+        async function deleteLog(ts) {
+            if (confirm('Видалити?')) {
+                await fetch(`/api/admin/logs/${ts}?t=${token}`, { method: 'DELETE' });
+                fetchData();
             }
         }
 
         async function restartServices() {
-            if (!confirm('Перезапустити сервіси моніторингу? Це короткочасно перерве збір даних.')) return;
-            
-            try {
-                const response = await fetch(`/api/admin/service/restart?t=${token}`, {
-                    method: 'POST'
-                });
-                if (response.ok) {
-                    alert('Команду на перезапуск надіслано');
-                } else {
-                    alert('Не вдалося перезапустити сервіси');
-                }
-            } catch (err) {
-                alert('Запит не вдався');
-            }
+            if (confirm('Перезапустити?')) await fetch(`/api/admin/service/restart?t=${token}`, { method: 'POST' });
         }
 
-        // Initial load
         fetchData();
-        
-        // Auto-refresh status every 30s
-        setInterval(() => {
-            fetchData();
-        }, 30000);
-        
-        // Visual sugar for radio buttons
-        document.querySelectorAll('.radio-group').forEach(group => {
-            group.addEventListener('click', () => {
-                const radio = group.querySelector('input');
-                radio.checked = true;
-                document.querySelectorAll('.radio-group').forEach(g => g.classList.remove('active'));
-                group.classList.add('active');
-            });
-        });
+        setInterval(fetchData, 10000);
+        document.querySelectorAll('.radio-group').forEach(g => g.onclick = () => { g.querySelector('input').checked = true; renderStatus({quiet_mode: g.querySelector('input').value}); });
     </script>
 </body>
 </html>
