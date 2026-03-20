@@ -5,24 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, shrink-to-fit=no">
     
     <!-- SEO & Metadata -->
-    <title>СВІТЛО⚡БЕЗПЕКА (Київ) — Моніторинг світла та тривог</title>
+    <title>v2.2.7 | СВІТЛО⚡БЕЗПЕКА (Київ)</title>
     <meta name="description" content="Автономний моніторинг електропостачання, повітряних тривог та якості повітря у Києві в реальному часі. Дані Yasno, ДТЕК та SaveEcoBot.">
-    <meta name="keywords" content="світло київ, графік відключень, повітряна тривога київ, якість повітря київ, радіація київ, моніторинг безпеки">
-    <meta name="author" content="Weby Homelab">
     
-    <!-- Open Graph -->
-    <meta property="og:title" content="СВІТЛО⚡БЕЗПЕКА (Київ)">
-    <meta property="og:description" content="Живий моніторинг світла та безпеки. Працює автономно.">
-    <meta property="og:image" content="/static/icon-512.png">
-    <meta property="og:url" content="https://flash.srvrs.top">
-    
-    <!-- PWA -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- PWA Cache Busting v2.2.7 -->
     <meta name="theme-color" content="#050505">
-    <link rel="manifest" href="/manifest.json?v=2.2.6">
-    <link rel="icon" type="image/png" href="/static/favicon.png?v=2.2.6">
-    <link rel="apple-touch-icon" href="/static/icon-512.png?v=2.2.6">
+    <link rel="manifest" href="/manifest.json?v=2.2.7">
+    <link rel="icon" type="image/png" href="/static/favicon.png?v=2.2.7">
+    <link rel="apple-touch-icon" href="/static/icon-512.png?v=2.2.7">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -39,8 +29,6 @@
             --danger: #f87171;
             --warning: #fbbf24;
             --blur: 25px;
-            
-            /* Professional Muted Graph Colors */
             --color-graph-fact-on: #14b8a6;
             --color-graph-fact-off: #f43f5e;
         }
@@ -55,21 +43,21 @@
                 --accent: #8b5cf6;
                 --success: #059669;
                 --danger: #dc2626;
-                
-                /* Light Mode Professional Muted */
                 --color-graph-fact-on: #0f766e;
                 --color-graph-fact-off: #be123c;
             }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
         html { 
             width: 100%;
             height: auto;
             min-height: 100%;
             overflow-x: hidden; 
-            overflow-y: auto;
+            overflow-y: auto !important;
             background-color: #050505;
         }
+        
         body { 
             background-color: var(--bg-color); 
             color: var(--text-primary); 
@@ -78,16 +66,17 @@
             height: auto;
             min-height: 100vh;
             margin: 0;
-            display: block; /* Removed flex from body */
+            display: block !important; /* No flexbox to avoid squashing */
             padding: env(safe-area-inset-top, 24px) 16px env(safe-area-inset-bottom, 60px); 
             background-attachment: scroll; 
             transition: background-color 0.3s; 
         }
+        
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 10% 10%, rgba(167, 139, 250, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.08) 0%, transparent 40%); z-index: -1; }
         
         .container { 
             width: 100%; 
-            max-width: 800px; 
+            max-width: 600px; /* SET TO 600px */
             margin: 0 auto;
             position: relative;
             display: block;
@@ -98,7 +87,6 @@
         .logo { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text-primary); }
         .logo span { color: var(--accent); }
 
-        /* Bell Icon Style */
         .bell-btn {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -117,7 +105,7 @@
         .bell-btn.off { opacity: 0.5; grayscale: 1; }
         .bell-btn:active { transform: scale(0.9); }
 
-        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; margin-bottom: 16px; backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); box-shadow: var(--card-shadow); position: relative; overflow: hidden; transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s; width: 100%; }
+        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; margin-bottom: 16px; backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); box-shadow: var(--card-shadow); position: relative; overflow: hidden; transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s; width: 100%; height: auto; }
         .card-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-secondary); margin-bottom: 16px; display: block; font-weight: 700; }
         .status-row { display: flex; align-items: center; gap: 16px; width: 100%; }
         .status-icon { font-size: 2.2rem; }
@@ -126,6 +114,7 @@
         .status-on { border-color: rgba(52, 211, 153, 0.3); }
         .status-off { border-color: rgba(248, 113, 113, 0.3); }
         .alert-active { border-color: var(--danger); background: rgba(248, 113, 113, 0.15); animation: pulse-danger 2s infinite; }
+        
         @keyframes pulse-danger { 0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(248, 113, 113, 0); } 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); } }
         
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -144,54 +133,7 @@
         .chart-wrap img { width: 100%; height: auto; display: block; }
         .schedule-text { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 28px; padding: 24px; font-family: 'Inter', sans-serif; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; font-weight: 500; box-shadow: var(--card-shadow); color: var(--text-primary); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); }
         
-        .schedule-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
-        .col-header { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--card-border); }
-        .col-header.on { color: var(--color-graph-fact-on); } /* teal */
-        .col-header.off { color: var(--color-graph-fact-off); } /* rose */
-
-        .schedule-date { color: var(--text-primary); font-weight: 600; margin-bottom: 20px; font-size: 1rem; }
-        .schedule-line { display: flex; align-items: center; margin-bottom: 6px; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
-        .schedule-time { color: var(--text-primary); opacity: 0.85; width: 40px; text-align: center; }
-        .time-sep { width: 12px; text-align: center; opacity: 0.4; }
-        .schedule-duration { color: var(--text-secondary); margin-left: 8px; font-size: 0.8em; opacity: 0.6; }
-        
-        .schedule-line.off { color: var(--color-graph-fact-off) !important; }
-        .schedule-line.on { color: var(--color-graph-fact-on) !important; }
-
-        .schedule-summary { border-top: 1px dashed var(--card-border); margin-top: 20px; padding-top: 16px; display: flex; gap: 24px; font-size: 1.1rem; }
-        
-        .light-hours { color: var(--color-graph-fact-on); font-weight: 700; text-shadow: 0 0 8px rgb(20 184 166 / 0.3); }
-        .no-light-hours { color: var(--color-graph-fact-off); font-weight: 700; text-shadow: 0 0 8px rgb(244 63 94 / 0.3); }
-        .schedule-divider { text-align: center; margin: 24px 0; opacity: 0.5; font-size: 0.8rem; letter-spacing: 4px; }
-        .emergency-banner { 
-            background: rgba(255, 68, 68, 0.1); 
-            border: 1px solid #ff4444; 
-            border-radius: 16px; 
-            padding: 16px; 
-            color: #ff4444; 
-            text-align: center; 
-            margin-bottom: 20px; 
-            font-weight: 600;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            animation: pulse-border 2s infinite;
-        }
-        .emergency-banner i { font-size: 1.5rem; }
-        .emergency-title { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
-        .emergency-desc { font-size: 0.9rem; opacity: 0.9; font-weight: 400; }
-        .source-label { font-size: 0.7rem; text-transform: uppercase; opacity: 0.6; letter-spacing: 0.5px; margin-top: 4px; font-weight: 700; }
-        .emergency-banner .source-label { color: #ff4444; opacity: 0.8; margin-top: 8px; border-top: 1px solid rgba(255, 68, 68, 0.2); padding-top: 4px; }
-        
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
-        }
-        
-        .updated-time { color: var(--text-secondary); font-size: 0.85rem; margin-top: 12px; font-weight: 500; opacity: 0.8; }
-        
-        footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
+        footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; padding-bottom: 20px; }
         footer a { color: inherit; text-decoration: none; font-weight: 700; }
         
         #modal { display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); padding: 16px; align-items: center; justify-content: center; }
@@ -230,28 +172,20 @@
         <div id="schedule-text" class="schedule-text">...</div>
         
         <footer>
-            Оновлено: <span id="last-update">--:--:--</span><br>
+            v2.2.7 | Оновлено: <span id="last-update">--:--:--</span><br>
             © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv" target="_blank">Weby Homelab</a>
         </footer>
     </div>
     <div id="modal" onclick="this.style.display='none'"><img id="modal-img" src=""></div>
-    <input type="checkbox" id="haptic-trigger" style="display:none" switch>
     
     <script>
         let lastLightStatus = null;
         let lastAlertStatus = null;
         let notificationsEnabled = localStorage.getItem('notifications') === 'true';
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Light "ding"
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
         function triggerHaptic(pattern = 10) {
-            try {
-                if (navigator.vibrate) {
-                    navigator.vibrate(pattern);
-                } else {
-                    const iosSwitch = document.getElementById('haptic-trigger');
-                    if (iosSwitch) iosSwitch.click();
-                }
-            } catch (e) { console.log("Haptic failed:", e); }
+            try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
         }
 
         function updateBellUI() {
@@ -269,9 +203,8 @@
                 if (permission === 'granted') {
                     notificationsEnabled = true;
                     localStorage.setItem('notifications', 'true');
-                    showToast("Сповіщення увімкнено");
                 } else {
-                    alert("Будь ласка, дозвольте сповіщення у налаштуваннях браузера");
+                    alert("Будь ласка, дозвольте сповіщення у налаштуваннях");
                 }
             } else {
                 notificationsEnabled = false;
@@ -280,15 +213,7 @@
             updateBellUI();
         }
 
-        function showToast(text) {
-            console.log(text); // Placeholder for a toast if needed
-        }
-
-        function playDing() {
-            if (notificationsEnabled) {
-                audio.play().catch(e => console.log("Audio play failed:", e));
-            }
-        }
+        function playDing() { if (notificationsEnabled) audio.play().catch(e => {}); }
 
         function sendPush(title, body) {
             if (notificationsEnabled && Notification.permission === 'granted') {
@@ -301,7 +226,9 @@
             document.getElementById('modal-img').src = src; 
             document.getElementById('modal').style.display = 'flex'; 
         }
+        
         function getTheme() { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+        
         function refreshCharts() {
             const t = Date.now();
             const theme = getTheme();
@@ -309,15 +236,9 @@
             document.getElementById('main-chart').src = `/static/chart${suffix}.png?t=${t}`;
             document.getElementById('weekly-chart').src = `/static/weekly${suffix}.png?t=${t}`;
         }
-        function updateMapTheme() {
-            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const map = document.getElementById('alert-map');
-            if (map) map.src = isDark ? "https://alerts.in.ua/?minimal=true&dark=1" : "https://alerts.in.ua/?minimal=true";
-        }
 
         function update() {
             fetch('/api/status').then(r => r.json()).then(data => {
-                // Light
                 const lCard = document.getElementById('light-card');
                 const currentLight = data.light;
                 
@@ -333,26 +254,21 @@
                     }
                 }
                 
-                // Security: light_event and schedule_text contain trusted server-side HTML (br, div, span)
                 const lightEventEl = document.getElementById('light-event');
                 if (lightEventEl) lightEventEl.innerHTML = data.light_event;
                 
                 if (lastLightStatus && currentLight !== lastLightStatus) {
                     playDing();
-                    if (document.hasFocus()) triggerHaptic([50, 100, 50]);
-                    const statusText = currentLight === 'on' ? "Світло з'явилося!" : "Світло зникло!";
-                    sendPush("⚡ СВІТЛО⚡БЕЗПЕКА", statusText);
+                    sendPush("⚡ СВІТЛО⚡БЕЗПЕКА", currentLight === 'on' ? "Світло з'явилося!" : "Світло зникло!");
                     refreshCharts();
                 }
                 lastLightStatus = currentLight;
 
-                // Group name
                 if (data.group) { 
-                    const groupHeader = document.getElementById('group-schedule-header');
-                    if (groupHeader) groupHeader.innerText = 'Графік групи ' + data.group; 
+                    const gh = document.getElementById('group-schedule-header');
+                    if (gh) gh.innerText = 'Графік групи ' + data.group; 
                 }
 
-                // Alert
                 const aCard = document.getElementById('alert-card');
                 const isAlert = !!data.alert.city;
                 if (aCard) {
@@ -371,53 +287,31 @@
 
                 if (lastAlertStatus !== null && isAlert !== lastAlertStatus) {
                     playDing();
-                    if (document.hasFocus()) triggerHaptic([100, 200, 100]);
-                    const alertMsg = isAlert ? "Початок повітряної тривоги!" : "Відбій тривоги";
-                    sendPush("🚨 ПОВІТРЯНА ТРИВОГА", alertMsg);
+                    sendPush("🚨 ПОВІТРЯНА ТРИВОГА", isAlert ? "Початок тривоги!" : "Відбій тривоги");
                 }
                 lastAlertStatus = isAlert;
                 
-                const aqiNum = document.getElementById('aqi-num');
-                if (aqiNum) {
-                    aqiNum.innerText = data.aqi.aqi;
-                    aqiNum.style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
-                }
-                
-                const aqiText = document.getElementById('aqi-text');
-                if (aqiText) aqiText.innerText = data.aqi.text;
-                
-                const aqiLoc = document.getElementById('aqi-loc');
-                if (data.aqi.location && aqiLoc) aqiLoc.innerText = data.aqi.location;
-                
-                if (document.getElementById('pm25')) document.getElementById('pm25').innerText = data.aqi.pm25;
-                if (document.getElementById('pm10')) document.getElementById('pm10').innerText = data.aqi.pm10;
-                if (document.getElementById('temp')) document.getElementById('temp').innerText = data.aqi.temp + '°C';
-                if (document.getElementById('hum')) document.getElementById('hum').innerText = data.aqi.hum + '%';
-                
-                const windStatus = document.getElementById('wind-status');
-                if (windStatus) windStatus.innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
-                
-                const radVal = document.getElementById('rad-val');
-                if (radVal) radVal.innerText = data.radiation.level;
-                
-                const scheduleTextEl = document.getElementById('schedule-text');
-                if (scheduleTextEl) scheduleTextEl.innerHTML = data.schedule_text;
-                
-                const lastUpdateEl = document.getElementById('last-update');
-                if (lastUpdateEl) lastUpdateEl.innerText = data.timestamp;
+                document.getElementById('aqi-num').innerText = data.aqi.aqi;
+                document.getElementById('aqi-text').innerText = data.aqi.text;
+                document.getElementById('aqi-num').style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
+                if (data.aqi.location) document.getElementById('aqi-loc').innerText = data.aqi.location;
+                document.getElementById('pm25').innerText = data.aqi.pm25;
+                document.getElementById('pm10').innerText = data.aqi.pm10;
+                document.getElementById('temp').innerText = data.aqi.temp + '°C';
+                document.getElementById('hum').innerText = data.aqi.hum + '%';
+                document.getElementById('wind-status').innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
+                document.getElementById('rad-val').innerText = data.radiation.level;
+                document.getElementById('schedule-text').innerHTML = data.schedule_text;
+                document.getElementById('last-update').innerText = data.timestamp;
             });
         }
 
         updateBellUI();
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { updateMapTheme(); refreshCharts(); });
-        updateMapTheme(); 
         setInterval(update, 30000); 
         update();
 
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js').then(reg => console.log('SW ok'));
-            });
+            navigator.serviceWorker.register('/service-worker.js?v=2.2.7');
         }
     </script>
 </body>
