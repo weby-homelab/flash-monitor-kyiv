@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, shrink-to-fit=no">
     
     <!-- SEO & Metadata -->
     <title>СВІТЛО⚡БЕЗПЕКА (Київ) — Моніторинг світла та тривог</title>
@@ -20,9 +20,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#050505">
-    <link rel="manifest" href="/manifest.json?v=2.2.5">
-    <link rel="icon" type="image/png" href="/static/favicon.png?v=2.2.5">
-    <link rel="apple-touch-icon" href="/static/icon-512.png?v=2.2.5">
+    <link rel="manifest" href="/manifest.json?v=2.2.6">
+    <link rel="icon" type="image/png" href="/static/favicon.png?v=2.2.6">
+    <link rel="apple-touch-icon" href="/static/icon-512.png?v=2.2.6">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -62,28 +62,25 @@
             }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        html, body { 
+        html { 
             width: 100%;
-            margin: 0;
-            padding: 0;
+            height: auto;
+            min-height: 100%;
             overflow-x: hidden; 
-            overflow-y: auto; /* Ensure vertical scrolling is enabled */
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        html::-webkit-scrollbar, body::-webkit-scrollbar { 
-            display: none;
+            overflow-y: auto;
+            background-color: #050505;
         }
         body { 
             background-color: var(--bg-color); 
             color: var(--text-primary); 
             font-family: 'Inter', sans-serif; 
-            min-height: 100vh; /* Allow it to grow beyond viewport */
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+            width: 100%;
+            height: auto;
+            min-height: 100vh;
+            margin: 0;
+            display: block; /* Removed flex from body */
             padding: env(safe-area-inset-top, 24px) 16px env(safe-area-inset-bottom, 60px); 
-            background-attachment: fixed; 
+            background-attachment: scroll; 
             transition: background-color 0.3s; 
         }
         body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 10% 10%, rgba(167, 139, 250, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 90%, rgba(34, 211, 238, 0.08) 0%, transparent 40%); z-index: -1; }
@@ -92,8 +89,9 @@
             width: 100%; 
             max-width: 800px; 
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
+            position: relative;
+            display: block;
+            height: auto;
         }
         
         header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
@@ -258,8 +256,10 @@
 
         function updateBellUI() {
             const btn = document.getElementById('bell-btn');
-            btn.innerText = notificationsEnabled ? '🔔' : '🔕';
-            btn.className = notificationsEnabled ? 'bell-btn' : 'bell-btn off';
+            if (btn) {
+                btn.innerText = notificationsEnabled ? '🔔' : '🔕';
+                btn.className = notificationsEnabled ? 'bell-btn' : 'bell-btn off';
+            }
         }
 
         async function toggleNotifications() {
