@@ -38,9 +38,17 @@ def fetch_yasno(cfg: dict) -> Optional[dict]:
     if not yasno_cfg.get('enabled', False):
         return None
     try:
+        region_id = str(yasno_cfg.get('region_id', '25'))
+        dso_id = str(yasno_cfg.get('dso_id', '902'))
+        
+        # Security validation: Ensure IDs are numeric to prevent URL manipulation
+        if not (region_id.isdigit() and dso_id.isdigit()):
+            print(f"Yasno fetch error: Invalid IDs detected (region_id={region_id}, dso_id={dso_id})")
+            return None
+
         url = YASNO_URL.format(
-            region_id=yasno_cfg.get('region_id', '25'),
-            dso_id=yasno_cfg.get('dso_id', '902')
+            region_id=region_id,
+            dso_id=dso_id
         )
         r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
         r.raise_for_status()

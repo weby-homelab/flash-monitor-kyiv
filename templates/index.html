@@ -296,19 +296,21 @@
 
         function update() {
             fetch('/api/status').then(r => r.json()).then(data => {
-                // Light
-                const lCard = document.getElementById('light-card');
-                const currentLight = data.light;
-                if (currentLight === 'on') { 
-                    lCard.className = 'card status-on'; 
-                    document.getElementById('light-icon').innerText = '💡'; 
-                    document.getElementById('light-text').innerText = "Світло Є!"; 
-                } else {
-                    lCard.className = 'card status-off';
-                    document.getElementById('light-icon').innerText = '✖️';
-                    document.getElementById('light-text').innerText = 'Світло зникло!';
+                if (lCard) {
+                    if (currentLight === 'on') { 
+                        lCard.className = 'card status-on'; 
+                        document.getElementById('light-icon').innerText = '💡'; 
+                        document.getElementById('light-text').innerText = "Світло Є!"; 
+                    } else {
+                        lCard.className = 'card status-off';
+                        document.getElementById('light-icon').innerText = '✖️';
+                        document.getElementById('light-text').innerText = 'Світло зникло!';
+                    }
                 }
-                document.getElementById('light-event').innerHTML = data.light_event;
+                
+                // Security: light_event and schedule_text contain trusted server-side HTML (br, div, span)
+                const lightEventEl = document.getElementById('light-event');
+                if (lightEventEl) lightEventEl.innerHTML = data.light_event;
                 
                 if (lastLightStatus && currentLight !== lastLightStatus) {
                     playDing();
@@ -320,21 +322,26 @@
                 lastLightStatus = currentLight;
 
                 // Group name
-                if (data.group) { document.getElementById('group-schedule-header').innerText = 'Графік групи ' + data.group; }
+                if (data.group) { 
+                    const groupHeader = document.getElementById('group-schedule-header');
+                    if (groupHeader) groupHeader.innerText = 'Графік групи ' + data.group; 
+                }
 
                 // Alert
                 const aCard = document.getElementById('alert-card');
                 const isAlert = !!data.alert.city;
-                if (isAlert) { 
-                    aCard.className = 'card alert-active'; 
-                    document.getElementById('alert-icon').innerText = '🚨'; 
-                    document.getElementById('alert-val').innerText = 'ТРИВОГА'; 
-                    document.getElementById('alert-status').innerText = 'Київ. Пройдіть в укриття!'; 
-                } else { 
-                    aCard.className = 'card'; 
-                    document.getElementById('alert-icon').innerText = '🛡️'; 
-                    document.getElementById('alert-val').innerText = 'СПОКІЙНО'; 
-                    document.getElementById('alert-status').innerText = 'Київ. Тривоги немає'; 
+                if (aCard) {
+                    if (isAlert) { 
+                        aCard.className = 'card alert-active'; 
+                        document.getElementById('alert-icon').innerText = '🚨'; 
+                        document.getElementById('alert-val').innerText = 'ТРИВОГА'; 
+                        document.getElementById('alert-status').innerText = 'Київ. Пройдіть в укриття!'; 
+                    } else { 
+                        aCard.className = 'card'; 
+                        document.getElementById('alert-icon').innerText = '🛡️'; 
+                        document.getElementById('alert-val').innerText = 'СПОКІЙНО'; 
+                        document.getElementById('alert-status').innerText = 'Київ. Тривоги немає'; 
+                    }
                 }
 
                 if (lastAlertStatus !== null && isAlert !== lastAlertStatus) {
@@ -345,18 +352,34 @@
                 }
                 lastAlertStatus = isAlert;
                 
-                document.getElementById('aqi-num').innerText = data.aqi.aqi;
-                document.getElementById('aqi-text').innerText = data.aqi.text;
-                document.getElementById('aqi-num').style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
-                if (data.aqi.location) { document.getElementById('aqi-loc').innerText = data.aqi.location; }
-                document.getElementById('pm25').innerText = data.aqi.pm25;
-                document.getElementById('pm10').innerText = data.aqi.pm10;
-                document.getElementById('temp').innerText = data.aqi.temp + '°C';
-                document.getElementById('hum').innerText = data.aqi.hum + '%';
-                document.getElementById('wind-status').innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
-                document.getElementById('rad-val').innerText = data.radiation.level;
-                document.getElementById('schedule-text').innerHTML = data.schedule_text;
-                document.getElementById('last-update').innerText = data.timestamp;
+                const aqiNum = document.getElementById('aqi-num');
+                if (aqiNum) {
+                    aqiNum.innerText = data.aqi.aqi;
+                    aqiNum.style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
+                }
+                
+                const aqiText = document.getElementById('aqi-text');
+                if (aqiText) aqiText.innerText = data.aqi.text;
+                
+                const aqiLoc = document.getElementById('aqi-loc');
+                if (data.aqi.location && aqiLoc) aqiLoc.innerText = data.aqi.location;
+                
+                if (document.getElementById('pm25')) document.getElementById('pm25').innerText = data.aqi.pm25;
+                if (document.getElementById('pm10')) document.getElementById('pm10').innerText = data.aqi.pm10;
+                if (document.getElementById('temp')) document.getElementById('temp').innerText = data.aqi.temp + '°C';
+                if (document.getElementById('hum')) document.getElementById('hum').innerText = data.aqi.hum + '%';
+                
+                const windStatus = document.getElementById('wind-status');
+                if (windStatus) windStatus.innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
+                
+                const radVal = document.getElementById('rad-val');
+                if (radVal) radVal.innerText = data.radiation.level;
+                
+                const scheduleTextEl = document.getElementById('schedule-text');
+                if (scheduleTextEl) scheduleTextEl.innerHTML = data.schedule_text;
+                
+                const lastUpdateEl = document.getElementById('last-update');
+                if (lastUpdateEl) lastUpdateEl.innerText = data.timestamp;
             });
         }
 
