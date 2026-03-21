@@ -176,31 +176,49 @@ def update_local_schedules(config_path: str, output_path: str):
             except Exception:
                 pass
 
-        source = yasno_cache if yasno_cache else github_cache
-        if source:
-            group_key = list(source.keys())[0]
-            schedule_data = source[group_key]
-            history_updated = False
-            for date_str, day_data in schedule_data.items():
-                new_slots = day_data.get("slots")
-                if new_slots:
-                    # Protective Merge: If day exists in history, preserve ALL existing False (outage) slots.
-                    # Never allow a Light slot (True) to overwrite an Outage slot (False) in history.
-                    if date_str in history:
-                        old_slots = history[date_str].get("slots", [True] * 48)
-                        # Create a merged array: False wins over True
-                        merged_slots = [
-                            (old_slots[i] if old_slots[i] is False else new_slots[i])
-                            for i in range(min(len(old_slots), len(new_slots)))
-                        ]
-                        history[date_str] = {"slots": merged_slots}
-                    else:
-                        history[date_str] = {"slots": new_slots}
-                    history_updated = True
+        # Collect all dates from all available caches
+        all_dates = set()
+        if yasno_cache:
+            for grp in yasno_cache:
+                all_dates.update(yasno_cache[grp].keys())
+        if github_cache:
+            for grp in github_cache:
+                all_dates.update(github_cache[grp].keys())
 
-            if history_updated:
-                with open(history_path, "w") as f:
-                    json.dump(history, f, indent=2)
+        history_updated = False
+        for date_str in all_dates:
+            # Find merged slots for this date across all sources (False wins)
+            merged_new_slots = None
+            for cache in [yasno_cache, github_cache]:
+                if not cache: continue
+                # We assume all groups in a cache for the same region have similar behavior or we pick the first
+                grp = list(cache.keys())[0]
+                day_data = cache[grp].get(date_str)
+                if day_data and day_data.get("slots"):
+                    s = day_data["slots"]
+                    if merged_new_slots is None:
+                        merged_new_slots = list(s)
+                    else:
+                        for i in range(min(len(merged_new_slots), len(s))):
+                            if s[i] is False: merged_new_slots[i] = False
+            
+            if merged_new_slots:
+                # Protective Merge: If day exists in history, preserve ALL existing False (outage) slots.
+                # Never allow a Light slot (True) to overwrite an Outage slot (False) in history.
+                if date_str in history:
+                    old_slots = history[date_str].get("slots", [True] * 48)
+                    final_slots = [
+                        (old_slots[i] if old_slots[i] is False else merged_new_slots[i])
+                        for i in range(min(len(old_slots), len(merged_new_slots)))
+                    ]
+                    history[date_str] = {"slots": final_slots}
+                else:
+                    history[date_str] = {"slots": merged_new_slots}
+                history_updated = True
+
+        if history_updated:
+            with open(history_path, "w") as f:
+                json.dump(history, f, indent=2)
 
         print(f"Local schedules updated successfully at {new_cache['last_update']}. Changed: {has_changed}")
         return True, has_changed
