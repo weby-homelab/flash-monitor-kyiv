@@ -270,53 +270,57 @@ def get_today_schedule_text():
         schedule_file = os.path.join(data_dir, "last_schedules.json")
         if not os.path.exists(schedule_file):
             return "Графік відсутній"
-            
+
         with open(schedule_file, 'r') as f:
             data = json.load(f)
-            
+
         now = datetime.now(KYIV_TZ)
         today_str = now.strftime("%Y-%m-%d")
         tomorrow_str = (now + timedelta(days=1)).strftime("%Y-%m-%d")
-        
-        # --- SMART SOURCE SELECTION ---
-        # Look for source with slots. If none, look for emergency.
-        best_source = None
-        schedule_source_name = "НЕВІДОМО"
+
+        # --- SMART SOURCE MERGE ---
+        # We collect slots from all sources and merge them: False (outage) always wins over True (light).
+        today_slots = None
+        tomorrow_slots = None
         emergency_sources = []
-        
+
         for s_name in ['yasno', 'github']:
             src = data.get(s_name)
             if not src: continue
-            
-            grp = list(src.keys())[0]
-            day_data = src[grp].get(today_str)
-            if not day_data: continue
-            
-            name = "YASNO" if s_name == 'yasno' else "ДТЕК"
-            
-            if day_data.get('slots'):
-                if not best_source:
-                    best_source = src
-                    schedule_source_name = "YASNO" if s_name == 'yasno' else "ДТЕК (GitHub Baskerville)"
-            
-            if day_data.get('status') == 'emergency':
-                emergency_sources.append(name)
-                    
-        if not best_source and not emergency_sources: return "Дані не знайдені"
-        
-        # If no schedule found but we have emergency, we use that source for the structure
-        if not best_source and emergency_sources:
-            # Pick the first emergency source as a baseline
-            for s_name in ['yasno', 'github']:
-                if data.get(s_name):
-                    best_source = data[s_name]
-                    break
 
-        group_key = list(best_source.keys())[0]
-        schedule_data = best_source[group_key]
-        
+            grp = list(src.keys())[0]
+            name = "YASNO" if s_name == 'yasno' else "ДТЕК"
+
+            # Today
+            day_data = src[grp].get(today_str)
+            if day_data:
+                if day_data.get('status') == 'emergency':
+                    if name not in emergency_sources: emergency_sources.append(name)
+
+                s = day_data.get('slots')
+                if s:
+                    if today_slots is None:
+                        today_slots = list(s)
+                    else:
+                        for i in range(min(len(today_slots), len(s))):
+                            if s[i] is False: today_slots[i] = False
+
+            # Tomorrow
+            tm_data = src[grp].get(tomorrow_str)
+            if tm_data:
+                s = tm_data.get('slots')
+                if s:
+                    if tomorrow_slots is None:
+                        tomorrow_slots = list(s)
+                    else:
+                        for i in range(min(len(tomorrow_slots), len(s))):
+                            if s[i] is False: tomorrow_slots[i] = False
+
+        if today_slots is None and not emergency_sources: 
+            return "Дані не знайдені"
+
         output = []
-        
+
         if emergency_sources:
             output.append("<div class='emergency-banner'>")
             output.append("<div class='emergency-title'>⚠️ Екстрені відключення!</div>")
@@ -324,41 +328,39 @@ def get_today_schedule_text():
             output.append(f"<div class='source-label'>Джерело: {', '.join(emergency_sources)}</div>")
             output.append("</div>")
 
-        # Today
-        if today_str in schedule_data and schedule_data[today_str].get('slots'):
-            output.append(render_day_schedule_html(schedule_data[today_str]['slots'], now))
-        
-        # Tomorrow
-        if tomorrow_str in schedule_data and schedule_data[tomorrow_str].get('slots'):
-            slots = schedule_data[tomorrow_str]['slots']
-            if slots and any(s is not None for s in slots):
+        # Render Today
+        if today_slots:
+            output.append(render_day_schedule_html(today_slots, now))
+
+        # Render Tomorrow
+        if tomorrow_slots:
+            if any(s is not None for s in tomorrow_slots):
                 output.append("<div class='schedule-divider'></div>")
-                output.append(render_day_schedule_html(slots, now + timedelta(days=1)))
-            
+                output.append(render_day_schedule_html(tomorrow_slots, now + timedelta(days=1)))
+
         file_mtime = os.path.getmtime(schedule_file)
         dt_mtime = datetime.fromtimestamp(file_mtime, KYIV_TZ)
-        
+
         # Collect list of sources that actually provided SLOTS for today
         active_sources = []
-        
+
         gh = data.get('github', {})
         if gh:
             g_gh = list(gh.keys())[0]
             if gh[g_gh].get(today_str, {}).get('slots'):
                 active_sources.append("ДТЕК")
-                
+
         ys = data.get('yasno', {})
         if ys:
             g_ys = list(ys.keys())[0]
             if ys[g_ys].get(today_str, {}).get('slots'):
                 active_sources.append("YASNO")
-                
+
         sources_str = f" [{', '.join(active_sources)}]" if active_sources else ""
-        
+
         output.append(f"<div class='updated-time'>Оновлено: {dt_mtime.strftime('%H:%M')}{sources_str}</div>")
-        
-        return "".join(output)
-    except Exception as e:
+
+        return "".join(output)    except Exception as e:
         print(f"Error building schedule text: {e}")
         return "Помилка завантаження графіка"
 

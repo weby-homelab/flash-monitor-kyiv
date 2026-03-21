@@ -55,14 +55,24 @@ def load_schedule_slots(target_date):
             with open(SCHEDULE_FILE, 'r') as f:
                 data = json.load(f)
             
-            # Priority: Yasno -> Github
-            source = data.get('yasno') or data.get('github')
-            if source:
+            # Merge all available sources for the target date (False wins)
+            merged_slots = None
+            for s_key in ['github', 'yasno']:
+                source = data.get(s_key)
+                if not source: continue
                 group_key = list(source.keys())[0]
-                schedule_data = source[group_key]
+                schedule_data = source.get(group_key, {})
                 
                 if date_str in schedule_data and schedule_data[date_str].get('slots'):
-                     return schedule_data[date_str]['slots']
+                     s = schedule_data[date_str]['slots']
+                     if merged_slots is None:
+                         merged_slots = list(s)
+                     else:
+                         for i in range(min(len(merged_slots), len(s))):
+                             if s[i] is False: merged_slots[i] = False
+            
+            if merged_slots:
+                return merged_slots
         except Exception as e:
             print(f"Error loading schedule: {e}")
 
