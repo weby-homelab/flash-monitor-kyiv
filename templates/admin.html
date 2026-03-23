@@ -226,7 +226,7 @@
         <header>
             <div>
                 <h1>СВІТЛО⚡️ БЕЗПЕКА</h1>
-                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">Панель керування v2.4.1</p>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">Панель керування v2.4.2</p>
             </div>
             <button class="btn btn-secondary" onclick="fetchData()" style="width: auto;">
                 <i class="fas fa-sync-alt"></i> Оновити
@@ -345,6 +345,7 @@
                             <tr>
                                 <th>Час</th>
                                 <th>Подія</th>
+                                <th>Тривалість</th>
                                 <th>Дії</th>
                             </tr>
                         </thead>
@@ -375,7 +376,7 @@
                 renderConfig(data.config);
                 renderLogs(data.logs);
                 
-                document.getElementById('footer-info').innerHTML = '&copy; 2026 Weby Homelab &bull; v2.4.1 &bull; ' + new Date().toLocaleTimeString();
+                document.getElementById('footer-info').innerHTML = '&copy; 2026 Weby Homelab &bull; v2.4.2 &bull; ' + new Date().toLocaleTimeString();
             } catch (err) {
                 console.error('Fetch error:', err);
             }
@@ -440,14 +441,26 @@
             const tbody = document.getElementById('log-table-body');
             tbody.innerHTML = '';
             
-            logs.forEach(log => {
+            logs.forEach((log, index) => {
                 const tr = document.createElement('tr');
                 const eventLabel = log.event === 'up' ? 'UP' : 'DOWN';
                 const badgeClass = log.event === 'up' ? 'status-up' : 'status-down';
                 
+                let durationStr = '-';
+                if (index < logs.length - 1) {
+                    const prevLog = logs[index + 1];
+                    const diffSec = log.timestamp - prevLog.timestamp;
+                    if (diffSec > 0) {
+                        const h = Math.floor(diffSec / 3600);
+                        const m = Math.floor((diffSec % 3600) / 60);
+                        durationStr = h > 0 ? `${h} год ${m} хв` : `${m} хв`;
+                    }
+                }
+                
                 tr.innerHTML = `
                     <td>${log.date_str}</td>
                     <td><span class="status-badge ${badgeClass}">${eventLabel}</span></td>
+                    <td style="color: var(--text-secondary); font-size: 0.9em; opacity: 0.8;">${durationStr}</td>
                     <td>
                         <button class="btn btn-secondary btn-sm" onclick="deleteLog(${log.timestamp})" style="padding: 6px 10px;">
                             <i class="fas fa-trash"></i>
