@@ -204,6 +204,7 @@ To send Push signals, it is recommended to use the **HTTPS address of your domai
 ---
 
 ## 📝 Update History
+- **v2.4.2**: Added a 'Duration' column in the Admin Panel's Event Editor. Improved notification logic: added calculation of the total air raid alert duration, and optimized Telegram notifications to reduce spam. Exposed raw schedule data (`schedule_slots`) in the public API.
 - **v2.4.1**: Restored the Log Editor in the Admin Panel, fixed layout and JavaScript handlers after a bad AI update. Removed the Timestamp column.
 - **v2.4.0**: Implemented Safety Net (push signal loss detection) with interactive Telegram buttons (Down / Technical Failure / Ignore) and auto-fallback. Added dynamic push interval configuration (20-60s) via Admin Panel. Completely redesigned Web Admin Panel UI: mobile-first Glassmorphism, improved responsiveness, touch-friendly buttons, and scrollable tables.
 - **v2.3.2**: Protective History Merge in parser_service.py (preventing False to True overwrites in historical schedules).

@@ -360,7 +360,8 @@ def get_today_schedule_text():
 
         output.append(f"<div class='updated-time'>Оновлено: {dt_mtime.strftime('%H:%M')}{sources_str}</div>")
 
-        return "".join(output)    except Exception as e:
+        return "".join(output)
+    except Exception as e:
         print(f"Error building schedule text: {e}")
         return "Помилка завантаження графіка"
 
@@ -472,11 +473,37 @@ def api_status():
             if groups:
                 group_name = groups[0].replace('GPV', '')
 
+    # Extra: get raw slots for graph bar
+    from datetime import timedelta
+    now = datetime.now(KYIV_TZ)
+    date_str = now.strftime("%Y-%m-%d")
+    slots = [True] * 48
+    data_dir = os.environ.get("DATA_DIR", "data")
+    sched_file = os.path.join(data_dir, "last_schedules.json")
+    if os.path.exists(sched_file):
+        try:
+            with open(sched_file, 'r') as f:
+                s_data = json.load(f)
+                merged = None
+                for src in ['github', 'yasno']:
+                    s = s_data.get(src)
+                    if not s: continue
+                    g_key = list(s.keys())[0]
+                    day_data = s.get(g_key, {}).get(date_str, {}).get('slots')
+                    if day_data:
+                        if merged is None: merged = list(day_data)
+                        else:
+                            for i in range(min(len(merged), len(day_data))):
+                                if day_data[i] is False: merged[i] = False
+                if merged: slots = merged
+        except: pass
+
     return jsonify({
         "light": ui_light_state,
         "light_event": latest_event_text,
         "recent_events": recent_events,
         "schedule_text": schedule_text,
+        "schedule_slots": slots,
         "aqi": aq_data,
         "radiation": get_radiation(),
         "alert": alert_data,
@@ -564,7 +591,7 @@ def tg_webhook():
         msg_id = cb.get('message', {}).get('message_id')
         chat_id = cb.get('message', {}).get('chat', {}).get('id')
         
-        if cb_data.startswith('confirm_down_') or cb_data.startswith('sn_down_'):
+        if cb_data.startswith('confirm_down_'):
             load_state()
             with state_lock:
                 state['quiet_status'] = 'active'
@@ -683,6 +710,7 @@ def tg_webhook():
             load_state()
             with state_lock:
                 state['safety_net_pending'] = False
+                state['quiet_status'] = 'active'
                 state["status"] = "down"
                 
                 # Apply standard correction (last_seen + configured interval)
