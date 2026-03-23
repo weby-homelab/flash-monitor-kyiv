@@ -792,13 +792,26 @@ def alerts_loop():
                     # active = м. Київ, region = Київська область, clear = No alert
 
                     if new_status != old_status:
-                        time_str = datetime.datetime.now(KYIV_TZ).strftime("%H:%M")
+                        now_dt = datetime.datetime.now(KYIV_TZ)
+                        time_str = now_dt.strftime("%H:%M")
 
                         if new_status == "active":
+                            state["alert_start_time"] = now_dt.timestamp()
                             msg = f"⚠️ <b>{time_str} ПОВІТРЯНА ТРИВОГА! КИЇВ</b>"
                             threading.Thread(target=send_telegram, args=(msg,)).start()
                         elif old_status == "active" and new_status != "active":
-                            msg = f"✅ <b>{time_str} ВІДБІЙ ТРИВОГИ</b>"
+                            start_ts = state.get("alert_start_time")
+                            duration_str = ""
+                            if start_ts:
+                                duration_sec = int(now_dt.timestamp() - start_ts)
+                                hours = duration_sec // 3600
+                                mins = (duration_sec % 3600) // 60
+                                if hours > 0:
+                                    duration_str = f"\nяка тривала {hours} год {mins} хв"
+                                else:
+                                    duration_str = f"\nяка тривала {mins} хв"
+                            
+                            msg = f"✅ <b>{time_str} ВІДБІЙ ТРИВОГИ</b>{duration_str}"
                             threading.Thread(target=send_telegram, args=(msg,)).start()
 
                         # Update state
@@ -903,7 +916,8 @@ def sync_schedules():
                 should_alert = True # Fallback to alert if check fails
 
             if should_alert:
-                send_telegram("⚠️ <b>Увага!</b>\n<b>Оновлено графіки відключень!</b>\nНові дані вже доступні в каналі та на сайті\n⚡️ FLASH.srvrs.top")
+                print("Schedule updated. Telegram alert suppressed by configuration.")
+                # send_telegram("⚠️ <b>Увага!</b>\n<b>Оновлено графіки відключень!</b>\nНові дані вже доступні в каналі та на сайті\n⚡️ FLASH.srvrs.top")
             else:
                 print("Schedule updated but alert skipped (deduplicated or no outages).")
 
@@ -1051,7 +1065,8 @@ def schedule_loop():
                         
                         threading.Thread(target=trigger_report).start()
                     
-                    threading.Thread(target=send_telegram, args=(msg,)).start()
+                    print(f"Quiet mode status changed to: {new_status}. Telegram alert suppressed.")
+                    # threading.Thread(target=send_telegram, args=(msg,)).start()
                     save_state()
             
         # 3. Weekly Telegram Report (Monday around 00:15)
