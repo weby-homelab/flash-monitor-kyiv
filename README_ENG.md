@@ -3,13 +3,13 @@
     <img src="https://img.shields.io/badge/🇬🇧_English-00D4FF?style=for-the-badge&logo=readme&logoColor=white" alt="English README">
   </a>
   <a href="README.md">
-    <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Українська версія">
+    <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Ukrainian version">
   </a>
 </p>
 
 <br>
 
-# СВІТЛО⚡️ БЕЗПЕКА (Light & Safety) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) BARE METAL Edition
+# LIGHT⚡️ SAFETY [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) BARE METAL Edition
 
 <p align="center">
   <a href="https://github.com/weby-homelab/flash-monitor-kyiv/commits/main"><img src="https://img.shields.io/github/last-commit/weby-homelab/flash-monitor-kyiv" alt="GitHub last commit"></a>
@@ -22,11 +22,7 @@
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="LIGHT⚡️ SAFETY Dashboard Preview" width="100%">
 </p>
 
-<<<<<<< HEAD
-**Autonomous Docker-based Power & Safety Monitoring System for Kyiv.**
-=======
 **Autonomous power & safety monitoring system for Kyiv.**
->>>>>>> classic
 
 The project provides full control over the energy and security situation by analyzing real network data and official Yasno/DTEK schedules locally.
 
@@ -35,7 +31,7 @@ The project provides full control over the energy and security situation by anal
 ## 📚 Project Documentation
 | File | Description |
 | :--- | :--- |
-| 📖 **[Installation and Setup](INSTRUCTIONS_INSTALL_ENG.md)** | Main guide for system deployment (Docker, variables, API). |
+| 📖 **[Installation and Setup](INSTRUCTIONS_INSTALL_ENG.md)** | Main guide for system deployment (variables, API). |
 | 🔌 **[IoT Device Guides](INSTRUCTIONS_ENG.md)** | Sketches and instructions for ESP8266/ESP32 microcontrollers (physical light sensors). |
 | 🛠️ **[Developer Guide](DEVELOPMENT_ENG.md)** | Architectural rules, security protocols, and code deployment instructions. |
 
@@ -86,7 +82,7 @@ The project provides full control over the energy and security situation by anal
 
 ---
 
-## 🏗 System Architecture [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
+## 🏗 System Architecture
 
 ```mermaid
 flowchart TD
@@ -152,42 +148,11 @@ flowchart TD
 
 ---
 
-## 🐳 Quick Start via Docker
+## 💡 IoT Device Tip (Heartbeat)
+For sending Push signals, it is recommended to use the HTTPS address of your domain (e.g., via Cloudflare Tunnel) instead of a direct IP address:
 
-**Official image:** `webyhomelab/flash-monitor-kyiv:latest`
-
-### Docker Compose
-```yaml
-services:
-  web:
-    image: webyhomelab/flash-monitor-kyiv:latest
-    container_name: flash-monitor-web
-    ports: ["5050:5050"]
-    volumes: ["./data:/app/data"]
-    environment:
-      - TELEGRAM_BOT_TOKEN=your_token
-      - TELEGRAM_CHANNEL_ID=your_channel_id
-      - DATA_DIR=/app/data
-
-  worker:
-    image: webyhomelab/flash-monitor-kyiv:latest
-    container_name: flash-monitor-worker
-    command: python run_background.py
-    volumes: ["./data:/app/data"]
-    environment:
-      - TELEGRAM_BOT_TOKEN=your_token
-      - TELEGRAM_CHANNEL_ID=your_channel_id
-      - DATA_DIR=/app/data
-```
-
----
-
-## 💡 Tip for IoT sensors (Heartbeat)
-
-To send Push signals, it is recommended to use the **HTTPS address of your domain** (for example, via Cloudflare Tunnel) instead of a direct IP address:
-
-*   **🛡️ Security:** HTTPS encrypts your secret key during transmission.
-*   **🧩 Flexibility:** If you change the server, you don't need to reflash the sensors — just change the tunnel settings.
+- 🛡️ **Security:** HTTPS encrypts your secret key during transmission.
+- 🧩 **Flexibility:** If you change the server, you don't need to reflash the sensors — just change the tunnel settings.
 
 **Example:** `https://flash.srvrs.top/api/push/your_key`
 
@@ -200,28 +165,11 @@ To send Push signals, it is recommended to use the **HTTPS address of your domai
 
 ---
 
-## 📝 Update History
-- **v2.4.2**: Added a 'Duration' column in the Admin Panel's Event Editor. Improved notification logic: added calculation of the total air raid alert duration, and optimized Telegram notifications to reduce spam. Exposed raw schedule data (`schedule_slots`) in the public API.
-- **v2.4.1**: Restored the Log Editor in the Admin Panel, fixed layout and JavaScript handlers after a bad AI update. Removed the Timestamp column.
-- **v2.4.0**: Implemented Safety Net (push signal loss detection) with interactive Telegram buttons (Down / Technical Failure / Ignore) and auto-fallback. Added dynamic push interval configuration (20-60s) via Admin Panel. Completely redesigned Web Admin Panel UI: mobile-first Glassmorphism, improved responsiveness, touch-friendly buttons, and scrollable tables.
-- **v2.3.2**: Protective History Merge in parser_service.py (preventing False to True overwrites in historical schedules).
-- **v2.3.0**: UI Fix & Consolidation. Restored functional schedule layout, fixed scrolling, moved all dynamic state/config files to `data/`.
-- **v2.2.0**: Security Hardening Release. Token-based auth, input validation, DOM safety.
-- **v2.1.2**: Smart Deduplication v2 (hashing only slots with outages).
-- **v2.1.1**: Optimization of graphical and text reports: auto-deletion of yesterday's graphical reports at 00:01, fix for text report deduplication, and hiding tomorrow's schedules until the evening slot.
-- **v2.0.1**: Optimization of "Quiet Mode" logic (switch to 24/24 formula). Fixed minor errors in dashboard texts.
-- **v2.0.0**: Major update: added a web control panel (Admin Panel) and intelligent "Quiet Mode" with secure outage confirmation.
-- **v1.17.5**: Added "Holiday Mode", smart status display on the dashboard, and new report finalization logic at 00:01.
-- **v1.17.4**: Dynamic Emergency status source attribution (DTEK, YASNO, or both). Intelligent source filtering in the footer.
-- **v1.17.3**: Smart schedule source selection (Smart Fallback) and Emergency status support.
-- **v1.17.2**: Updated air raid alert format.
-
 ## 📜 License
 Distributed under the **MIT** license.
 
+<br>
 <p align="center">
-  ✦ 2026 Weby Homelab ✦<br>
+  ✦ 2026 Weby Homelab ✦ <br>
   Made with ❤️ in Kyiv under air raid sirens and blackouts
 </p>
-
----
