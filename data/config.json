@@ -1,69 +1,74 @@
 {
   "settings": {
+    "groups": [
+      "GPV36.1"
+    ],
+    "max_messages": 1,
     "region": "kyiv",
-    "timezone": "Europe/Kyiv",
-    "groups": ["GPV36.1"],
+    "show_intervals_detail": false,
     "style": "list",
     "table_format": "code_lines",
-    "max_messages": 1,
-    "show_intervals_detail": false
+    "timezone": "Europe/Kyiv",
+    "admin_chat_id": "6313526220",
+    "safety_net_timeout": 35,
+    "push_interval": 30
   },
   "sources": {
+    "air_quality": {
+      "lat": "50.408",
+      "location_name": "Борщагівка (Симиренка)",
+      "lon": "30.400",
+      "seb_station": "17095"
+    },
     "github": {
       "enabled": true,
       "name": "ДТЕК"
     },
     "yasno": {
+      "dso_id": "902",
       "enabled": true,
       "name": "Yasno",
-      "region_id": "25",
-      "dso_id": "902"
-    },
-    "air_quality": {
-      "seb_station": "17095",
-      "lat": "50.408",
-      "lon": "30.400",
-      "location_name": "Борщагівка (Симиренка)"
+      "region_id": "25"
     }
   },
   "ui": {
+    "format": {
+      "detail_indent": "   ",
+      "header_template": "🔆 Графік групи <b>{group}</b> 🔆",
+      "separator_day": "■  ■  ■",
+      "separator_footer": " - ",
+      "separator_source": "✧  ✧  ✧",
+      "table_separator": "-"
+    },
     "icons": {
       "calendar": "📆",
       "clock": "🕐",
-      "on": "🔆",
-      "off": "✖️",
-      "on_list": "🔆",
-      "off_list": "✖️",
       "emergency": "⚠️",
-      "pending": "⏳",
-      "separator": "⠅",
+      "light_off": "✖️",
       "light_on": "🔆",
-      "light_off": "✖️"
-    },
-    "text": {
-      "on_full": "Світло є",
-      "off_full": "Світла нема",
-      "on_detail": "Світло буде",
-      "off_detail": "Світла не буде",
-      "emergency": "Аварійне Відключення!",
-      "pending": "Очікується інформація про графік",
-      "updated": "Оновлено",
-      "hours_short": "год."
-    },
-    "format": {
-      "header_template": "🔆 Графік групи <b>{group}</b> 🔆",
-      "separator_source": "✧  ✧  ✧",
-      "separator_day": "■  ■  ■",
-      "separator_footer": " - ",
-      "table_separator": "-",
-      "detail_indent": "   "
+      "off": "✖️",
+      "off_list": "✖️",
+      "on": "🔆",
+      "on_list": "🔆",
+      "pending": "⏳",
+      "separator": "⠅"
     },
     "spacing": {
-      "before_separator_source": 1,
-      "before_separator_day": 1,
-      "before_summary": 1,
+      "after_footer_separator": 1,
       "before_footer": 0,
-      "after_footer_separator": 1
+      "before_separator_day": 1,
+      "before_separator_source": 1,
+      "before_summary": 1
+    },
+    "text": {
+      "emergency": "Аварійне Відключення!",
+      "hours_short": "год.",
+      "off_detail": "Світла не буде",
+      "off_full": "Світла нема",
+      "on_detail": "Світло буде",
+      "on_full": "Світло є",
+      "pending": "Очікується інформація про графік",
+      "updated": "Оновлено"
     }
   }
 }
