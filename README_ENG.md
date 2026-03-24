@@ -52,6 +52,7 @@ The project provides full control over the energy and security situation by anal
 - **Air Raid Alerts:** Instant status and Telegram notifications about the start and end of alerts in Kyiv.
 - **Live Map:** Integrated map of alerts for Kyiv and the region.
 - **Air Quality (AQI):** Monitoring of PM2.5, PM10, and radiation background (Location: Symyrenka).
+- **AQI History (v2.4.3):** 24-hour history for air quality, temperature, and humidity with interactive graphs and real-time tooltips.
 - **Weather:** Current temperature, humidity, and wind parameters.
 
 ### 🔔 Telegram Notifications
