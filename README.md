@@ -9,23 +9,20 @@
 
 <br>
 
-# СВІТЛО⚡️ БЕЗПЕКА [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) DOCKER Edition
+# СВІТЛО⚡️ БЕЗПЕКА [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) BARE METAL Edition
 
 <p align="center">
-  <a href="https://hub.docker.com/r/webyhomelab/flash-monitor-kyiv"><img src="https://img.shields.io/docker/pulls/webyhomelab/flash-monitor-kyiv?logo=docker&logoColor=white" alt="Docker Pulls"></a>
-  <a href="https://hub.docker.com/r/webyhomelab/flash-monitor-kyiv"><img src="https://img.shields.io/docker/image-size/webyhomelab/flash-monitor-kyiv/latest?logo=docker&logoColor=white" alt="Docker Image Size"></a>
   <a href="https://github.com/weby-homelab/flash-monitor-kyiv/commits/main"><img src="https://img.shields.io/github/last-commit/weby-homelab/flash-monitor-kyiv" alt="GitHub last commit"></a>
   <a href="https://github.com/weby-homelab/flash-monitor-kyiv/issues"><img src="https://img.shields.io/github/issues/weby-homelab/flash-monitor-kyiv" alt="GitHub issues"></a>
   <a href="https://github.com/weby-homelab/flash-monitor-kyiv/blob/main/LICENSE"><img src="https://img.shields.io/github/license/weby-homelab/flash-monitor-kyiv" alt="License"></a>
   <img src="https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white" alt="Python Version">
-  <img src="https://img.shields.io/badge/Platform-Docker-2496ED?style=flat&logo=docker&logoColor=white" alt="Platform Docker">
 </p>
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡️ БЕЗПЕКА Dashboard Preview" width="100%">
 </p>
 
-**Автономна Docker-система моніторингу електропостачання та безпеки Києва.**
+**Автономна система моніторингу електропостачання та безпеки Києва.**
 
 Проект забезпечує повний контроль над енергетичною та безпековою ситуацією, аналізуючи реальні дані мережі та офіційні графіки Yasno/ДТЕК локально.
 
@@ -34,7 +31,7 @@
 ## 📚 Документація проєкту
 | Файл | Опис |
 | :--- | :--- |
-| 📖 **[Встановлення та налаштування](INSTRUCTIONS_INSTALL.md)** | Головна інструкція з розгортання системи (Docker, змінні, API). |
+| 📖 **[Встановлення та налаштування](INSTRUCTIONS_INSTALL.md)** | Головна інструкція з розгортання системи (змінні, API). |
 | 🔌 **[Робота з IoT-платами](INSTRUCTIONS.md)** | Скетчі та інструкції для мікроконтролерів ESP8266/ESP32 (фізичні датчики світла). |
 | 🛠️ **[Посібник розробника](DEVELOPMENT.md)** | Архітектурні правила, протоколи безпеки та інструкції з деплою коду. |
 
@@ -85,7 +82,7 @@
 
 ---
 
-## 🏗 Архітектура Системи [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
+## 🏗 Архітектура Системи
 
 ```mermaid
 flowchart TD
@@ -151,42 +148,11 @@ flowchart TD
 
 ---
 
-## 🐳 Швидкий запуск через Docker
-
-**Офіційний образ:** `webyhomelab/flash-monitor-kyiv:latest`
-
-### Docker Compose
-```yaml
-services:
-  web:
-    image: webyhomelab/flash-monitor-kyiv:latest
-    container_name: flash-monitor-web
-    ports: ["5050:5050"]
-    volumes: ["./data:/app/data"]
-    environment:
-      - TELEGRAM_BOT_TOKEN=your_token
-      - TELEGRAM_CHANNEL_ID=your_channel_id
-      - DATA_DIR=/app/data
-
-  worker:
-    image: webyhomelab/flash-monitor-kyiv:latest
-    container_name: flash-monitor-worker
-    command: python run_background.py
-    volumes: ["./data:/app/data"]
-    environment:
-      - TELEGRAM_BOT_TOKEN=your_token
-      - TELEGRAM_CHANNEL_ID=your_channel_id
-      - DATA_DIR=/app/data
-```
-
----
-
 ## 💡 Порада для IoT-датчиків (Heartbeat)
+Для надсилання Push-сигналів рекомендується використовувати HTTPS-адресу вашого домену (наприклад, через Cloudflare Tunnel) замість прямої IP-адреси:
 
-Для надсилання Push-сигналів рекомендується використовувати **HTTPS-адресу вашого домену** (наприклад, через Cloudflare Tunnel) замість прямої IP-адреси:
-
-*   **🛡️ Безпека:** HTTPS шифрує ваш секретний ключ під час передачі.
-*   **🧩 Гнучкість:** При зміні сервера вам не потрібно перепрошивати датчики — достатньо змінити налаштування тунелю.
+- 🛡️ **Безпека:** HTTPS шифрує ваш секретний ключ під час передачі.
+- 🧩 **Гнучкість:** При зміні сервера вам не потрібно перепрошивати датчики — достатньо змінити налаштування тунелю.
 
 **Приклад:** `https://flash.srvrs.top/api/push/ваш_ключ`
 
@@ -199,28 +165,11 @@ services:
 
 ---
 
-## 📝 Історія оновлень
-- **v2.4.2**: Додано колонку «Тривалість» в редакторі подій веб-панелі адміністратора. Вдосконалено логіку сповіщень: додано розрахунок загальної тривалості повітряної тривоги після відбою, та оптимізовано сповіщення Telegram для зменшення спаму. Виведено дані графіків (`schedule_slots`) у відкритий API.
-- **v2.4.1**: Відновлено редактор подій (Log Editor) у веб-панелі адміністратора, виправлено верстку та JavaScript-обробники після невдалого ШІ-оновлення. Видалено колонку Timestamp.
-- **v2.4.0**: Впроваджено Safety Net (перевірка втрати пуш-сигналу) з інтерактивними кнопками в Telegram (Світло зникло / Технічний збій / Не знаю) та автоматичним фолбеком. Додано можливість динамічної зміни інтервалу пушу (20-60 сек) через адмін-панель. Повністю оновлено дизайн веб-панелі керування: нова мобільна версія (Glassmorphism), покращена адаптивність, зручні кнопки та таблиці з прокруткою.
-- **v2.3.2**: Protective History Merge у parser_service.py (запобігання перезапису False на True в історичних графіках).
-- **v2.3.0**: UI Fix та Consolidation. Повернення робочого графіку, фікс скролу, всі динамічні файли переміщені в директорію `data/`.
-- **v2.2.0**: Security Hardening Release. Авторизація по токену, валідація вводу, безпека DOM.
-- **v2.1.2**: Smart Deduplication v2 (хешування лише слотів з відключеннями).
-- **v2.1.1**: Оптимізація графічних і текстових звітів: автовидалення вчорашніх графіків о 00:01, фікс дедублікації текстових звітів та приховування графіків на завтра до вечірнього слоту.
-- **v2.0.1**: Оптимізація логіки «Інформаційного спокою» (перехід на формулу 24/24). Виправлення дрібних помилок у текстах дашборду.
-- **v2.0.0**: Масштабне оновлення: додано веб-панель керування (Admin Panel) та інтелектуальний режим «Інформаційного спокою» з безпечним підтвердженням відключень.
-- **v1.17.5**: Додано режим «Світла смуга», розумне відображення статусів на дашборді та нову логіку фіналізації звітів о 00:01.
-- **v1.17.4**: Динамічна атрибуція джерел статусу Emergency (ДТЕК, YASNO або обидва). Інтелектуальна фільтрація джерел у футері (тільки ті, що надали графік).
-- **v1.17.3**: Розумний вибір джерела графіків (Smart Fallback) та підтримка статусу Emergency.
-- **v1.17.2**: Оновлено формат сповіщень про повітряну тривогу.
-
 ## 📜 Ліцензія
 Розповсюджується під ліцензією **MIT**.
 
+<br>
 <p align="center">
-  ✦ 2026 Weby Homelab ✦<br>
+  ✦ 2026 Weby Homelab ✦ <br>
   Made with ❤️ in Kyiv under air raid sirens and blackouts
 </p>
-
----

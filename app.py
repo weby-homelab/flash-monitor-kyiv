@@ -2,6 +2,7 @@ import requests
 from flask import Flask, render_template, jsonify, send_from_directory, make_response, request
 import json
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import os
 import time
 import re
@@ -383,25 +384,80 @@ def get_air_quality():
         # OpenMeteo for PM2.5/PM10
         lat = aq_cfg.get("lat", "50.45")
         lon = aq_cfg.get("lon", "30.52")
-        om_url = f"https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={lon}&current=pm10,pm2_5"
+        om_url = f"https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={lon}&current=pm10,pm2_5&hourly=pm2_5&past_days=1"
         
         # SaveEcoBot for Station-specific (Station 17095)
         seb_id = aq_cfg.get("seb_station", "17095")
         seb_url = f"https://www.saveecobot.com/platform/api/v1/stations/{seb_id}"
         
         # Weather for Temp/Hum
-        w_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m"
+        w_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m&past_days=1"
 
         def fetch_all():
             pm_data = requests.get(om_url, timeout=5).json()
             w_data = requests.get(w_url, timeout=5).json()
-            
+
             pm25 = pm_data.get('current', {}).get('pm2_5', 0)
             pm10 = pm_data.get('current', {}).get('pm10', 0)
-            
+
+            history_hourly = []
+            history_times = []
+            temp_history = []
+            hum_history = []
+            try:
+                pm25_hourly = pm_data.get('hourly', {}).get('pm2_5', [])
+                time_hourly = pm_data.get('hourly', {}).get('time', [])
+
+                temp_hourly = w_data.get('hourly', {}).get('temperature_2m', [])
+                hum_hourly = w_data.get('hourly', {}).get('relative_humidity_2m', [])
+                w_time_hourly = w_data.get('hourly', {}).get('time', [])
+
+                if time_hourly:
+                    now_iso = datetime.now(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:00")
+                    try:
+                        idx = time_hourly.index(now_iso)
+                    except ValueError:
+                        idx = len(time_hourly) - 1
+
+                    if idx >= 23:
+                        recent = pm25_hourly[idx-23:idx+1]
+                        recent_times = time_hourly[idx-23:idx+1]
+                    else:
+                        recent = pm25_hourly[:idx+1]
+                        recent_times = time_hourly[:idx+1]
+
+                    for i in range(len(recent)):
+                        val = recent[i] or 0
+                        dt = datetime.fromisoformat(recent_times[i]).replace(tzinfo=ZoneInfo("UTC")).astimezone(KYIV_TZ)
+                        history_hourly.append(int(val * 3))
+                        history_times.append(dt.strftime("%H:%M"))
+
+                if w_time_hourly:
+                    now_iso = datetime.now(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:00")
+                    try:
+                        idx = w_time_hourly.index(now_iso)
+                    except ValueError:
+                        idx = len(w_time_hourly) - 1
+
+                    if idx >= 11:
+                        recent_temp = temp_hourly[idx-11:idx+1]
+                        recent_hum = hum_hourly[idx-11:idx+1]
+                    else:
+                        recent_temp = temp_hourly[:idx+1]
+                        recent_hum = hum_hourly[:idx+1]
+
+                    for i in range(len(recent_temp)):
+                        t_val = recent_temp[i] if recent_temp[i] is not None else 0
+                        h_val = recent_hum[i] if recent_hum[i] is not None else 0
+                        temp_history.append(t_val)
+                        hum_history.append(h_val)
+
+            except Exception as e:
+                print(f"AQ History Error: {e}")
+
             # Simple AQI calculation based on PM2.5 (standard European scale approx)
             aqi = int(pm25 * 3) # rough proxy for simplified dashboard
-            
+
             status = "ok"
             status_text = "Низький"
             if aqi > 50: 
@@ -413,10 +469,13 @@ def get_air_quality():
 
             return {
                 "aqi": aqi,
+                "history_hourly": history_hourly,
+                "history_times": history_times,
+                "temp_history": temp_history,
+                "hum_history": hum_history,
                 "status": status,
                 "text": status_text,
-                "pm25": pm25,
-                "pm10": pm10,
+                "pm25": pm25,                "pm10": pm10,
                 "pm1": None,
                 "temp": w_data.get('current', {}).get('temperature_2m'),
                 "hum": w_data.get('current', {}).get('relative_humidity_2m'),

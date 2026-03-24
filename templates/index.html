@@ -200,12 +200,21 @@
         
         <div class="section-header" id="aqi-loc">Якість повітря</div>
         <div class="card">
-            <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 24px;"><span id="aqi-num" style="font-size: 3.5rem; font-weight: 800; line-height: 1;">--</span><div><div id="aqi-text" style="font-size: 1.2rem; font-weight: 700;">---</div><div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">AQI INDEX</div></div></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div style="display: flex; align-items: baseline; gap: 12px;"><span id="aqi-num" style="font-size: 3.5rem; font-weight: 800; line-height: 1;">--</span><div><div id="aqi-text" style="font-size: 1.2rem; font-weight: 700;">---</div><div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">AQI INDEX</div></div></div>
+                <div id="aqi-graph" style="display: flex; align-items: flex-end; gap: 3px; height: 44px; margin-left: auto;"></div>
+            </div>
             <div class="grid">
                 <div class="grid-item"><div class="grid-val" id="pm25">--</div><div class="grid-label">PM2.5</div></div>
                 <div class="grid-item"><div class="grid-val" id="pm10">--</div><div class="grid-label">PM10</div></div>
-                <div class="grid-item"><div class="grid-val" id="temp">--</div><div class="grid-label">Температура</div></div>
-                <div class="grid-item"><div class="grid-val" id="hum">--</div><div class="grid-label">Вологість</div></div>
+                <div class="grid-item" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div><div class="grid-val" id="temp">--</div><div class="grid-label">Температура</div></div>
+                    <div id="temp-graph" style="display: flex; align-items: flex-end; gap: 2px; height: 30px; position: relative;"></div>
+                </div>
+                <div class="grid-item" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div><div class="grid-val" id="hum">--</div><div class="grid-label">Вологість</div></div>
+                    <div id="hum-graph" style="display: flex; align-items: flex-end; gap: 2px; height: 30px; position: relative;"></div>
+                </div>
             </div>
             <div class="weather-info"><span id="wind-status">---</span><span id="rad-container">☢️ <span id="rad-val">--</span> мкЗв/год <span class="rad-norm">(норма)</span></span></div>
         </div>
@@ -374,11 +383,180 @@
                 
                 const aqiLoc = document.getElementById('aqi-loc');
                 if (data.aqi.location && aqiLoc) aqiLoc.innerText = data.aqi.location;
-                
+
+                const aqiGraph = document.getElementById('aqi-graph');
+                if (aqiGraph && data.aqi.history_hourly && data.aqi.history_hourly.length > 0) {
+                    aqiGraph.style.display = 'flex';
+                    aqiGraph.style.flexDirection = 'column';
+                    aqiGraph.style.gap = '4px';
+                    aqiGraph.style.alignItems = 'flex-end';
+                    aqiGraph.style.height = 'auto';
+                    aqiGraph.style.position = 'relative';
+
+                    let chartArea = document.getElementById('aqi-chart-area');
+                    let tooltip = document.getElementById('aqi-tooltip');
+
+                    if (!chartArea) {
+                        aqiGraph.innerHTML = '';
+                        
+                        chartArea = document.createElement('div');
+                        chartArea.id = 'aqi-chart-area';
+                        chartArea.style.display = 'flex';
+                        chartArea.style.alignItems = 'flex-end';
+                        chartArea.style.gap = '4px';
+                        chartArea.style.height = '44px';
+
+                        tooltip = document.createElement('div');
+                        tooltip.id = 'aqi-tooltip';
+                        tooltip.style.position = 'absolute';
+                        tooltip.style.top = '-25px';
+                        tooltip.style.background = 'var(--card-bg)';
+                        tooltip.style.border = '1px solid var(--card-border)';
+                        tooltip.style.padding = '2px 6px';
+                        tooltip.style.borderRadius = '4px';
+                        tooltip.style.fontSize = '0.7rem';
+                        tooltip.style.fontWeight = 'bold';
+                        tooltip.style.pointerEvents = 'none';
+                        tooltip.style.opacity = '0';
+                        tooltip.style.transition = 'opacity 0.2s';
+                        tooltip.style.whiteSpace = 'nowrap';
+                        tooltip.style.backdropFilter = 'blur(10px)';
+                        tooltip.style.zIndex = '10';
+                        tooltip.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
+
+                        aqiGraph.appendChild(tooltip);
+                        aqiGraph.appendChild(chartArea);
+                    } else {
+                        chartArea.innerHTML = '';
+                    }
+
+                    const maxVal = Math.max(100, ...data.aqi.history_hourly);
+                    
+                    data.aqi.history_hourly.forEach((val, idx) => {
+                        const h = Math.max(4, (val / maxVal) * 44);
+                        const color = (val > 100) ? 'var(--danger)' : (val > 50) ? 'var(--warning)' : 'var(--success)';
+                        const timeStr = data.aqi.history_times ? data.aqi.history_times[idx] : '';
+
+                        const barWrap = document.createElement('div');
+                        barWrap.style.width = '5px';
+                        barWrap.style.height = '44px';
+                        barWrap.style.display = 'flex';
+                        barWrap.style.alignItems = 'flex-end';
+                        barWrap.style.cursor = 'pointer';
+                        
+                        const bar = document.createElement('div');
+                        bar.style.width = '100%';
+                        bar.style.height = `${h}px`;
+                        bar.style.backgroundColor = color;
+                        bar.style.borderRadius = '3px';
+                        bar.style.opacity = '0.85';
+                        bar.style.transition = 'height 0.3s ease, opacity 0.2s';
+                        
+                        barWrap.appendChild(bar);
+                        chartArea.appendChild(barWrap);
+
+                        const showTooltip = (e) => {
+                            tooltip.innerText = `${timeStr} - AQI: ${val}`;
+                            tooltip.style.opacity = '1';
+                            const rect = chartArea.getBoundingClientRect();
+                            const barRect = barWrap.getBoundingClientRect();
+                            let leftPos = barRect.left - rect.left - 10;
+                            if (leftPos < 0) leftPos = 0;
+                            if (leftPos > rect.width - 40) leftPos = rect.width - 60;
+                            tooltip.style.left = `${leftPos}px`;
+                            bar.style.opacity = '1';
+                        };
+                        const hideTooltip = () => {
+                            tooltip.style.opacity = '0';
+                            bar.style.opacity = '0.85';
+                        };
+
+                        barWrap.addEventListener('mouseenter', showTooltip);
+                        barWrap.addEventListener('mouseleave', hideTooltip);
+                        barWrap.addEventListener('touchstart', (e) => { e.preventDefault(); showTooltip(); });
+                        barWrap.addEventListener('touchend', hideTooltip);
+                    });
+                }
+
                 if (document.getElementById('pm25')) document.getElementById('pm25').innerText = data.aqi.pm25;
                 if (document.getElementById('pm10')) document.getElementById('pm10').innerText = data.aqi.pm10;
                 if (document.getElementById('temp')) document.getElementById('temp').innerText = data.aqi.temp + '°C';
                 if (document.getElementById('hum')) document.getElementById('hum').innerText = data.aqi.hum + '%';
+
+                function renderMiniGraph(containerId, historyData, color, formatUnit) {
+                    const container = document.getElementById(containerId);
+                    if (container && historyData && historyData.length > 0) {
+                        container.innerHTML = '';
+                        const tooltip = document.createElement('div');
+                        tooltip.style.position = 'absolute';
+                        tooltip.style.top = '-20px';
+                        tooltip.style.background = 'var(--card-bg)';
+                        tooltip.style.border = '1px solid var(--card-border)';
+                        tooltip.style.padding = '2px 4px';
+                        tooltip.style.borderRadius = '4px';
+                        tooltip.style.fontSize = '0.65rem';
+                        tooltip.style.fontWeight = 'bold';
+                        tooltip.style.pointerEvents = 'none';
+                        tooltip.style.opacity = '0';
+                        tooltip.style.transition = 'opacity 0.2s';
+                        tooltip.style.whiteSpace = 'nowrap';
+                        tooltip.style.backdropFilter = 'blur(10px)';
+                        tooltip.style.zIndex = '10';
+                        tooltip.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
+                        container.appendChild(tooltip);
+
+                        const minVal = Math.min(...historyData);
+                        const maxVal = Math.max(...historyData);
+                        const range = maxVal - minVal || 1;
+
+                        historyData.forEach((val, idx) => {
+                            const h = Math.max(4, ((val - minVal) / range) * 26 + 4);
+                            const timeStr = data.aqi.history_times ? data.aqi.history_times[data.aqi.history_times.length - historyData.length + idx] : '';
+
+                            const barWrap = document.createElement('div');
+                            barWrap.style.width = '3px';
+                            barWrap.style.height = '30px';
+                            barWrap.style.display = 'flex';
+                            barWrap.style.alignItems = 'flex-end';
+                            barWrap.style.cursor = 'pointer';
+                            
+                            const bar = document.createElement('div');
+                            bar.style.width = '100%';
+                            bar.style.height = `${h}px`;
+                            bar.style.backgroundColor = color;
+                            bar.style.borderRadius = '2px';
+                            bar.style.opacity = '0.7';
+                            bar.style.transition = 'height 0.3s ease, opacity 0.2s';
+                            
+                            barWrap.appendChild(bar);
+                            container.appendChild(barWrap);
+
+                            const showTooltip = (e) => {
+                                tooltip.innerText = `${timeStr} - ${val}${formatUnit}`;
+                                tooltip.style.opacity = '1';
+                                const rect = container.getBoundingClientRect();
+                                const barRect = barWrap.getBoundingClientRect();
+                                let leftPos = barRect.left - rect.left - 20;
+                                if (leftPos < 0) leftPos = 0;
+                                if (leftPos > rect.width - 40) leftPos = rect.width - 40;
+                                tooltip.style.left = `${leftPos}px`;
+                                bar.style.opacity = '1';
+                            };
+                            const hideTooltip = () => {
+                                tooltip.style.opacity = '0';
+                                bar.style.opacity = '0.7';
+                            };
+
+                            barWrap.addEventListener('mouseenter', showTooltip);
+                            barWrap.addEventListener('mouseleave', hideTooltip);
+                            barWrap.addEventListener('touchstart', (e) => { e.preventDefault(); showTooltip(); });
+                            barWrap.addEventListener('touchend', hideTooltip);
+                        });
+                    }
+                }
+
+                renderMiniGraph('temp-graph', data.aqi.temp_history, 'var(--warning)', '°C');
+                renderMiniGraph('hum-graph', data.aqi.hum_history, 'var(--color-graph-fact-on)', '%');
                 
                 const windStatus = document.getElementById('wind-status');
                 if (windStatus) windStatus.innerText = '💨 ' + data.aqi.wind_dir + ', ' + data.aqi.wind_speed + ' км/год';
