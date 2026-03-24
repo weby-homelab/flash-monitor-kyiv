@@ -26,43 +26,129 @@
 
 ## 🇺🇦 Українська версія
 
-**Автономна система моніторингу електропостачання та безпеки Києва.**
+**Автономна система моніторингу електропостачання та безпеки Києва (Docker Edition).**
 
-Проект забезпечує повний контроль над енергетичною та безпековою ситуацією, аналізуючи реальні дані мережі та офіційні графіки Yasno/ДТЕК локально.
+Проєкт забезпечує повний контроль над енергетичною та безпековою ситуацією, аналізуючи реальні дані мережі та офіційні графіки Yasno/ДТЕК локально.
 
 🔗 **Живий моніторинг:** [flash.srvrs.top](https://flash.srvrs.top/)
 
-### 📚 Документація проєкту
-| Файл | Опис |
-| :--- | :--- |
-| 📖 **[Встановлення та налаштування](INSTRUCTIONS_INSTALL.md)** | Головна інструкція з розгортання системи (змінні, API). |
-| 🔌 **[Робота з IoT-платами](INSTRUCTIONS.md)** | Скетчі та інструкції для мікроконтролерів ESP8266/ESP32 (фізичні датчики світла). |
-| 🛠️ **[Посібник розробника](DEVELOPMENT.md)** | Архітектурні правила, протоколи безпеки та інструкції з деплою коду. |
+### 🚀 Швидкий старт (Docker Compose)
+
+Найпростіший спосіб запустити систему — використовувати Docker Compose.
+
+#### 1. Створіть файл `.env`:
+```env
+TELEGRAM_BOT_TOKEN=ваш_токен
+TELEGRAM_CHANNEL_ID=ваш_id_каналу
+ADMIN_CHAT_ID=ваш_id_адміна
+SECRET_KEY=ваш_секретний_ключ
+```
+
+#### 2. Створіть файл `docker-compose.yml`:
+```yaml
+services:
+  flash-monitor:
+    image: webyhomelab/flash-monitor-kyiv:latest
+    container_name: flash-monitor
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./data:/app/data
+      - ./config.json:/app/config.json:ro
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Kyiv
+
+  background-worker:
+    image: webyhomelab/flash-monitor-kyiv:latest
+    container_name: flash-monitor-worker
+    restart: unless-stopped
+    command: python run_background.py
+    volumes:
+      - ./data:/app/data
+      - ./config.json:/app/config.json:ro
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Kyiv
+```
+
+#### 3. Запустіть систему:
+```bash
+docker compose up -d
+```
+
+---
 
 ### 🚀 Основні можливості
-- **Smart Bootstrap:** Автоматичне розгортання актуальних планових графіків при першому запуску.
-- **Heartbeat Tracking:** Моніторинг світла в реальному часі через IoT-сигнали (`/api/push`).
-- **Стійкість до збоїв API:** Надійне локальне кешування графіків DTEK/Yasno.
-- **Аналітика «План vs Факт»:** Порівняння реальних вимкнень із запланованими графіками.
-- **Історія AQI (v2.4.3):** 24-годинна історія якості повітря та погоди з інтерактивними графіками.
+- **Smart Bootstrap:** Автоматичне розгортання графіків при першому запуску.
+- **Heartbeat Tracking:** Моніторинг світла в реальному часі через IoT (`/api/push`).
+- **Стійкість до збоїв API:** Локальне кешування графіків DTEK/Yasno.
+- **Аналітика «План vs Факт»:** Порівняння реальних вимкнень із запланованими.
+- **Історія AQI (v2.4.3):** 24-годинна історія якості повітря з інтерактивними графіками.
 - **Quiet Mode:** Розумний режим спокою в стабільні періоди (24/24 Logic).
 
 ---
 
 ## 🇬🇧 English Version
 
-**Autonomous power & safety monitoring system for Kyiv.**
+**Autonomous power & safety monitoring system for Kyiv (Docker Edition).**
 
 The project provides full control over the energy and security situation by analyzing real network data and official Yasno/DTEK schedules locally.
 
 🔗 **Live monitoring:** [flash.srvrs.top](https://flash.srvrs.top/)
 
-### 📚 Project Documentation
-| File | Description |
-| :--- | :--- |
-| 📖 **[Installation and Setup](INSTRUCTIONS_INSTALL_ENG.md)** | Main guide for system deployment (variables, API). |
-| 🔌 **[IoT Device Guides](INSTRUCTIONS_ENG.md)** | Sketches and instructions for ESP8266/ESP32 microcontrollers. |
-| 🛠️ **[Developer Guide](DEVELOPMENT_ENG.md)** | Architectural rules, security protocols, and deployment instructions. |
+### 🚀 Quick Start (Docker Compose)
+
+The easiest way to deploy the system is using Docker Compose.
+
+#### 1. Create a `.env` file:
+```env
+TELEGRAM_BOT_TOKEN=your_token
+TELEGRAM_CHANNEL_ID=your_channel_id
+ADMIN_CHAT_ID=your_admin_id
+SECRET_KEY=your_secret_key
+```
+
+#### 2. Create a `docker-compose.yml` file:
+```yaml
+services:
+  flash-monitor:
+    image: webyhomelab/flash-monitor-kyiv:latest
+    container_name: flash-monitor
+    restart: unless-stopped
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./data:/app/data
+      - ./config.json:/app/config.json:ro
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Kyiv
+
+  background-worker:
+    image: webyhomelab/flash-monitor-kyiv:latest
+    container_name: flash-monitor-worker
+    restart: unless-stopped
+    command: python run_background.py
+    volumes:
+      - ./data:/app/data
+      - ./config.json:/app/config.json:ro
+    env_file:
+      - .env
+    environment:
+      - TZ=Europe/Kyiv
+```
+
+#### 3. Start the system:
+```bash
+docker compose up -d
+```
+
+---
 
 ### 🚀 Main Features
 - **Smart Bootstrap:** Automatic deployment of current schedules upon first launch.
