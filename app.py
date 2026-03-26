@@ -92,8 +92,11 @@ def get_power_events_data(limit=5):
     recent_events = []
     
     # Default schedule info
-    sched_light_now, current_end, next_range, next_duration = get_schedule_context()
-    latest_event_text = f"Наступне планове: {next_range}"
+    sched_light_now, current_end, next_range, next_duration, is_emergency = get_schedule_context()
+    if is_emergency:
+        latest_event_text = "• ‼️‼️ можливі аварійні відключення"
+    else:
+        latest_event_text = f"• Наступне планове: {next_range}"
     
     try:
         if os.path.exists(EVENT_LOG_FILE):
@@ -184,18 +187,18 @@ def get_power_events_data(limit=5):
                         else:
                             wait_line = f"• Очікуємо о {next_info['interval']}"
                     
-                    if dev_line and wait_line:
+                    if is_emergency:
+                        latest_event_text = "• ‼️‼️ можливі аварійні відключення"
+                    elif dev_line and wait_line:
                         latest_event_text = f"{dev_line}<br>{wait_line}"
                     elif dev_line:
                         latest_event_text = f"{dev_line}"
                     elif wait_line:
                         latest_event_text = f"{wait_line}"
                     else:
-                        if sched_light_now and (next_range == "час невідомий 🤷‍♂️" or next_range == "час очікується" or next_range == "відключення не плануються 🔆"):
-                            if next_range == "відключення не плануються 🔆":
-                                latest_event_text = "• відключення не плануються 🔆"
-                            else:
-                                latest_event_text = "• час невідомий 🤷‍♂️"
+                        elif sched_light_now and (next_range == "відключення не плануються 🔆" or next_range == "відключення не плануються ✅" or next_range == "час невідомий 🤷‍♂️" or next_range == "час очікується"):
+                            latest_event_text = "• відключення не плануються 🔆"
+
                         else:
                             latest_event_text = f"• Наступне планове: {next_range}"
                     

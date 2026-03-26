@@ -282,17 +282,26 @@ def get_best_source_internal(data, date_str):
     """Internal helper to find source with slots or fallback to emergency."""
     best_source = None
     is_emergency = False
+    
+    # 1. First pass: check for any emergency status in any source
     for s_name in ['yasno', 'github']:
         src = data.get(s_name)
         if not src: continue
         group_key = list(src.keys())[0]
         day_data = src[group_key].get(date_str)
-        if day_data:
-            if day_data.get('slots'):
-                return src, False
-            if day_data.get('status') == 'emergency':
-                is_emergency = True
-                if not best_source: best_source = src
+        if day_data and day_data.get('status') == 'emergency':
+            is_emergency = True
+            if not best_source: best_source = src
+
+    # 2. Second pass: prioritize sources with actual slots
+    for s_name in ['yasno', 'github']:
+        src = data.get(s_name)
+        if not src: continue
+        group_key = list(src.keys())[0]
+        day_data = src[group_key].get(date_str)
+        if day_data and day_data.get('slots'):
+            return src, is_emergency
+            
     return best_source, is_emergency
 
 def get_next_scheduled_event(event_time, look_for_light):
@@ -454,15 +463,15 @@ def get_schedule_context():
         tomorrow_str = (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
         
         source, is_emergency = get_best_source_internal(data, today_str)
-        if not source: return (None, None, "Невідомо", None)
+        if not source: return (None, None, "Невідомо", None, False)
         
         group_key = list(source.keys())[0]
         schedule_data = source[group_key]
         
         if today_str not in schedule_data or not schedule_data[today_str].get('slots'):
             if is_emergency:
-                return (None, None, "⚠️ Екстрені відключення", None)
-            return (None, None, "Графік відсутній", None)
+                return (None, None, "⚠️ Екстрені відключення", None, True)
+            return (None, None, "Графік відсутній", None, False)
             
         # Combine today and tomorrow slots for a 48h view (96 slots)
         slots = list(schedule_data[today_str]['slots'])
@@ -522,10 +531,10 @@ def get_schedule_context():
         else:
             next_range = "відключення не плануються 🔆" if has_tomorrow else "час невідомий 🤷‍♂️"
             
-        return (is_light_now, t_end, next_range, next_duration)
+        return (is_light_now, t_end, next_range, next_duration, is_emergency)
     except Exception as e:
         print(f"Schedule error: {e}")
-        return (None, None, "Помилка", None)
+        return (None, None, "Помилка", None, False)
 
 def send_telegram(message):
     # Mask token for logging

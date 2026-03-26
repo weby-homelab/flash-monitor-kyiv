@@ -132,6 +132,22 @@ def is_all_on(slots):
     if not slots or len(slots) < 48: return False
     return all(s is True for s in slots)
 
+def has_actual_outages(target_date_str):
+    """Checks if there were any actual 'down' events recorded for the given date."""
+    event_log_file = os.path.join(DATA_DIR, "event_log.json")
+    if not os.path.exists(event_log_file):
+        return False
+    try:
+        with open(event_log_file, 'r') as f:
+            events = json.load(f)
+            for event in events:
+                # event['date_str'] is format "YYYY-MM-DD HH:MM:SS"
+                if event['date_str'].startswith(target_date_str) and event['event'] == 'down':
+                    return True
+    except:
+        pass
+    return False
+
 def generate_holiday_report(today_str, tomorrow_str, data, group, icons):
     # Check if today and tomorrow are fully ON
     today_slots = None
@@ -148,6 +164,10 @@ def generate_holiday_report(today_str, tomorrow_str, data, group, icons):
     if not today_all_on and not tomorrow_all_on:
         return None
         
+    # CRITICAL: If today has actual outages, we cannot claim it's an "all-on" day
+    if today_all_on and has_actual_outages(today_str):
+        return None
+
     now = datetime.datetime.now(KYIV_TZ)
     t_dt = datetime.datetime.strptime(today_str, "%Y-%m-%d")
     
