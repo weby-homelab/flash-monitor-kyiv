@@ -18,7 +18,7 @@
     },
     "notifications": {
       "report_times": [
-        "08:00",
+        "06:00",
         "20:00"
       ]
     },
@@ -27,8 +27,8 @@
       "auto_confirm": true
     },
     "retention": {
-      "event_log_days": 30,
-      "schedule_history_days": 14
+      "event_log_days": 7,
+      "schedule_history_days": 7
     }
   },
   "settings": {
