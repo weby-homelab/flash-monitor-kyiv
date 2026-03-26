@@ -720,6 +720,42 @@ def get_air_raid_alert():
         print(f"Error fetching alerts: {e}")
     return {"status": "unknown", "location": "Невідомо"}
 
+def update_quiet_status():
+    """Calculates and updates quiet_status based on current mode and eligibility."""
+    with state_lock:
+        q_mode = state.get("quiet_mode", "auto")
+        old_status = state.get("quiet_status", "active")
+        is_eligible = check_quiet_mode_eligibility()
+        
+        new_status = old_status
+        if q_mode == "forced_on":
+            new_status = "quiet"
+        elif q_mode == "forced_off":
+            new_status = "active"
+        else: # auto
+            new_status = "quiet" if is_eligible else "active"
+        
+        if new_status != old_status:
+            state["quiet_status"] = new_status
+            if new_status == "quiet":
+                state["stability_start"] = time.time()
+            else:
+                # Trigger detailed text report generation
+                def trigger_report():
+                    try:
+                        base_dir = os.path.dirname(os.path.abspath(__file__))
+                        python_exec = sys.executable
+                        script_path = os.path.join(base_dir, "generate_text_report.py")
+                        time.sleep(2)
+                        subprocess.run([python_exec, script_path, "--force-new"], check=True, cwd=base_dir)
+                    except Exception as e:
+                        print(f"Failed to trigger text report: {e}")
+                
+                threading.Thread(target=trigger_report).start()
+            
+            save_state()
+            print(f"Quiet mode status immediately updated to: {new_status}")
+
 # --- Monitor Loop ---
 def monitor_loop():
     print("Monitor loop started...")
@@ -1037,46 +1073,7 @@ def schedule_loop():
             sync_schedules()
             trigger_daily_report_update(is_final=False)
             trigger_text_report_update()
-
-            # Quiet Mode Logic (every 10 mins)
-            with state_lock:
-                q_mode = state.get("quiet_mode", "auto")
-                old_status = state.get("quiet_status", "active")
-                is_eligible = check_quiet_mode_eligibility()
-                
-                new_status = old_status
-                if q_mode == "forced_on":
-                    new_status = "quiet"
-                elif q_mode == "forced_off":
-                    new_status = "active"
-                else: # auto
-                    new_status = "quiet" if is_eligible else "active"
-                
-                if new_status != old_status:
-                    state["quiet_status"] = new_status
-                    if new_status == "quiet":
-                        msg = "🔇 Система перейшла в режим інформаційного спокою"
-                        state["stability_start"] = time.time()
-                    else:
-                        msg = "🔊 Увага! Виявлено зміни в графіку або фактичні відключення. Режим спокою вимкнено."
-                        
-                        # Trigger detailed text report generation
-                        def trigger_report():
-                            try:
-                                base_dir = os.path.dirname(os.path.abspath(__file__))
-                                python_exec = sys.executable
-                                script_path = os.path.join(base_dir, "generate_text_report.py")
-                                # Wait a bit for state to save and then run
-                                time.sleep(2)
-                                subprocess.run([python_exec, script_path, "--force-new"], check=True, cwd=base_dir)
-                            except Exception as e:
-                                print(f"Failed to trigger text report after quiet mode exit: {e}")
-                        
-                        threading.Thread(target=trigger_report).start()
-                    
-                    print(f"Quiet mode status changed to: {new_status}. Telegram alert suppressed.")
-                    # threading.Thread(target=send_telegram, args=(msg,)).start()
-                    save_state()
+            update_quiet_status()
             
         # 3. Weekly Telegram Report (Monday around 00:15)
         if now.weekday() == 0 and hour == 0 and 15 <= minute < 25:

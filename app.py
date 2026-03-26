@@ -22,6 +22,7 @@ from light_service import (
     format_event_message, get_next_scheduled_event,
     trigger_daily_report_update, trigger_weekly_report_update,
     get_air_raid_alert, get_push_interval, get_advanced_setting,
+    update_quiet_status,
     TOKEN, ADMIN_CHAT_ID,
     KYIV_TZ, FileLock, STATE_LOCK_FILE, DATA_DIR, EVENT_LOG_FILE
 )
@@ -863,10 +864,18 @@ def admin_data():
         with open(EVENT_LOG_FILE, 'r') as f:
             logs = json.load(f)
             
+    # Get version
+    version = "2.4.6"
+    version_path = os.path.join(os.path.dirname(__file__), "VERSION")
+    if os.path.exists(version_path):
+        with open(version_path, 'r') as f:
+            version = f.read().strip()
+
     return jsonify({
         "config": config,
         "state": state,
-        "logs": logs[-10:][::-1] # Last 10, newest first
+        "logs": logs[-20:][::-1], # Last 20, newest first
+        "version": version
     })
 
 @app.route('/api/admin/config', methods=['POST'])
@@ -912,6 +921,8 @@ def admin_quiet_mode():
             state['muted_until'] = 0
             state['safety_net_pending'] = False
         save_state()
+        # Immediately recalculate actual status
+        update_quiet_status()
     return jsonify({"status": "ok"})
 
 @app.route('/api/admin/safety_net/react', methods=['POST'])
