@@ -43,11 +43,21 @@ def get_admin_chat_id():
 
 def get_safety_net_timeout():
     cfg = get_config()
+    # Priority: advanced.monitoring.push_timeout -> settings.safety_net_timeout -> default 35
+    adv_timeout = cfg.get("advanced", {}).get("monitoring", {}).get("push_timeout")
+    if adv_timeout: return int(adv_timeout)
     return int(cfg.get("settings", {}).get("safety_net_timeout", 35))
 
 def get_push_interval():
     cfg = get_config()
+    # Priority: advanced.monitoring.push_interval_min (or average) -> settings.push_interval -> default 30
+    adv_min = cfg.get("advanced", {}).get("monitoring", {}).get("push_interval_min")
+    if adv_min: return int(adv_min)
     return int(cfg.get("settings", {}).get("push_interval", 30))
+
+def get_advanced_setting(section, key, default):
+    cfg = get_config()
+    return cfg.get("advanced", {}).get(section, {}).get(key, default)
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
@@ -282,17 +292,33 @@ def get_best_source_internal(data, date_str):
     """Internal helper to find source with slots or fallback to emergency."""
     best_source = None
     is_emergency = False
-    for s_name in ['yasno', 'github']:
+    
+    # Use priority from advanced settings
+    priority = get_advanced_setting("data_sources", "priority", "yasno")
+    sources_to_check = [priority, 'github' if priority == 'yasno' else 'yasno']
+
+    for s_name in sources_to_check:
         src = data.get(s_name)
         if not src: continue
         group_key = list(src.keys())[0]
         day_data = src[group_key].get(date_str)
         if day_data:
-            if day_data.get('slots'):
-                return src, False
             if day_data.get('status') == 'emergency':
                 is_emergency = True
                 if not best_source: best_source = src
+            if day_data.get('slots'):
+                # Slots found, we return this as best source
+                # If another source had emergency, we keep is_emergency=True
+                # But we must check the OTHER source for emergency before returning
+                other_name = 'github' if s_name == 'yasno' else 'yasno'
+                other_src = data.get(other_name)
+                if other_src:
+                    other_group = list(other_src.keys())[0]
+                    other_day = other_src[other_group].get(date_str)
+                    if other_day and other_day.get('status') == 'emergency':
+                        is_emergency = True
+                return src, is_emergency
+                
     return best_source, is_emergency
 
 def get_next_scheduled_event(event_time, look_for_light):
@@ -450,6 +476,12 @@ def get_schedule_context():
             data = json.load(f)
         
         now = datetime.datetime.now(KYIV_TZ)
+        
+        # Use rollover_hour from config
+        rollover_h = get_advanced_setting("data_sources", "rollover_hour", 6)
+        
+        # If it's early (before rollover), we might want to look at yesterday's context? 
+        # But usually we just follow the calendar date.
         today_str = now.strftime("%Y-%m-%d")
         tomorrow_str = (now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
         
