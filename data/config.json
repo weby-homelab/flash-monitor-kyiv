@@ -1,24 +1,56 @@
 {
+  "advanced": {
+    "dashboard": {
+      "show_aq": true,
+      "show_radiation": true,
+      "show_temp_graph": true
+    },
+    "data_sources": {
+      "priority": "github",
+      "smart_deduplication": true,
+      "rollover_hour": 6
+    },
+    "monitoring": {
+      "push_timeout": 35,
+      "push_interval_min": 20,
+      "push_interval_max": 60,
+      "safety_net_delay": 5
+    },
+    "notifications": {
+      "report_times": [
+        "08:00",
+        "20:00"
+      ]
+    },
+    "quiet_mode": {
+      "stability_threshold_h": 24,
+      "auto_confirm": true
+    },
+    "retention": {
+      "event_log_days": 30,
+      "schedule_history_days": 14
+    }
+  },
   "settings": {
+    "admin_chat_id": "6313526220",
     "groups": [
       "GPV36.1"
     ],
     "max_messages": 1,
+    "push_interval": 30,
     "region": "kyiv",
+    "safety_net_timeout": 35,
     "show_intervals_detail": false,
     "style": "list",
     "table_format": "code_lines",
-    "timezone": "Europe/Kyiv",
-    "admin_chat_id": "6313526220",
-    "safety_net_timeout": 35,
-    "push_interval": 30
+    "timezone": "Europe/Kyiv"
   },
   "sources": {
     "air_quality": {
       "lat": "50.408",
       "location_name": "Борщагівка (Симиренка)",
       "lon": "30.400",
-      "seb_station": "17095"
+      "seb_station": "24185"
     },
     "github": {
       "enabled": true,
