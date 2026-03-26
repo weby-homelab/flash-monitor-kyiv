@@ -1,13 +1,6 @@
-<p align="center">
-  <a href="#-українська-версія">
-    <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Українська версія">
-  </a>
-  <a href="#-english-version">
-    <img src="https://img.shields.io/badge/🇬🇧_English-00D4FF?style=for-the-badge&logo=readme&logoColor=white" alt="English README">
-  </a>
-</p>
+# ⚡ FLASH MONITOR KYIV v2.4
 
-<br>
+![Dashboard Preview](dashboard_preview.jpg)
 
 # СВІТЛО⚡️ БЕЗПЕКА [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) DOCKER Edition
 
@@ -18,145 +11,43 @@
   <img src="https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white" alt="Python Version">
 </p>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="СВІТЛО⚡️ БЕЗПЕКА Dashboard Preview" width="100%">
-</p>
+---
+
+**Flash Monitor Kyiv** — це професійна автономна система моніторингу критичної інфраструктури та екологічної безпеки м. Києва. Проєкт забезпечує моніторинг електропостачання в реальному часі, відстеження повітряних тривог, якості повітря (AQI) та радіаційного фону.
+
+> **Статус проєкту:** Stable v2.4.6
+> **Архітектура:** Python Flask + Background Workers + JSON Flat-DB
+> **Бренд:** Weby Homelab
 
 ---
 
-## 🇺🇦 Українська версія
+## 🚀 Ключові інновації (v2.0+)
 
-**Автономна система моніторингу електропостачання та безпеки Києва (Docker Edition).**
+### 1. Режим «Інформаційний спокій» (Quiet Mode)
+Унікальний алгоритм, що мінімізує "інформаційний шум". Система автоматично переходить у стан спокою, якщо:
+*   За останні **24 години** не було жодного відключення.
+*   У графіках на наступні **24 години** не планується жодних обмежень.
+У цьому режимі Telegram-сповіщення про втрату зв'язку спочатку надсилаються адміністратору для підтвердження, щоб не турбувати канал через технічні збої обладнання.
 
-Проєкт забезпечує повний контроль над енергетичною та безпековою ситуацією, аналізуючи реальні дані мережі та офіційні графіки Yasno/ДТЕК локально.
+### 2. Safety Net (Мережа безпеки)
+Інтерактивний механізм швидкого реагування:
+*   При затримці сигналу (Push) понад **35 секунд**, адміністратор отримує запит у Telegram з варіантами дій: `🔴 Світло зникло`, `🛠 Технічний збій`, `🤷‍♂️ Не знаю`.
+*   Це дозволяє зафіксувати аварію миттєво, не чекаючи стандартного 3-хвилинного таймауту.
 
-🔗 **Живий моніторинг:** [flash.srvrs.top](https://flash.srvrs.top/)
-
-### 🚀 Швидкий старт (Docker Compose)
-
-Найпростіший спосіб запустити систему — використовувати Docker Compose.
-
-#### 1. Створіть файл `.env`:
-```env
-TELEGRAM_BOT_TOKEN=ваш_токен
-TELEGRAM_CHANNEL_ID=ваш_id_каналу
-ADMIN_CHAT_ID=ваш_id_адміна
-SECRET_KEY=ваш_секретний_ключ
-```
-
-#### 2. Створіть файл `docker-compose.yml`:
-```yaml
-services:
-  flash-monitor:
-    image: webyhomelab/flash-monitor-kyiv:latest
-    container_name: flash-monitor
-    restart: unless-stopped
-    ports:
-      - "5050:5050"
-    volumes:
-      - ./data:/app/data
-      - ./config.json:/app/config.json:ro
-    env_file:
-      - .env
-    environment:
-      - TZ=Europe/Kyiv
-
-  background-worker:
-    image: webyhomelab/flash-monitor-kyiv:latest
-    container_name: flash-monitor-worker
-    restart: unless-stopped
-    command: python run_background.py
-    volumes:
-      - ./data:/app/data
-      - ./config.json:/app/config.json:ro
-    env_file:
-      - .env
-    environment:
-      - TZ=Europe/Kyiv
-```
-
-#### 3. Запустіть систему:
-```bash
-docker compose up -d
-```
+### 3. Логіка «False Always Wins» (Захищене злиття)
+Гібридна система обробки графіків (DTEK + Yasno):
+*   **Пріоритет відключень:** Якщо хоча б одне джерело вказує на відключення (`False`), система відображає його як пріоритетне.
+*   **Protective History Merge:** При оновленні даних старі записи про відключення ніколи не затираються "чистими" планами. Історична точність понад усе.
 
 ---
 
-### 🚀 Основні можливості
-- **Smart Bootstrap:** Автоматичне розгортання графіків при першому запуску.
-- **Heartbeat Tracking:** Моніторинг світла в реальному часі через IoT (`/api/push`).
-- **Стійкість до збоїв API:** Локальне кешування графіків DTEK/Yasno.
-- **Аналітика «План vs Факт»:** Порівняння реальних вимкнень із запланованими.
-- **Історія AQI (v2.4.3):** 24-годинна історія якості повітря з інтерактивними графіками.
-- **Quiet Mode:** Розумний режим спокою в стабільні періоди (24/24 Logic).
+## 📊 Можливості дашборду (PWA)
 
----
-
-## 🇬🇧 English Version
-
-**Autonomous power & safety monitoring system for Kyiv (Docker Edition).**
-
-The project provides full control over the energy and security situation by analyzing real network data and official Yasno/DTEK schedules locally.
-
-🔗 **Live monitoring:** [flash.srvrs.top](https://flash.srvrs.top/)
-
-### 🚀 Quick Start (Docker Compose)
-
-The easiest way to deploy the system is using Docker Compose.
-
-#### 1. Create a `.env` file:
-```env
-TELEGRAM_BOT_TOKEN=your_token
-TELEGRAM_CHANNEL_ID=your_channel_id
-ADMIN_CHAT_ID=your_admin_id
-SECRET_KEY=your_secret_key
-```
-
-#### 2. Create a `docker-compose.yml` file:
-```yaml
-services:
-  flash-monitor:
-    image: webyhomelab/flash-monitor-kyiv:latest
-    container_name: flash-monitor
-    restart: unless-stopped
-    ports:
-      - "5050:5050"
-    volumes:
-      - ./data:/app/data
-      - ./config.json:/app/config.json:ro
-    env_file:
-      - .env
-    environment:
-      - TZ=Europe/Kyiv
-
-  background-worker:
-    image: webyhomelab/flash-monitor-kyiv:latest
-    container_name: flash-monitor-worker
-    restart: unless-stopped
-    command: python run_background.py
-    volumes:
-      - ./data:/app/data
-      - ./config.json:/app/config.json:ro
-    env_file:
-      - .env
-    environment:
-      - TZ=Europe/Kyiv
-```
-
-#### 3. Start the system:
-```bash
-docker compose up -d
-```
-
----
-
-### 🚀 Main Features
-- **Smart Bootstrap:** Automatic deployment of current schedules upon first launch.
-- **Heartbeat Tracking:** Real-time light monitoring via IoT signals (`/api/push`).
-- **API Resilience:** Reliable local caching of schedules, protecting against server failures.
-- **"Plan vs Fact" Analytics:** Automatic comparison of real outages with planned schedules.
-- **AQI History (v2.4.3):** 24-hour air quality and weather history with interactive graphs.
-- **Quiet Mode:** Intelligent notification suppression during stable periods (24/24 Logic).
+Сучасний інтерфейс у стилі **Glassmorphism**, оптимізований для мобільних пристроїв:
+*   **Live Status:** Візуалізація "Пульсу" системи (Світло Є! / Світло зникло!).
+*   **Екологічний моніторинг:** Температура, вологість, PM2.5/PM10 (OpenMeteo/SaveEcoBot) та радіація з інтерактивними графіками за 24 години.
+*   **Графік-бар:** Компактна 24-годинна шкала планових відключень.
+*   **Аналітика:** Автоматична генерація щоденних та щотижневих графічних звітів прямо в Telegram та на сайт.
 
 ---
 
@@ -218,17 +109,13 @@ flowchart TD
 ---
 
 ## 🛠 Технологічний стек / Tech Stack
-- **Backend:** Python 3.11, Flask, Gunicorn.
-- **Analytics:** Matplotlib, BeautifulSoup4, Pandas.
+- **Backend:** Python 3.12, Flask, Gunicorn.
+- **Analytics:** Matplotlib, BeautifulSoup4.
 - **Infra:** Docker & Docker Compose, Cloudflare Tunnel.
 
 ---
 
 ## 📜 Ліцензія / License
-Distributed under the **MIT** license.
+Розповсюджується під ліцензією **MIT**.
 
-<br>
-<p align="center">
-  ✦ 2026 Weby Homelab ✦ <br>
-  Made with ❤️ in Kyiv under air raid sirens and blackouts
-</p>
+© 2026 Weby Homelab. Слава Україні! 🇺🇦

@@ -253,7 +253,10 @@
         <header>
             <div>
                 <h1>СВІТЛО⚡️ БЕЗПЕКА</h1>
-                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">Панель керування v2.4.5</p>
+                <div class="version-badge">
+                    <span class="label">v</span>
+                    <span class="value" id="header-version">...</span>
+                </div>
             </div>
             <button class="btn btn-secondary" onclick="fetchData()" style="width: auto;">
                 <i class="fas fa-sync-alt"></i> Оновити
@@ -472,7 +475,11 @@
                 renderConfig(data.config);
                 renderLogs(data.logs);
                 
-                document.getElementById('footer-info').innerHTML = '&copy; 2026 Weby Homelab &bull; v2.4.5 &bull; ' + new Date().toLocaleTimeString();
+                if (data.version) {
+                    document.getElementById('header-version').innerText = data.version;
+                }
+                
+                document.getElementById('footer-info').innerHTML = '&copy; 2026 Weby Homelab &bull; ' + new Date().toLocaleTimeString();
             } catch (err) {
                 console.error('Fetch error:', err);
             }
