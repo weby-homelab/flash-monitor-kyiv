@@ -297,6 +297,73 @@
                 <button class="btn btn-primary" onclick="saveQuietMode()" style="width: 100%; margin-top: 10px;">Зберегти зміни</button>
             </div>
 
+            <!-- Advanced System Settings -->
+            <div class="admin-section full-width">
+                <div class="section-header"><i class="fas fa-microchip"></i> Системні налаштування</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+                    
+                    <!-- Monitoring & Sensitivity -->
+                    <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                        <label style="color: var(--accent-color); font-weight: 600; margin-bottom: 12px; display: block;">📊 Моніторинг</label>
+                        <div class="form-group"><label>Timeout Пуша (сек)</label><input type="number" id="adv-push-timeout"></div>
+                        <div class="form-group"><label>Мін. інтервал (сек)</label><input type="number" id="adv-push-min"></div>
+                        <div class="form-group"><label>Макс. інтервал (сек)</label><input type="number" id="adv-push-max"></div>
+                        <div class="form-group"><label>Затримка SN (сек)</label><input type="number" id="adv-sn-delay"></div>
+                    </div>
+
+                    <!-- Quiet Mode Tuning -->
+                    <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                        <label style="color: var(--accent-color); font-weight: 600; margin-bottom: 12px; display: block;">🔇 Режим спокою</label>
+                        <div class="form-group"><label>Поріг стабільності (год)</label><input type="number" id="adv-quiet-threshold"></div>
+                        <div class="form-group">
+                            <label>Авто-підтвердження</label>
+                            <select id="adv-quiet-auto">
+                                <option value="true">Увімкнено (авто-вхід)</option>
+                                <option value="false">Вимкнено (чекати адміна)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Data Sources -->
+                    <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                        <label style="color: var(--accent-color); font-weight: 600; margin-bottom: 12px; display: block;">📦 Джерела даних</label>
+                        <div class="form-group">
+                            <label>Пріоритет</label>
+                            <select id="adv-ds-priority">
+                                <option value="yasno">Yasno (Пріоритет)</option>
+                                <option value="github">ДТЕК (Пріоритет)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Smart Deduplication</label>
+                            <select id="adv-ds-dedup">
+                                <option value="true">Увімкнено</option>
+                                <option value="false">Вимкнено</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Година роловеру</label><input type="number" id="adv-ds-rollover" placeholder="6"></div>
+                    </div>
+
+                    <!-- Retention & Maintenance -->
+                    <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                        <label style="color: var(--accent-color); font-weight: 600; margin-bottom: 12px; display: block;">🔄 Зберігання даних</label>
+                        <div class="form-group"><label>Історія подій (днів)</label><input type="number" id="adv-ret-log"></div>
+                        <div class="form-group"><label>Історія графіків (днів)</label><input type="number" id="adv-ret-sched"></div>
+                        <div class="form-group"><label>Час звітів (через кому)</label><input type="text" id="adv-notif-times" placeholder="08:00, 20:00"></div>
+                    </div>
+
+                    <!-- Dashboard Toggles -->
+                    <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                        <label style="color: var(--accent-color); font-weight: 600; margin-bottom: 12px; display: block;">🖥 Дашборд</label>
+                        <div class="form-group"><label>Показувати Повітря</label><select id="adv-db-aq"><option value="true">Так</option><option value="false">Ні</option></select></div>
+                        <div class="form-group"><label>Показувати Радіацію</label><select id="adv-db-rad"><option value="true">Так</option><option value="false">Ні</option></select></div>
+                        <div class="form-group"><label>Показувати Графіки</label><select id="adv-db-temp"><option value="true">Так</option><option value="false">Ні</option></select></div>
+                    </div>
+
+                </div>
+                <button class="btn btn-primary" onclick="saveAdvancedConfig()" style="margin-top: 20px; width: 100%;"><i class="fas fa-save"></i> Зберегти розширені налаштування</button>
+            </div>
+
             <!-- Configuration -->
             <div class="admin-section full-width">
                 <div class="section-header"><i class="fas fa-cog"></i> Налаштування</div>
@@ -435,6 +502,38 @@
                 document.getElementById('cfg-lat').value = config.sources.air_quality.lat || '';
                 document.getElementById('cfg-lon').value = config.sources.air_quality.lon || '';
             }
+
+            // Advanced settings
+            if (config.advanced) {
+                const adv = config.advanced;
+                if (adv.monitoring) {
+                    document.getElementById('adv-push-timeout').value = adv.monitoring.push_timeout || 35;
+                    document.getElementById('adv-push-min').value = adv.monitoring.push_interval_min || 20;
+                    document.getElementById('adv-push-max').value = adv.monitoring.push_interval_max || 60;
+                    document.getElementById('adv-sn-delay').value = adv.monitoring.safety_net_delay || 5;
+                }
+                if (adv.quiet_mode) {
+                    document.getElementById('adv-quiet-threshold').value = adv.quiet_mode.stability_threshold_h || 24;
+                    document.getElementById('adv-quiet-auto').value = adv.quiet_mode.auto_confirm ? 'true' : 'false';
+                }
+                if (adv.data_sources) {
+                    document.getElementById('adv-ds-priority').value = adv.data_sources.priority || 'yasno';
+                    document.getElementById('adv-ds-dedup').value = adv.data_sources.smart_deduplication ? 'true' : 'false';
+                    document.getElementById('adv-ds-rollover').value = adv.data_sources.rollover_hour || 6;
+                }
+                if (adv.retention) {
+                    document.getElementById('adv-ret-log').value = adv.retention.event_log_days || 30;
+                    document.getElementById('adv-ret-sched').value = adv.retention.schedule_history_days || 14;
+                }
+                if (adv.notifications) {
+                    document.getElementById('adv-notif-times').value = (adv.notifications.report_times || []).join(', ');
+                }
+                if (adv.dashboard) {
+                    document.getElementById('adv-db-aq').value = adv.dashboard.show_aq ? 'true' : 'false';
+                    document.getElementById('adv-db-rad').value = adv.dashboard.show_radiation ? 'true' : 'false';
+                    document.getElementById('adv-db-temp').value = adv.dashboard.show_temp_graph ? 'true' : 'false';
+                }
+            }
         }
 
         function renderLogs(logs) {
@@ -519,6 +618,54 @@
                 });
                 if (response.ok) {
                     alert('Конфігурацію збережено!');
+                    fetchData();
+                } else {
+                    const err = await response.json();
+                    alert('Помилка: ' + err.msg);
+                }
+            } catch (err) { alert('Помилка запиту'); }
+        }
+
+        async function saveAdvancedConfig() {
+            const config = JSON.parse(JSON.stringify(currentConfig));
+            if (!config.advanced) config.advanced = {};
+            
+            config.advanced.monitoring = {
+                push_timeout: parseInt(document.getElementById('adv-push-timeout').value),
+                push_interval_min: parseInt(document.getElementById('adv-push-min').value),
+                push_interval_max: parseInt(document.getElementById('adv-push-max').value),
+                safety_net_delay: parseInt(document.getElementById('adv-sn-delay').value)
+            };
+            config.advanced.quiet_mode = {
+                stability_threshold_h: parseInt(document.getElementById('adv-quiet-threshold').value),
+                auto_confirm: document.getElementById('adv-quiet-auto').value === 'true'
+            };
+            config.advanced.data_sources = {
+                priority: document.getElementById('adv-ds-priority').value,
+                smart_deduplication: document.getElementById('adv-ds-dedup').value === 'true',
+                rollover_hour: parseInt(document.getElementById('adv-ds-rollover').value)
+            };
+            config.advanced.retention = {
+                event_log_days: parseInt(document.getElementById('adv-ret-log').value),
+                schedule_history_days: parseInt(document.getElementById('adv-ret-sched').value)
+            };
+            config.advanced.notifications = {
+                report_times: document.getElementById('adv-notif-times').value.split(',').map(s => s.trim()).filter(s => s)
+            };
+            config.advanced.dashboard = {
+                show_aq: document.getElementById('adv-db-aq').value === 'true',
+                show_radiation: document.getElementById('adv-db-rad').value === 'true',
+                show_temp_graph: document.getElementById('adv-db-temp').value === 'true'
+            };
+
+            try {
+                const response = await fetch(`/api/admin/config?t=${token}`, { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify(config) 
+                });
+                if (response.ok) {
+                    alert('Розширені налаштування збережено!');
                     fetchData();
                 } else {
                     const err = await response.json();

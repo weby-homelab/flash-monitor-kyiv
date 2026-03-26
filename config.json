@@ -13,6 +13,35 @@
     "table_format": "code_lines",
     "timezone": "Europe/Kyiv"
   },
+  "advanced": {
+    "monitoring": {
+      "push_timeout": 35,
+      "push_interval_min": 20,
+      "push_interval_max": 60,
+      "safety_net_delay": 5
+    },
+    "quiet_mode": {
+      "stability_threshold_h": 24,
+      "auto_confirm": false
+    },
+    "data_sources": {
+      "priority": "yasno",
+      "smart_deduplication": true,
+      "rollover_hour": 6
+    },
+    "retention": {
+      "event_log_days": 30,
+      "schedule_history_days": 14
+    },
+    "notifications": {
+      "report_times": ["08:00", "20:00"]
+    },
+    "dashboard": {
+      "show_aq": true,
+      "show_radiation": true,
+      "show_temp_graph": true
+    }
+  },
   "sources": {
     "air_quality": {
       "lat": "50.408",
