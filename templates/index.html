@@ -372,20 +372,45 @@
                 }
                 lastAlertStatus = isAlert;
                 
-                const aqiNum = document.getElementById('aqi-num');
-                if (aqiNum) {
-                    aqiNum.innerText = data.aqi.aqi;
-                    aqiNum.style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
+                // Hide or show AQ card
+                const aqCard = document.getElementById('aq-card');
+                if (aqCard) {
+                    if (data.aqi) {
+                        aqCard.style.display = 'block';
+                        const aqiNum = document.getElementById('aqi-num');
+                        if (aqiNum) {
+                            aqiNum.innerText = data.aqi.aqi;
+                            aqiNum.style.color = (data.aqi.aqi > 100) ? 'var(--danger)' : (data.aqi.aqi > 50) ? 'var(--warning)' : 'var(--success)';
+                        }
+                        const aqiText = document.getElementById('aqi-text');
+                        if (aqiText) aqiText.innerText = data.aqi.text;
+                        const aqiLoc = document.getElementById('aqi-loc');
+                        if (data.aqi.location && aqiLoc) aqiLoc.innerText = data.aqi.location;
+                    } else {
+                        aqCard.style.display = 'none';
+                    }
                 }
-                
-                const aqiText = document.getElementById('aqi-text');
-                if (aqiText) aqiText.innerText = data.aqi.text;
-                
-                const aqiLoc = document.getElementById('aqi-loc');
-                if (data.aqi.location && aqiLoc) aqiLoc.innerText = data.aqi.location;
+
+                // Hide or show Radiation card
+                const radCard = document.getElementById('rad-card');
+                if (radCard) {
+                    if (data.radiation) {
+                        radCard.style.display = 'block';
+                        const radVal = document.getElementById('radiation-val');
+                        if (radVal) radVal.innerText = data.radiation.level;
+                    } else {
+                        radCard.style.display = 'none';
+                    }
+                }
+
+                // Charts visibility
+                const chartsBlock = document.getElementById('charts-block');
+                if (chartsBlock) {
+                    chartsBlock.style.display = data.show_graphs ? 'block' : 'none';
+                }
 
                 const aqiGraph = document.getElementById('aqi-graph');
-                if (aqiGraph && data.aqi.history_hourly && data.aqi.history_hourly.length > 0) {
+                if (aqiGraph && data.aqi && data.aqi.history_hourly && data.aqi.history_hourly.length > 0) {
                     aqiGraph.style.display = 'flex';
                     aqiGraph.style.flexDirection = 'column';
                     aqiGraph.style.gap = '4px';

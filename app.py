@@ -21,7 +21,7 @@ from light_service import (
     get_deviation_info, get_nearest_schedule_switch,
     format_event_message, get_next_scheduled_event,
     trigger_daily_report_update, trigger_weekly_report_update,
-    get_air_raid_alert, get_push_interval,
+    get_air_raid_alert, get_push_interval, get_advanced_setting,
     TOKEN, ADMIN_CHAT_ID,
     KYIV_TZ, FileLock, STATE_LOCK_FILE, DATA_DIR, EVENT_LOG_FILE
 )
@@ -520,7 +520,14 @@ def api_status():
         
     latest_event_text, recent_events = get_power_events_data()
     schedule_text = get_today_schedule_text()
-    aq_data = get_air_quality()
+    
+    # Dashboard toggles
+    show_aq = get_advanced_setting("dashboard", "show_aq", True)
+    show_rad = get_advanced_setting("dashboard", "show_radiation", True)
+    show_graphs = get_advanced_setting("dashboard", "show_temp_graph", True)
+    
+    aq_data = get_air_quality() if show_aq else None
+    rad_data = get_radiation() if show_rad else None
     alert_data = get_air_raid_alert()
     
     # Extract group name
@@ -567,9 +574,10 @@ def api_status():
         "schedule_text": schedule_text,
         "schedule_slots": slots,
         "aqi": aq_data,
-        "radiation": get_radiation(),
+        "radiation": rad_data,
         "alert": alert_data,
         "group": group_name,
+        "show_graphs": show_graphs,
         "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
     })
 
