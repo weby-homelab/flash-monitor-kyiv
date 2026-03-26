@@ -881,6 +881,11 @@ def admin_config_post():
             config_path = "config.json"
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(new_config, f, indent=2, ensure_ascii=False)
+        
+        # Clear cache to reflect changes immediately (AQ, etc.)
+        with cache_lock:
+            CACHE.clear()
+            
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"status": "error", "msg": str(e)}), 500

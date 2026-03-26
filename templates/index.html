@@ -198,25 +198,27 @@
         <div id="alert-card" class="card"><div class="status-row"><div class="status-icon" id="alert-icon">🛡️</div><div class="status-info"><div class="status-title" id="alert-val">---</div><div class="status-desc" id="alert-status">...</div></div></div></div>
         <div class="card" style="padding: 0; height: 320px; border: none; background: #000;"><iframe id="alert-map" src="https://alerts.in.ua/?minimal=true" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen></iframe></div>
         
-        <div class="section-header" id="aqi-loc">Якість повітря</div>
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <div style="display: flex; align-items: baseline; gap: 12px;"><span id="aqi-num" style="font-size: 3.5rem; font-weight: 800; line-height: 1;">--</span><div><div id="aqi-text" style="font-size: 1.2rem; font-weight: 700;">---</div><div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">AQI INDEX</div></div></div>
-                <div id="aqi-graph" style="display: flex; align-items: flex-end; gap: 3px; height: 44px; margin-left: auto;"></div>
-            </div>
-            <div class="grid">
-                <div class="grid-item"><div class="grid-val" id="pm25">--</div><div class="grid-label">PM2.5</div></div>
-                <div class="grid-item"><div class="grid-val" id="pm10">--</div><div class="grid-label">PM10</div></div>
-                <div class="grid-item" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div><div class="grid-val" id="temp">--</div><div class="grid-label">Температура</div></div>
-                    <div id="temp-graph" style="display: flex; align-items: flex-end; gap: 2px; height: 30px; position: relative;"></div>
+        <div id="aq-block">
+            <div class="section-header" id="aqi-loc">Якість повітря</div>
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <div style="display: flex; align-items: baseline; gap: 12px;"><span id="aqi-num" style="font-size: 3.5rem; font-weight: 800; line-height: 1;">--</span><div><div id="aqi-text" style="font-size: 1.2rem; font-weight: 700;">---</div><div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">AQI INDEX</div></div></div>
+                    <div id="aqi-graph" style="display: flex; align-items: flex-end; gap: 3px; height: 44px; margin-left: auto;"></div>
                 </div>
-                <div class="grid-item" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div><div class="grid-val" id="hum">--</div><div class="grid-label">Вологість</div></div>
-                    <div id="hum-graph" style="display: flex; align-items: flex-end; gap: 2px; height: 30px; position: relative;"></div>
+                <div class="grid">
+                    <div class="grid-item"><div class="grid-val" id="pm25">--</div><div class="grid-label">PM2.5</div></div>
+                    <div class="grid-item"><div class="grid-val" id="pm10">--</div><div class="grid-label">PM10</div></div>
+                    <div class="grid-item" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div><div class="grid-val" id="temp">--</div><div class="grid-label">Температура</div></div>
+                        <div id="temp-graph" style="display: flex; align-items: flex-end; gap: 2px; height: 30px; position: relative;"></div>
+                    </div>
+                    <div class="grid-item" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div><div class="grid-val" id="hum">--</div><div class="grid-label">Вологість</div></div>
+                        <div id="hum-graph" style="display: flex; align-items: flex-end; gap: 2px; height: 30px; position: relative;"></div>
+                    </div>
                 </div>
+                <div class="weather-info"><span id="wind-status">---</span><span id="rad-container">☢️ <span id="rad-val">--</span> мкЗв/год <span class="rad-norm">(норма)</span></span></div>
             </div>
-            <div class="weather-info"><span id="wind-status">---</span><span id="rad-container">☢️ <span id="rad-val">--</span> мкЗв/год <span class="rad-norm">(норма)</span></span></div>
         </div>
         
         <div class="section-header">Аналітика за сьогодні</div>
@@ -372,11 +374,11 @@
                 }
                 lastAlertStatus = isAlert;
                 
-                // Hide or show AQ card
-                const aqCard = document.getElementById('aq-card');
-                if (aqCard) {
+                // Hide or show AQ block
+                const aqBlock = document.getElementById('aq-block');
+                if (aqBlock) {
                     if (data.aqi) {
-                        aqCard.style.display = 'block';
+                        aqBlock.style.display = 'block';
                         const aqiNum = document.getElementById('aqi-num');
                         if (aqiNum) {
                             aqiNum.innerText = data.aqi.aqi;
@@ -384,29 +386,34 @@
                         }
                         const aqiText = document.getElementById('aqi-text');
                         if (aqiText) aqiText.innerText = data.aqi.text;
-                        const aqiLoc = document.getElementById('aqi-loc');
-                        if (data.aqi.location && aqiLoc) aqiLoc.innerText = data.aqi.location;
+                        
+                        // Update PM fields
+                        document.getElementById('pm25').innerText = data.aqi.pm25 || '--';
+                        document.getElementById('pm10').innerText = data.aqi.pm10 || '--';
+                        document.getElementById('temp').innerText = data.aqi.temp || '--';
+                        document.getElementById('hum').innerText = data.aqi.hum || '--';
+                        document.getElementById('wind-status').innerText = data.aqi.wind_speed ? `${data.aqi.wind_speed} м/с, ${data.aqi.wind_dir}` : '---';
                     } else {
-                        aqCard.style.display = 'none';
+                        aqBlock.style.display = 'none';
                     }
                 }
 
-                // Hide or show Radiation card
-                const radCard = document.getElementById('rad-card');
-                if (radCard) {
+                // Hide or show Radiation container
+                const radContainer = document.getElementById('rad-container');
+                if (radContainer) {
                     if (data.radiation) {
-                        radCard.style.display = 'block';
-                        const radVal = document.getElementById('radiation-val');
+                        radContainer.style.display = 'inline';
+                        const radVal = document.getElementById('rad-val');
                         if (radVal) radVal.innerText = data.radiation.level;
                     } else {
-                        radCard.style.display = 'none';
+                        radContainer.style.display = 'none';
                     }
                 }
 
-                // Charts visibility
-                const chartsBlock = document.getElementById('charts-block');
-                if (chartsBlock) {
-                    chartsBlock.style.display = data.show_graphs ? 'block' : 'none';
+                // Analytics block visibility
+                const analyticsBlock = document.getElementById('analytics-block');
+                if (analyticsBlock) {
+                    analyticsBlock.style.display = data.show_graphs ? 'block' : 'none';
                 }
 
                 const aqiGraph = document.getElementById('aqi-graph');
