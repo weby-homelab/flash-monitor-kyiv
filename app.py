@@ -862,7 +862,7 @@ def admin_data():
             logs = json.load(f)
             
     # Get version
-    version = "2.4.6"
+    version = "2.4.7"
     version_path = os.path.join(os.path.dirname(__file__), "VERSION")
     if os.path.exists(version_path):
         with open(version_path, 'r') as f:
