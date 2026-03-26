@@ -118,4 +118,4 @@ flowchart TD
 ## 📜 Ліцензія / License
 Розповсюджується під ліцензією **MIT**.
 
-© 2026 Weby Homelab. Слава Україні! 🇺🇦
+© 2026 Weby Homelab.
