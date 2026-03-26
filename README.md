@@ -1,17 +1,24 @@
-# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
-
-![Dashboard Preview](dashboard_preview.jpg)
-
-# СВІТЛО⚡️ БЕЗПЕКА [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest) DOCKER Edition
-
 <p align="center">
-  <a href="https://hub.docker.com/r/webyhomelab/flash-monitor-kyiv"><img src="https://img.shields.io/docker/pulls/webyhomelab/flash-monitor-kyiv?logo=docker&logoColor=white" alt="Docker Pulls"></a>
-  <a href="https://github.com/weby-homelab/flash-monitor-kyiv/commits/main"><img src="https://img.shields.io/github/last-commit/weby-homelab/flash-monitor-kyiv" alt="GitHub last commit"></a>
-  <a href="https://github.com/weby-homelab/flash-monitor-kyiv/issues"><img src="https://img.shields.io/github/issues/weby-homelab/flash-monitor-kyiv" alt="GitHub issues"></a>
-  <img src="https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white" alt="Python Version">
+  <a href="README_ENG.md">
+    <img src="https://img.shields.io/badge/🇬🇧_English-00D4FF?style=for-the-badge&logo=readme&logoColor=white" alt="English README">
+  </a>
+  <a href="README.md">
+    <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Українська версія">
+  </a>
 </p>
 
----
+<br>
+
+<p align="center">
+  <img src="https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv?style=for-the-badge&color=purple" alt="Latest Release">
+  <img src="https://img.shields.io/badge/Branch-Main_(Docker)-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Branch Main">
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
+</p>
+
+# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 **Flash Monitor Kyiv** — це професійна автономна система моніторингу критичної інфраструктури та екологічної безпеки м. Києва. Проєкт забезпечує моніторинг електропостачання в реальному часі, відстеження повітряних тривог, якості повітря (AQI) та радіаційного фону.
 
@@ -108,14 +115,39 @@ flowchart TD
 
 ---
 
-## 🛠 Технологічний стек / Tech Stack
+## 🛠 Технічний стек / Tech Stack
 - **Backend:** Python 3.12, Flask, Gunicorn.
 - **Analytics:** Matplotlib, BeautifulSoup4.
 - **Infra:** Docker & Docker Compose, Cloudflare Tunnel.
 
 ---
 
-## 📜 Ліцензія / License
-Розповсюджується під ліцензією **MIT**.
+## 📥 Встановлення та розгортання
+
+Проєкт має дві основні гілки:
+1.  **`main` (Docker Edition):** Рекомендовано для швидкого старту.
+    ```bash
+    docker-compose up -d
+    ```
+2.  **`classic` (Bare-Metal Edition):** Для роботи безпосередньо в системі через `systemd`.
+
+### Швидкий старт (Smart Bootstrap):
+Система автоматично ініціалізується при першому запуску:
+1.  Генерує унікальні `SECRET_KEY` та `ADMIN_TOKEN`.
+2.  Створює структуру папок у `data/`.
+3.  Завантажує актуальні графіки для вашої групи.
+
+---
+
+## 🛡 Безпека
+*   Автентифікація через заголовки `X-Admin-Token` та `X-Secret-Key`.
+*   Повна ізоляція середовищ (PROD/TEST).
+*   Захист від маніпуляцій з URL в API запитах.
+
+---
+
+## 🤝 Контакти та розробка
+Розробка ведеться **Weby Homelab**. 
+Всі зміни вносяться згідно з **"Протоколом нульової толерантності до регресій"**.
 
 © 2026 Weby Homelab.
