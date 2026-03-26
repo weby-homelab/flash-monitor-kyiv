@@ -1,4 +1,4 @@
-# ⚡ FLASH MONITOR KYIV v2.4
+# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 ![Dashboard Preview](dashboard_preview.jpg)
 
@@ -15,7 +15,7 @@
 
 **Flash Monitor Kyiv** — це професійна автономна система моніторингу критичної інфраструктури та екологічної безпеки м. Києва. Проєкт забезпечує моніторинг електропостачання в реальному часі, відстеження повітряних тривог, якості повітря (AQI) та радіаційного фону.
 
-> **Статус проєкту:** Stable v2.4.6
+> **Статус проєкту:** Stable v2.4.7
 > **Архітектура:** Python Flask + Background Workers + JSON Flat-DB
 > **Бренд:** Weby Homelab
 
