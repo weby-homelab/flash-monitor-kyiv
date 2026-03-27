@@ -33,6 +33,20 @@ def get_timezone():
 
 KYIV_TZ = get_timezone()
 
+DAYS_UA = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"]
+
+def get_quiet_status():
+    """Reads current quiet_status from state file."""
+    state_file = os.path.join(DATA_DIR, "power_monitor_state.json")
+    if os.path.exists(state_file):
+        try:
+            with open(state_file, 'r') as f:
+                state = json.load(f)
+                return state.get("quiet_status", "active")
+        except:
+            pass
+    return "active"
+
 def load_events():
     if not os.path.exists(EVENT_LOG_FILE):
         return []
@@ -548,6 +562,32 @@ if __name__ == "__main__":
             print(f"Error saving stats json: {e}")
                
     is_final = "--final" in sys.argv
+    quiet_status = get_quiet_status()
+
+    if quiet_status == "quiet" and "--no-send" not in sys.argv:
+        if is_final:
+            print("Quiet mode active. Sending special text summary instead of graphical report...")
+            # Send the special quiet mode summary text instead of photo
+            msg = f"{target_date.strftime('%d.%m')} ({DAYS_UA[target_date.weekday()]}): Світло є 24 год. 🔆"
+            url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+            payload = {"chat_id": CHAT_ID, "text": f"<b>{msg}</b>", "parse_mode": "HTML"}
+            try:
+                requests.post(url, json=payload, timeout=10)
+                print(f"Quiet mode summary sent: {msg}")
+                
+                # Delete old message if exists (keeping it clean)
+                last_id = get_last_report_id(target_date)
+                if last_id:
+                    print(f"Deleting yesterday's old report message (ID: {last_id}) during quiet finalization...")
+                    delete_telegram_message(last_id)
+            except Exception as e:
+                print(f"Failed to handle quiet summary: {e}")
+        else:
+            print("Quiet mode active: Skipping Telegram update (not final).")
+        
+        if os.path.exists(filename): os.remove(filename)
+        if os.path.exists(filename_light): os.remove(filename_light)
+        sys.exit(0)
                
     if "--no-send" not in sys.argv:
         # Check if we can update an existing message

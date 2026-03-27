@@ -22,7 +22,7 @@
 
 **Flash Monitor Kyiv** is a professional, autonomous monitoring system for critical infrastructure and environmental safety in Kyiv. The project provides real-time power monitoring, air raid alerts tracking, air quality index (AQI), and radiation background levels.
 
-> **Project Status:** Stable v2.4.7
+> **Project Status:** Stable v2.4.8
 > **Architecture:** Python Flask + Background Workers + JSON Flat-DB
 > **Brand:** Weby Homelab
 
