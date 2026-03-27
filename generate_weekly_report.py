@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import necessary functions from the daily report script to reuse logic
-from generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ, load_schedule_slots
+from generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ, load_schedule_slots, get_quiet_status
 
 # --- Configuration ---
 DATA_DIR = os.environ.get("DATA_DIR", "data")
@@ -397,7 +397,11 @@ if __name__ == "__main__":
 #тиждень #статистика_світла"""
     
     if not args.no_send:
-        send_telegram_photo(filename, caption)
+        if get_quiet_status() == "quiet":
+            print("Quiet mode active: Skipping weekly Telegram report.")
+        else:
+            send_telegram_photo(filename, caption)
+    
     if os.path.exists(filename):
         os.remove(filename)
     if os.path.exists(filename_light):

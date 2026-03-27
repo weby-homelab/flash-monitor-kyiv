@@ -28,9 +28,7 @@ def get_timezone():
     except: pass
     return ZoneInfo("Europe/Kyiv")
 
-KYIV_TZ = get_timezone()
-
-DAYS_UA = {0: "Понеділок", 1: "Вівторок", 2: "Середа", 3: "Четвер", 4: "П'ятниця", 5: "Субота", 6: "Неділя"}
+from generate_daily_report import KYIV_TZ, DAYS_UA, get_quiet_status
 
 def load_config():
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -195,6 +193,10 @@ def main():
     current_hour = now.hour
     
     if not (datetime.time(0, 10) <= current_time <= datetime.time(23, 45)):
+        return
+
+    if get_quiet_status() == "quiet":
+        print("Quiet mode active: Skipping text report Telegram update.")
         return
 
     cfg = load_config()

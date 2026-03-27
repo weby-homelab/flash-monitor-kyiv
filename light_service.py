@@ -49,6 +49,10 @@ def get_push_interval():
     cfg = get_config()
     return int(cfg.get("settings", {}).get("push_interval", 30))
 
+def get_advanced_setting(section, key, default):
+    cfg = get_config()
+    return cfg.get("advanced", {}).get(section, {}).get(key, default)
+
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
 ADMIN_CHAT_ID = get_admin_chat_id()

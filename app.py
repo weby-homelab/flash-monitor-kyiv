@@ -196,12 +196,10 @@ def get_power_events_data(limit=5):
                         latest_event_text = f"{dev_line}"
                     elif wait_line:
                         latest_event_text = f"{wait_line}"
+                    elif sched_light_now and (next_range == "відключення не плануються 🔆" or next_range == "відключення не плануються ✅" or next_range == "час невідомий 🤷‍♂️" or next_range == "час очікується"):
+                        latest_event_text = "• відключення не плануються 🔆"
                     else:
-                        elif sched_light_now and (next_range == "відключення не плануються 🔆" or next_range == "відключення не плануються ✅" or next_range == "час невідомий 🤷‍♂️" or next_range == "час очікується"):
-                            latest_event_text = "• відключення не плануються 🔆"
-
-                        else:
-                            latest_event_text = f"• Наступне планове: {next_range}"
+                        latest_event_text = f"• Наступне планове: {next_range}"
                     
     except Exception as e:
         print(f"Error reading events: {e}")
@@ -600,17 +598,20 @@ def push_api(key):
             state["safety_net_sent_at"] = 0     # Reset on heartbeat
             state["safety_net_triggered_for"] = 0 # Reset on heartbeat
             
+            if (previous_status == "down" or previous_status == "unknown") and state.get("status") == "unknown": # Skip if already up
+                pass
+            
             if previous_status == "down" or previous_status == "unknown":
                 state["status"] = "up"
                 state["came_up_at"] = current_time
                 log_event("up", current_time)
                 
-                # New compact message format
-                # Use went_down_at before it might get updated (though push only sets came_up)
-                msg = format_event_message(True, current_time, state.get("went_down_at", 0))
-                
-                threading.Thread(target=send_telegram, args=(msg,)).start()
-                # trigger_daily_report_update() REMOVED FOR QUIET EVENTS
+                # Quiet Mode check: skip message if status is 'quiet'
+                if state.get("quiet_status") == "quiet":
+                    print("Quiet mode active: Skipping 'Light Up' Telegram message.")
+                else:
+                    msg = format_event_message(True, current_time, state.get("went_down_at", 0))
+                    threading.Thread(target=send_telegram, args=(msg,)).start()
                 
             save_state()
         
@@ -639,9 +640,12 @@ def down_api(key):
                 state["went_down_at"] = current_time
                 log_event("down", current_time)
                 
-                msg = format_event_message(False, current_time, state.get("came_up_at", 0))
-                
-                threading.Thread(target=send_telegram, args=(msg,)).start()
+                # Quiet Mode check
+                if state.get("quiet_status") == "quiet":
+                    print("Quiet mode active: Skipping 'Light Down' Telegram message from API.")
+                else:
+                    msg = format_event_message(False, current_time, state.get("came_up_at", 0))
+                    threading.Thread(target=send_telegram, args=(msg,)).start()
                 
             save_state()
         

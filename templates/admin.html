@@ -584,9 +584,13 @@
                 const badgeClass = log.event === 'up' ? 'status-up' : 'status-down';
                 
                 let durationStr = '-';
-                if (index < logs.length - 1) {
-                    const prevLog = logs[index + 1];
-                    const diffSec = log.timestamp - prevLog.timestamp;
+                if (index === 0) {
+                    durationStr = '<i class="fas fa-hourglass-half" style="opacity: 0.6;"></i> ⏳';
+                } else {
+                    // Duration of the state that started at index 1 and ended at index 0, etc.
+                    // To show it next to the event that STARTED it, we look at index vs index-1
+                    const nextLog = logs[index - 1]; // chronologically later
+                    const diffSec = nextLog.timestamp - log.timestamp;
                     if (diffSec > 0) {
                         const h = Math.floor(diffSec / 3600);
                         const m = Math.floor((diffSec % 3600) / 60);
