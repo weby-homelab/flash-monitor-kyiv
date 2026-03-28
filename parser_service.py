@@ -57,6 +57,18 @@ def fetch_yasno(cfg: dict) -> Optional[dict]:
         print(f"Yasno fetch error: {e}")
         return None
 
+def fetch_custom(cfg: dict) -> Optional[dict]:
+    custom_url = cfg.get('advanced', {}).get('data_sources', {}).get('custom_url')
+    if not custom_url:
+        return None
+    try:
+        r = requests.get(custom_url, headers={"User-Agent": "Flash-Monitor/2.7"}, timeout=20)
+        r.raise_for_status()
+        return r.json()
+    except Exception as e:
+        print(f"Custom URL fetch error: {e}")
+        return None
+
 def parse_github_day(day_data: dict) -> list[bool]:
     slots = []
     for h in range(1, 25):
@@ -115,7 +127,7 @@ def has_schedule_changed(old_cache: dict, new_cache: dict) -> bool:
     if not old_cache:
         return False
         
-    for source in ['yasno', 'github']:
+    for source in ['yasno', 'github', 'custom']:
         if source not in new_cache:
             continue
             
@@ -140,9 +152,17 @@ def update_local_schedules(config_path: str, output_path: str):
 
         gh_data = fetch_github(cfg)
         ys_data = fetch_yasno(cfg)
+        cu_data = fetch_custom(cfg)
 
         github_cache = extract_github(gh_data, cfg)
         yasno_cache = extract_yasno(ys_data, cfg)
+        
+        # Simple extraction for custom source: assume it's already in {group: {date: {slots, status}}} format
+        custom_cache = {}
+        if cu_data:
+            for grp in cfg['settings'].get('groups', []):
+                if grp in cu_data:
+                    custom_cache[grp] = cu_data[grp]
 
         old_cache = {}
         if os.path.exists(output_path):
@@ -157,6 +177,8 @@ def update_local_schedules(config_path: str, output_path: str):
             new_cache["github"] = github_cache
         if yasno_cache:
             new_cache["yasno"] = yasno_cache
+        if custom_cache:
+            new_cache["custom"] = custom_cache
             
         has_changed = has_schedule_changed(old_cache, new_cache)
             
@@ -178,21 +200,21 @@ def update_local_schedules(config_path: str, output_path: str):
 
         # Collect all dates from all available caches
         all_dates = set()
-        if yasno_cache:
-            for grp in yasno_cache:
-                all_dates.update(yasno_cache[grp].keys())
-        if github_cache:
-            for grp in github_cache:
-                all_dates.update(github_cache[grp].keys())
+        for cache in [yasno_cache, github_cache, custom_cache]:
+            if cache:
+                for grp in cache:
+                    all_dates.update(cache[grp].keys())
 
         history_updated = False
         for date_str in all_dates:
             # Find merged slots for this date across all sources (False wins)
             merged_new_slots = None
-            for cache in [yasno_cache, github_cache]:
+            for cache in [custom_cache, yasno_cache, github_cache]: # Priority: Custom > Yasno > GitHub
                 if not cache: continue
                 # We assume all groups in a cache for the same region have similar behavior or we pick the first
-                grp = list(cache.keys())[0]
+                group_keys = list(cache.keys())
+                if not group_keys: continue
+                grp = group_keys[0]
                 day_data = cache[grp].get(date_str)
                 if day_data and day_data.get("slots"):
                     s = day_data["slots"]

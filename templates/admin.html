@@ -9,13 +9,14 @@
     <style>
         :root {
             --bg-color: #0a0a0a;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
             --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
+            --text-secondary: #a0a0a0;
             --accent-color: #3b82f6;
             --danger-color: #ef4444;
             --success-color: #10b981;
+            --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
         }
 
         * {
@@ -27,187 +28,272 @@
 
         body {
             background-color: var(--bg-color);
-            background-image: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%);
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 30%),
+                radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 30%);
             color: var(--text-primary);
             min-height: 100vh;
             padding: 40px 20px;
+            line-height: 1.5;
+            overflow-x: hidden;
+            width: 100%;
         }
 
         .admin-container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 30px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 28px;
+            padding: 40px;
+            box-shadow: var(--card-shadow);
+            box-sizing: border-box;
         }
 
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 20px;
+            padding-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 20px;
         }
 
         header h1 {
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 800;
+            background: linear-gradient(to right, #fff, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+            word-break: break-word;
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-color);
+            padding: 2px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 5px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
         }
 
         .admin-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+            gap: 28px;
+            width: 100%;
+        }
+
+        @media (min-width: 1024px) {
+            .admin-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .full-width {
+                grid-column: span 2;
+            }
         }
 
         .admin-section {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.01);
             border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 20px;
+            padding: 28px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
         }
-
-        .full-width {
-            grid-column: 1 / -1;
+        
+        .admin-section:hover {
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .section-header {
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            margin-bottom: 24px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            word-break: break-word;
         }
 
         .section-header i {
-            margin-right: 12px;
-            color: var(--accent-color);
+            margin-right: 14px;
+            background: var(--accent-color);
+            color: white;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            flex-shrink: 0;
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
+            width: 100%;
         }
 
         label {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            word-wrap: break-word;
         }
 
         input, select {
             width: 100%;
-            background: rgba(255, 255, 255, 0.07);
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            padding: 12px 14px;
+            border-radius: 12px;
+            padding: 14px 16px;
             color: var(--text-primary);
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             outline: none;
-            transition: border-color 0.2s;
-        }
-
-        /* FIX: Visibility for select options */
-        select option {
-            background-color: #1a1a1a;
-            color: #ffffff;
-            padding: 10px;
+            transition: all 0.2s;
+            max-width: 100%;
+            box-sizing: border-box;
+            min-width: 0;
         }
 
         input:focus, select:focus {
+            background: rgba(255, 255, 255, 0.08);
             border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-size: 0.9rem;
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
             border: none;
-            gap: 8px;
-            transition: all 0.2s;
+            gap: 10px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 100%;
+            white-space: normal;
+            text-align: center;
+            box-sizing: border-box;
         }
+
+        .btn:active { transform: scale(0.98); }
 
         .btn-sm {
-            padding: 8px 14px;
-            font-size: 0.8rem;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            border-radius: 10px;
         }
 
-        .btn-primary { background: var(--accent-color); color: white; }
-        .btn-primary:hover { opacity: 0.9; }
-        .btn-danger { background: var(--danger-color); color: white; }
-        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
-        .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+        .btn-primary { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+            color: white;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        }
+        .btn-primary:hover { 
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger { 
+            background: rgba(239, 68, 68, 0.1); 
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .btn-danger:hover { 
+            background: #ef4444; 
+            color: white; 
+        }
+
+        .btn-secondary { 
+            background: rgba(255, 255, 255, 0.05); 
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+        .btn-secondary:hover { 
+            background: rgba(255, 255, 255, 0.1); 
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+        }
+        .btn-outline:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
 
         .status-badge {
-            padding: 5px 12px;
-            border-radius: 100px;
-            font-size: 0.75rem;
-            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
-        .status-up { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        .status-down { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .status-up { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .status-down { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
 
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .alarm-active {
-            animation: blink 1s infinite;
-            border: 2px solid var(--danger-color) !important;
-            background: rgba(239,68,68,0.2) !important;
-        }
-
-        .sn-actions {
+        .settings-card-title {
+            color: var(--accent-color);
+            font-weight: 800;
+            margin-bottom: 20px;
             display: flex;
-            gap: 8px;
-            margin-top: 12px;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            word-break: break-word;
         }
-
-        .sn-btn {
-            flex: 1;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border);
-            color: white;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        .sn-btn:hover { background: rgba(255,255,255,0.1); }
-
-        .table-container { overflow-x: auto; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th { text-align: left; font-size: 0.8rem; color: var(--text-secondary); padding: 12px; border-bottom: 1px solid var(--glass-border); }
-        td { padding: 12px; font-size: 0.85rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 
         .radio-group {
             display: flex;
             align-items: center;
-            gap: 12px;
-            background: rgba(255,255,255,0.03);
-            padding: 14px;
-            border-radius: 12px;
+            gap: 16px;
+            background: rgba(255,255,255,0.02);
+            padding: 18px;
+            border-radius: 16px;
             cursor: pointer;
-            margin-bottom: 10px;
-            border: 1px solid transparent;
+            margin-bottom: 12px;
+            border: 1px solid var(--glass-border);
             transition: all 0.2s;
+            width: 100%;
+            box-sizing: border-box;
         }
         .radio-group:hover { background: rgba(255, 255, 255, 0.05); }
-        .radio-group.active { border-color: var(--accent-color); background: rgba(59, 130, 246, 0.1); }
-        .radio-group input { cursor: pointer; }
+        .radio-group.active { border-color: var(--accent-color); background: rgba(59, 130, 246, 0.08); }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
         #log-add-form {
             display: grid;
@@ -218,33 +304,99 @@
             padding: 16px;
             background: rgba(255, 255, 255, 0.03);
             border-radius: 12px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        .settings-card {
-            background: rgba(255,255,255,0.02);
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid var(--glass-border);
-            height: 100%;
+        .table-container { 
+            width: 100%;
+            overflow-x: auto; 
+            margin-top: 10px; 
+            -webkit-overflow-scrolling: touch;
         }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        th { text-align: left; font-size: 0.8rem; color: var(--text-secondary); padding: 12px; border-bottom: 1px solid var(--glass-border); }
+        td { padding: 12px; font-size: 0.85rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 
-        .settings-card-title {
-            color: var(--accent-color);
-            font-weight: 700;
-            margin-bottom: 15px;
-            display: flex;
+        .sn-actions { display: flex; gap: 8px; margin-top: 12px; width: 100%; }
+        .sn-btn { flex: 1; padding: 10px; border-radius: 8px; cursor: pointer; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; font-size: 0.85rem; font-weight: 600; text-align: center; }
+
+        .info-icon {
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            background: rgba(255,255,255,0.1);
+            color: var(--accent-color);
+            border-radius: 50%;
+            font-size: 10px;
+            margin-left: 6px;
+            cursor: help;
+            position: relative;
+            vertical-align: middle;
+            transition: all 0.2s;
+        }
+        .info-icon:hover { background: var(--accent-color); color: white; }
+        
+        .tooltip {
+            visibility: hidden;
+            width: 240px;
+            background-color: #1a1a1a;
+            color: #fff;
+            text-align: left;
+            border-radius: 10px;
+            padding: 12px;
+            position: absolute;
+            z-index: 100;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: normal;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid var(--glass-border);
+            pointer-events: none;
+        }
+        .info-icon:hover .tooltip { visibility: visible; opacity: 1; }
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #1a1a1a transparent transparent transparent;
         }
 
         @media (max-width: 767px) {
-            header { flex-direction: column; text-align: center; gap: 15px; }
-            .btn { width: 100%; }
-            #log-add-form { grid-template-columns: 1fr; }
-            .admin-container { padding: 20px; }
+            body { padding: 10px 5px; }
+            .admin-container { padding: 20px 12px; border-radius: 16px; width: 100%; box-sizing: border-box; }
+            header { flex-direction: column; text-align: center; gap: 15px; margin-bottom: 25px; }
+            header > div { display: flex; flex-direction: column; align-items: center; }
+            header h1 { font-size: 1.4rem; white-space: normal; }
+            .btn { width: 100%; padding: 12px 16px; }
+            .admin-grid { grid-template-columns: 1fr; gap: 15px; }
+            .admin-section { padding: 20px 12px; border-radius: 16px; }
+            #log-add-form { grid-template-columns: 1fr; gap: 10px; padding: 12px; }
+            label { font-size: 0.75rem; }
+            input, select { padding: 12px; font-size: 0.9rem; min-width: 0; }
+            
+            .sn-actions { flex-direction: column; gap: 10px; }
+            .sn-btn { width: 100%; }
+
+            div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            .tooltip { width: 200px; left: -50px; transform: none; }
+            .tooltip::after { left: 60px; }
         }
     </style>
 </head>
@@ -264,24 +416,24 @@
         </header>
 
         <div class="admin-grid">
-            <!-- System Status -->
+            <!-- 1. System Status -->
             <div class="admin-section">
                 <div class="section-header"><i class="fas fa-server"></i> Статус системи</div>
                 <div class="form-group">
-                    <label>Поточний стан</label>
+                    <label>Поточний стан <span class="info-icon">i<span class="tooltip">Відображає реальний статус живлення на основі останнього отриманого сигналу від монітора.</span></span></label>
                     <span id="sys-status" class="status-badge">...</span>
                 </div>
                 <div class="form-group">
-                    <label>Останній сигнал</label>
+                    <label>Останній сигнал <span class="info-icon">i<span class="tooltip">Час отримання останнього успішного пінг-повідомлення від віддаленого пристрою моніторингу.</span></span></label>
                     <div id="sys-last-seen" style="font-weight: 600;">-</div>
                 </div>
                 <div class="form-group">
-                    <label>Режим сповіщень</label>
+                    <label>Режим сповіщень <span class="info-icon">i<span class="tooltip">Показує, чи активні зараз звукові/текстові сповіщення, або система перебуває в режимі тиші.</span></span></label>
                     <div id="sys-quiet-status" style="font-weight: 800; font-size: 0.95rem;">-</div>
                 </div>
 
                 <div id="sn-status-group" style="display: none; margin-top: 15px; padding: 15px; border-radius: 12px;" class="alarm-active">
-                    <label style="color: var(--danger-color); font-weight: 800;">ВТРАТА ПУША! 🚨</label>
+                    <label style="color: var(--danger-color); font-weight: 800;">ВТРАТА ПУША! 🚨 <span class="info-icon">i<span class="tooltip">Safety Net активовано: монітор перестав надсилати сигнали. Оберіть дію для коригування статусу.</span></span></label>
                     <div class="sn-actions">
                         <button class="sn-btn" onclick="safetyNetReact('down')" style="border-color: var(--danger-color);">Зникло</button>
                         <button class="sn-btn" onclick="safetyNetReact('tech')" style="border-color: var(--accent-color);">Збій</button>
@@ -290,7 +442,7 @@
                 </div>
 
                 <div id="mute-status-group" style="display: none; margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-                    <label style="margin-bottom: 2px;">Пауза до</label>
+                    <label style="margin-bottom: 2px;">Пауза до <span class="info-icon">i<span class="tooltip">Час, до якого сповіщення тимчасово вимкнені (наприклад, після вибору 'Збій' у Safety Net).</span></span></label>
                     <div id="sys-mute-until" style="color: var(--accent-color); font-weight: 800; font-size: 1.1rem;">-</div>
                 </div>
 
@@ -300,131 +452,180 @@
                 </div>
             </div>
 
-            <!-- Quiet Mode -->
+            <!-- 2. Quiet Mode -->
             <div class="admin-section">
                 <div class="section-header"><i class="fas fa-volume-mute"></i> Режим спокою</div>
                 <label class="radio-group" id="q-auto">
                     <input type="radio" name="quiet_mode" value="auto"> 
                     <div>
-                        <div style="font-weight: 600;">Автоматично</div>
+                        <div style="font-weight: 600;">Автоматично <span class="info-icon">i<span class="tooltip">Система сама вмикає тишу через 24 години стабільності, якщо немає планових вимкнень.</span></span></div>
                         <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Тиша, якщо немає планових вимкнень</div>
                     </div>
                 </label>
                 <label class="radio-group" id="q-on">
                     <input type="radio" name="quiet_mode" value="forced_on"> 
                     <div>
-                        <div style="font-weight: 600;">Завжди ТИХО</div>
+                        <div style="font-weight: 600;">Завжди ТИХО <span class="info-icon">i<span class="tooltip">Повний режим тиші. Сповіщення не надсилатимуться за жодних умов.</span></span></div>
                         <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Система завжди мовчить (без сповіщень)</div>
                     </div>
                 </label>
                 <label class="radio-group" id="q-off">
                     <input type="radio" name="quiet_mode" value="forced_off"> 
                     <div>
-                        <div style="font-weight: 600;">Завжди АКТИВНО</div>
+                        <div style="font-weight: 600;">Завжди АКТИВНО <span class="info-icon">i<span class="tooltip">Повертає стандартні сповіщення про кожну зміну статусу світла.</span></span></div>
                         <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Звичайні сповіщення за будь-яких умов</div>
                     </div>
                 </label>
                 <button class="btn btn-primary" onclick="saveQuietMode()" style="width: 100%; margin-top: 10px;">Зберегти зміни</button>
             </div>
 
-            <!-- Unified System Settings -->
-            <div class="admin-section full-width">
-                <div class="section-header"><i class="fas fa-microchip"></i> Системні налаштування</div>
+            <!-- 3. Telegram & API -->
+            <div class="admin-section">
+                <div class="settings-card-title"><i class="fas fa-paper-plane"></i> Telegram та API</div>
+                <div class="form-group">
+                    <label>Telegram Bot Token <span class="info-icon">i<span class="tooltip">Токен вашого бота від @BotFather. Приклад: 123456:ABC-DEF...</span></span></label>
+                    <input type="text" id="cfg-tg-token" placeholder="З .env або введіть новий">
+                </div>
+                <div class="form-group">
+                    <label>Telegram Chat ID <span class="info-icon">i<span class="tooltip">ID основного каналу або чату для сповіщень. Приклад: -100123456789</span></span></label>
+                    <input type="text" id="cfg-tg-chat" placeholder="З .env або введіть новий">
+                </div>
+                <div class="form-group">
+                    <label>API Пуш (Webhook) <span class="info-icon">i<span class="tooltip">URL для зовнішніх скриптів моніторингу. На цей адрес пристрій має слати запити для підтвердження наявності світла.</span></span></label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="info-push-api" readonly style="background: rgba(255,255,255,0.05); color: #888;">
+                        <button type="button" class="btn btn-outline" style="padding: 8px; flex-shrink: 0;" onclick="navigator.clipboard.writeText(document.getElementById('info-push-api').value); alert('Скопійовано!')"><i class="fas fa-copy"></i></button>
+                    </div>
+                    <small style="color: #666; font-size: 0.8rem; margin-top: 5px; display: block;">Секрет: <span id="info-push-secret"></span></small>
+                </div>
+            </div>
+
+            <!-- 4. Monitoring -->
+            <div class="admin-section">
+                <div class="settings-card-title"><i class="fas fa-broadcast-tower"></i> Моніторинг</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Регіон (ID) <span class="info-icon">i<span class="tooltip">Код регіону для джерела Yasno. Наприклад: kyiv</span></span></label><input type="text" id="cfg-region"></div>
+                    <div class="form-group"><label>Групи <span class="info-icon">i<span class="tooltip">Номери груп відключень через кому. Приклад: 1, 3, 6</span></span></label><input type="text" id="cfg-groups"></div>
+                </div>
+                <div class="form-group"><label>Chat ID Адміна <span class="info-icon">i<span class="tooltip">Ваш особистий Telegram ID для технічних звітів та підтверджень Safety Net.</span></span></label><input type="text" id="cfg-admin-chat"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Пуш (сек) <span class="info-icon">i<span class="tooltip">Частота, з якою очікується сигнал від монітора. Стандарт: 30</span></span></label><input type="number" id="cfg-push-interval"></div>
+                    <div class="form-group"><label>SN Timeout <span class="info-icon">i<span class="tooltip">Максимальна затримка сигналу, після якої вважати світло вимкненим. Рекомендовано: 65</span></span></label><input type="number" id="cfg-sn-timeout"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Мін. інт. <span class="info-icon">i<span class="tooltip">Нижня межа для адаптивного інтервалу перевірки.</span></span></label><input type="number" id="adv-push-min"></div>
+                    <div class="form-group"><label>Макс. інт. <span class="info-icon">i<span class="tooltip">Верхня межа для адаптивного інтервалу перевірки.</span></span></label><input type="number" id="adv-push-max"></div>
+                </div>
+            </div>
+
+            <!-- 5. Data Sources -->
+            <div class="admin-section">
+                <div class="settings-card-title"><i class="fas fa-database"></i> Джерела та Дані</div>
+                <div class="form-group">
+                    <label>Пріоритет джерела <span class="info-icon">i<span class="tooltip">Оберіть, яке джерело графіку вважати основним при конфліктах даних.</span></span></label>
+                    <select id="adv-ds-priority">
+                        <option value="yasno">Yasno (Пріоритет)</option>
+                        <option value="github">GitHub (Пріоритет)</option>
+                        <option value="custom">Свій URL (Пріоритет)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Custom JSON URL <span class="info-icon">i<span class="tooltip">Посилання на сторонній файл графіка. Використовується, якщо обрано пріоритет 'Свій URL'.</span></span></label>
+                    <input type="text" id="adv-ds-custom-url" placeholder="https://example.com/schedule.json">
+                </div>
+                <button class="btn btn-outline btn-sm" style="width: 100%; margin-bottom: 15px; background: rgba(255,255,255,0.05);" onclick="forceSyncSchedules()">
+                    <i class="fas fa-sync-alt"></i> Синхронізація зараз
+                </button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Дедуплікація <span class="info-icon">i<span class="tooltip">Ігнорувати оновлення джерел, якщо реальні години відключень не змінилися.</span></span></label>
+                        <select id="adv-ds-dedup">
+                            <option value="true">Увімкнено</option>
+                            <option value="false">Вимкнено</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Роловер <span class="info-icon">i<span class="tooltip">Година перемикання дашборду на наступний день. Стандарт: 6 (ранку).</span></span></label><input type="number" id="adv-ds-rollover"></div>
+                </div>
+            </div>
+
+            <!-- 6. Geo & AQI -->
+            <div class="admin-section">
+                <div class="settings-card-title"><i class="fas fa-map-marker-alt"></i> Гео та AQI</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Широта (Lat) <span class="info-icon">i<span class="tooltip">Координата для отримання погоди. Приклад: 50.408</span></span></label><input type="text" id="cfg-lat"></div>
+                    <div class="form-group"><label>Довгота (Lon) <span class="info-icon">i<span class="tooltip">Координата для отримання погоди. Приклад: 30.400</span></span></label><input type="text" id="cfg-lon"></div>
+                </div>
+                <div class="form-group"><label>ID Станції <span class="info-icon">i<span class="tooltip">Номер датчика на мапі SaveEcoBot для отримання якості повітря.</span></span></label><input type="text" id="cfg-aq-station"></div>
+                <div class="form-group"><label>Назва локації <span class="info-icon">i<span class="tooltip">Назва вашого району, що відображатиметься в заголовку блоку AQI.</span></span></label><input type="text" id="cfg-aq-name"></div>
                 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-
-                    <!-- Telegram & API -->
-                    <div class="settings-card">
-                        <div class="settings-card-title"><i class="fas fa-paper-plane"></i> Telegram & API</div>
-                        <div class="form-group"><label>Telegram Bot Token</label><input type="text" id="cfg-tg-token" placeholder="З .env або введіть новий"></div>
-                        <div class="form-group"><label>Telegram Chat ID</label><input type="text" id="cfg-tg-chat" placeholder="З .env або введіть новий"></div>
-                        <div class="form-group">
-                            <label>API Пуш-повідомлень (Webhook)</label>
-                            <div style="display: flex; gap: 5px;">
-                                <input type="text" id="info-push-api" readonly style="background: rgba(255,255,255,0.05); color: #888;">
-                                <button type="button" class="btn btn-outline" style="padding: 8px; flex-shrink: 0;" onclick="navigator.clipboard.writeText(document.getElementById('info-push-api').value); alert('Скопійовано!')"><i class="fas fa-copy"></i></button>
-                            </div>
-                            <small style="color: #666; font-size: 0.8rem; margin-top: 5px; display: block;">Секрет: <span id="info-push-secret"></span></small>
-                        </div>
-                    </div>
-
-                    <!-- Monitoring & Network -->
-                    <div class="settings-card">
-                        <div class="settings-card-title"><i class="fas fa-broadcast-tower"></i> Моніторинг</div>                        <div class="form-group"><label>Регіон (ID)</label><input type="text" id="cfg-region"></div>
-                        <div class="form-group"><label>Групи (через кому)</label><input type="text" id="cfg-groups"></div>
-                        <div class="form-group"><label>Chat ID Адміна</label><input type="text" id="cfg-admin-chat"></div>
-                        <div class="form-group"><label>Пуш інтервал (сек)</label><input type="number" id="cfg-push-interval"></div>
-                        <div class="form-group"><label>SN Timeout (сек)</label><input type="number" id="cfg-sn-timeout"></div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="form-group"><label>Мін. інт. (сек)</label><input type="number" id="adv-push-min"></div>
-                            <div class="form-group"><label>Макс. інт. (сек)</label><input type="number" id="adv-push-max"></div>
-                        </div>
-                        <div class="form-group"><label>Затримка SN (сек)</label><input type="number" id="adv-sn-delay"></div>
-                    </div>
-
-                    <!-- Quiet Mode & Sources -->
-                    <div class="settings-card">
-                        <div class="settings-card-title"><i class="fas fa-database"></i> Робота з даними</div>
-                        <div class="form-group"><label>Поріг стабільності (год)</label><input type="number" id="adv-quiet-threshold"></div>
-                        <div class="form-group">
-                            <label>Авто-підтвердження Quiet Mode</label>
-                            <select id="adv-quiet-auto">
-                                <option value="true">Увімкнено (авто-вхід)</option>
-                                <option value="false">Вимкнено (чекати адміна)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Пріоритет джерела</label>
-                            <select id="adv-ds-priority">
-                                <option value="yasno">Yasno (Пріоритет)</option>
-                                <option value="github">ДТЕК / GitHub (Пріоритет)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Smart Deduplication</label>
-                            <select id="adv-ds-dedup">
-                                <option value="true">Увімкнено</option>
-                                <option value="false">Вимкнено</option>
-                            </select>
-                        </div>
-                        <div class="form-group"><label>Година роловеру (0-23)</label><input type="number" id="adv-ds-rollover"></div>
-                    </div>
-
-                    <!-- Geo & AQI -->
-                    <div class="settings-card">
-                        <div class="settings-card-title"><i class="fas fa-map-marker-alt"></i> Геопозиція та AQI</div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div class="form-group"><label>Широта (Lat)</label><input type="text" id="cfg-lat"></div>
-                            <div class="form-group"><label>Довгота (Lon)</label><input type="text" id="cfg-lon"></div>
-                        </div>
-                        <div class="form-group"><label>ID станції SaveEcoBot</label><input type="text" id="cfg-aq-station"></div>
-                        <div class="form-group"><label>Назва локації для дашборду</label><input type="text" id="cfg-aq-name"></div>
-                        
-                        <div style="margin-top: 15px; border-top: 1px solid var(--glass-border); padding-top: 15px;">
-                            <label style="color: var(--accent-color); font-weight: 600; margin-bottom: 10px; display: block;">Відображення</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <div class="form-group"><label>Повітря</label><select id="adv-db-aq"><option value="true">Так</option><option value="false">Ні</option></select></div>
-                                <div class="form-group"><label>Радіація</label><select id="adv-db-rad"><option value="true">Так</option><option value="false">Ні</option></select></div>
-                            </div>
-                            <div class="form-group"><label>Графіки температури/вологості</label><select id="adv-db-temp"><option value="true">Так</option><option value="false">Ні</option></select></div>
-                        </div>
-                    </div>
-
-                    <!-- Retention & Reports -->
-                    <div class="settings-card">
-                        <div class="settings-card-title"><i class="fas fa-history"></i> Логи та Звіти</div>
-                        <div class="form-group"><label>Зберігати події (днів)</label><input type="number" id="adv-ret-log"></div>
-                        <div class="form-group"><label>Зберігати графіки (днів)</label><input type="number" id="adv-ret-sched"></div>
-                        <div class="form-group"><label>Час розсилки звітів (через кому)</label><input type="text" id="adv-notif-times" placeholder="08:00, 20:00"></div>
-                    </div>
-
+                <label style="color: var(--accent-color); font-size: 0.7rem; margin-bottom: 8px; display: block;">Віджети Дашборду</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 5px;">
+                    <div class="form-group"><label>Повітря</label><select id="adv-db-aq"><option value="true">Так</option><option value="false">Ні</option></select></div>
+                    <div class="form-group"><label>Радіація</label><select id="adv-db-rad"><option value="true">Так</option><option value="false">Ні</option></select></div>
+                    <div class="form-group"><label>Погода</label><select id="adv-db-temp"><option value="true">Так</option><option value="false">Ні</option></select></div>
+                    <div class="form-group"><label>Графіки</label><select id="adv-db-charts"><option value="true">Так</option><option value="false">Ні</option></select></div>
                 </div>
+            </div>
 
-                <div style="margin-top: 30px; display: flex; justify-content: center;">
-                    <button class="btn btn-primary" onclick="saveAllSettings()" style="width: 100%; max-width: 500px; padding: 16px; font-size: 1rem;">
-                        <i class="fas fa-save"></i> ЗБЕРЕГТИ ВСІ НАЛАШТУВАННЯ
-                    </button>
+            <!-- 7. Retention & Reports -->
+            <div class="admin-section">
+                <div class="settings-card-title"><i class="fas fa-history"></i> Звіти та Логи</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Події (днів) <span class="info-icon">i<span class="tooltip">Скільки днів зберігати історію вкл/викл світла в event_log.json.</span></span></label><input type="number" id="adv-ret-log"></div>
+                    <div class="form-group"><label>Графіки (днів) <span class="info-icon">i<span class="tooltip">Глибина зберігання згенерованих тижневих графіків на диску.</span></span></label><input type="number" id="adv-ret-sched"></div>
                 </div>
+                <div class="form-group"><label>Час звітів <span class="info-icon">i<span class="tooltip">Години для розсилки статистики у Telegram (через кому). Приклад: 08:00, 21:00</span></span></label><input type="text" id="adv-notif-times" placeholder="08:00, 20:00"></div>
+                <div class="form-group"><label>Поріг спокою (год) <span class="info-icon">i<span class="tooltip">Години безперервної наявності світла для переходу в Режим Спокою. Стандарт: 24</span></span></label><input type="number" id="adv-quiet-threshold"></div>
+            </div>
+
+            <!-- 8. Backup & Security -->
+            <div class="admin-section">
+                <div class="settings-card-title"><i class="fas fa-shield-alt"></i> Безпека та Бекап</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <button class="btn btn-secondary btn-sm" onclick="createBackup()"><i class="fas fa-file-export"></i> Бекап <span class="info-icon">i<span class="tooltip">Створює повну копію налаштувань та стану системи зараз.</span></span></button>
+                    <button class="btn btn-danger btn-sm" onclick="regenPushKey()"><i class="fas fa-key"></i> API Ключ <span class="info-icon">i<span class="tooltip">Генерує НОВИЙ секрет для пуш-повідомлень. Потрібно оновити скрипти на моніторах!</span></span></button>
+                </div>
+                <button class="btn btn-danger btn-sm" style="width: 100%; margin-bottom: 15px; background: rgba(239, 68, 68, 0.05);" onclick="regenAdminToken()">
+                    <i class="fas fa-user-shield"></i> Скинути токен адміна <span class="info-icon">i<span class="tooltip">Змінює пароль доступу до цієї панелі. Потребує повторного входу за новим лінком.</span></span>
+                </button>
+                <div id="backup-list" style="max-height: 100px; overflow-y: auto; background: rgba(0,0,0,0.1); border-radius: 10px; padding: 8px; border: 1px solid var(--glass-border); font-size: 0.75rem;">
+                    <div style="text-align: center; color: var(--text-secondary);">Завантаження...</div>
+                </div>
+            </div>
+
+            <!-- 9. Message Templates -->
+            <div class="admin-section">
+                <div class="settings-card-title"><i class="fas fa-comment-alt"></i> Шаблони повідомлень</div>
+                <div class="form-group"><label>Світло з'явилося <span class="info-icon">i<span class="tooltip">Текст сповіщення про увімкнення світла. {time} - час події.</span></span></label><input type="text" id="ui-txt-up"></div>
+                <div class="form-group"><label>Світло зникло <span class="info-icon">i<span class="tooltip">Текст сповіщення про вимкнення світла. {time} - час події.</span></span></label><input type="text" id="ui-txt-down"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Префікс (Є) <span class="info-icon">i<span class="tooltip">Префікс для часу наявності світла. Напр: 'Воно було'</span></span></label><input type="text" id="ui-txt-dur-up"></div>
+                    <div class="form-group"><label>Префікс (Нема) <span class="info-icon">i<span class="tooltip">Префікс для часу відсутності світла. Напр: 'Його не було'</span></span></label><input type="text" id="ui-txt-dur-down"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Очікуємо через <span class="info-icon">i<span class="tooltip">Текст перед часом до наступного включення.</span></span></label><input type="text" id="ui-txt-next-up"></div>
+                    <div class="form-group"><label>Вимкнення через <span class="info-icon">i<span class="tooltip">Текст перед часом до наступного відключення.</span></span></label><input type="text" id="ui-txt-next-down"></div>
+                </div>
+            </div>
+
+            <!-- 10. Icons & UI -->
+            <div class="admin-section">
+                <div class="settings-card-title"><i class="fas fa-icons"></i> UI та Іконки</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Іконка Є <span class="info-icon">i<span class="tooltip">Emoji або символ для статусу 'Світло Є'.</span></span></label><input type="text" id="ui-ico-on"></div>
+                    <div class="form-group"><label>Іконка Нема <span class="info-icon">i<span class="tooltip">Emoji або символ для статусу 'Світла Нема'.</span></span></label><input type="text" id="ui-ico-off"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Текст Є <span class="info-icon">i<span class="tooltip">Текст статусу 'Є СВІТЛО' на головному екрані.</span></span></label><input type="text" id="ui-txt-on-full"></div>
+                    <div class="form-group"><label>Текст Нема <span class="info-icon">i<span class="tooltip">Текст статусу 'НЕМАЄ СВІТЛА' на головному екрані.</span></span></label><input type="text" id="ui-txt-off-full"></div>
+                </div>
+                <div class="form-group"><label>Аварійне відключення <span class="info-icon">i<span class="tooltip">Заголовок для повідомлень про екстрені відключення поза графіком.</span></span></label><input type="text" id="ui-txt-emergency"></div>
+            </div>
+
+            <!-- Save Button Row -->
+            <div class="full-width" style="display: flex; justify-content: center; margin: 10px 0 20px 0;">
+                <button class="btn btn-primary" onclick="saveAllSettings()" style="width: 100%; max-width: 600px; padding: 18px; font-size: 1.2rem; box-shadow: 0 15px 30px -10px rgba(59, 130, 246, 0.5);">
+                    <i class="fas fa-save"></i> ЗБЕРЕГТИ ВСІ НАЛАШТУВАННЯ
+                </button>
             </div>
 
             <!-- Log Editor -->
@@ -488,6 +689,7 @@
                 renderStatus(data.state);
                 renderConfig(data.config, data);
                 renderLogs(data.logs);
+                renderBackups();
                 
                 if (data.version) {
                     document.getElementById('header-version').innerText = data.version;
@@ -500,146 +702,189 @@
         }
 
         function renderStatus(state) {
-            const statusEl = document.getElementById('sys-status');
-            statusEl.innerText = state.status === 'up' ? 'Є СВІТЛО' : 'НЕМАЄ СВІТЛА';
-            statusEl.className = 'status-badge ' + (state.status === 'up' ? 'status-up' : 'status-down');
-            
-            document.getElementById('sys-last-seen').innerText = state.last_seen ? new Date(state.last_seen * 1000).toLocaleString() : '-';
-            
-            const quietStatus = document.getElementById('sys-quiet-status');
-            if (state.quiet_status === 'quiet') { 
-                quietStatus.innerText = '🔇 ТИХИЙ РЕЖИМ'; 
-                quietStatus.style.color = 'var(--accent-color)'; 
-            } else { 
-                quietStatus.innerText = '🔔 АКТИВНИЙ'; 
-                quietStatus.style.color = 'var(--success-color)'; 
-            }
+            try {
+                const statusEl = document.getElementById('sys-status');
+                if (statusEl) {
+                    statusEl.innerText = state.status === 'up' ? 'Є СВІТЛО' : 'НЕМАЄ СВІТЛА';
+                    statusEl.className = 'status-badge ' + (state.status === 'up' ? 'status-up' : 'status-down');
+                }
+                
+                const lastSeenEl = document.getElementById('sys-last-seen');
+                if (lastSeenEl) {
+                    lastSeenEl.innerText = state.last_seen ? new Date(state.last_seen * 1000).toLocaleString() : '-';
+                }
+                
+                const quietStatus = document.getElementById('sys-quiet-status');
+                if (quietStatus) {
+                    if (state.quiet_status === 'quiet') { 
+                        quietStatus.innerText = '🔇 ТИХИЙ РЕЖИМ'; 
+                        quietStatus.style.color = 'var(--accent-color)'; 
+                    } else { 
+                        quietStatus.innerText = '🔔 АКТИВНИЙ'; 
+                        quietStatus.style.color = 'var(--success-color)'; 
+                    }
+                }
 
-            document.getElementById('sn-status-group').style.display = state.safety_net_pending ? 'block' : 'none';
+                const snGroup = document.getElementById('sn-status-group');
+                if (snGroup) snGroup.style.display = state.safety_net_pending ? 'block' : 'none';
 
-            const now = Date.now() / 1000;
-            const muteGroup = document.getElementById('mute-status-group');
-            const btnUnmute = document.getElementById('btn-unmute');
-            
-            if (state.muted_until && state.muted_until > now) {
-                muteGroup.style.display = 'block';
-                document.getElementById('sys-mute-until').innerText = new Date(state.muted_until * 1000).toLocaleTimeString();
-                btnUnmute.style.display = 'inline-flex';
-            } else { 
-                muteGroup.style.display = 'none'; 
-                btnUnmute.style.display = 'none'; 
-            }
+                const now = Date.now() / 1000;
+                const muteGroup = document.getElementById('mute-status-group');
+                const btnUnmute = document.getElementById('btn-unmute');
+                
+                if (state.muted_until && state.muted_until > now) {
+                    if (muteGroup) muteGroup.style.display = 'block';
+                    const muteUntilEl = document.getElementById('sys-mute-until');
+                    if (muteUntilEl) muteUntilEl.innerText = new Date(state.muted_until * 1000).toLocaleTimeString();
+                    if (btnUnmute) btnUnmute.style.display = 'inline-flex';
+                } else { 
+                    if (muteGroup) muteGroup.style.display = 'none'; 
+                    if (btnUnmute) btnUnmute.style.display = 'none'; 
+                }
 
-            // Sync radio buttons
-            const radios = document.getElementsByName('quiet_mode');
-            for (let r of radios) { 
-                r.checked = (r.value === state.quiet_mode); 
-                r.closest('.radio-group').classList.toggle('active', r.checked); 
-            }
+                const radios = document.getElementsByName('quiet_mode');
+                for (let r of radios) { 
+                    r.checked = (r.value === state.quiet_mode); 
+                    const rg = r.closest('.radio-group');
+                    if (rg) rg.classList.toggle('active', r.checked); 
+                }
+            } catch(e) { console.error('Render status error:', e); }
         }
 
         function renderConfig(config, data) {
-            if (!config.settings) return;
+            try {
+                if (!config.settings) return;
 
-            // Telegram & API
-            if (data.env) {
-                document.getElementById('cfg-tg-token').value = config.settings.telegram_bot_token || data.env.telegram_bot_token || '';
-                document.getElementById('cfg-tg-chat').value = config.settings.telegram_channel_id || data.env.telegram_channel_id || '';
-            }
-            if (data.state && data.state.secret_key) {
-                const protocol = window.location.protocol;
-                const host = window.location.host;
-                document.getElementById('info-push-api').value = `${protocol}//${host}/api/push/${data.state.secret_key}`;
-                document.getElementById('info-push-secret').textContent = data.state.secret_key;
-            }
+                const setVal = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = val !== undefined ? val : '';
+                };
 
-            // Basic Settings
-            document.getElementById('cfg-region').value = config.settings.region || '';
-            document.getElementById('cfg-groups').value = (config.settings.groups || []).join(', ');
-            document.getElementById('cfg-admin-chat').value = config.settings.admin_chat_id || '';
-            document.getElementById('cfg-sn-timeout').value = config.settings.safety_net_timeout || 35;
-            document.getElementById('cfg-push-interval').value = config.settings.push_interval || 30;
-            
-            // AQI & Geo
-            if (config.sources && config.sources.air_quality) {
-                document.getElementById('cfg-aq-station').value = config.sources.air_quality.seb_station || '';
-                document.getElementById('cfg-aq-name').value = config.sources.air_quality.location_name || '';
-                document.getElementById('cfg-lat').value = config.sources.air_quality.lat || '';
-                document.getElementById('cfg-lon').value = config.sources.air_quality.lon || '';
-            }
+                // Telegram & API
+                if (data.env) {
+                    setVal('cfg-tg-token', config.settings.telegram_bot_token || data.env.telegram_bot_token);
+                    setVal('cfg-tg-chat', config.settings.telegram_channel_id || data.env.telegram_channel_id);
+                }
+                if (data.state && data.state.secret_key) {
+                    const protocol = window.location.protocol;
+                    const host = window.location.host;
+                    const pushApiEl = document.getElementById('info-push-api');
+                    if (pushApiEl) pushApiEl.value = `${protocol}//${host}/api/push/${data.state.secret_key}`;
+                    const pushSecretEl = document.getElementById('info-push-secret');
+                    if (pushSecretEl) pushSecretEl.textContent = data.state.secret_key;
+                }
 
-            // Advanced settings
-            if (config.advanced) {
-                const adv = config.advanced;
-                if (adv.monitoring) {
-                    document.getElementById('adv-push-min').value = adv.monitoring.push_interval_min || 20;
-                    document.getElementById('adv-push-max').value = adv.monitoring.push_interval_max || 60;
-                    document.getElementById('adv-sn-delay').value = adv.monitoring.safety_net_delay || 5;
+                // Basic Settings
+                setVal('cfg-region', config.settings.region);
+                setVal('cfg-groups', (config.settings.groups || []).join(', '));
+                setVal('cfg-admin-chat', config.settings.admin_chat_id);
+                setVal('cfg-sn-timeout', config.settings.safety_net_timeout);
+                setVal('cfg-push-interval', config.settings.push_interval);
+                
+                // AQI & Geo
+                if (config.sources && config.sources.air_quality) {
+                    setVal('cfg-aq-station', config.sources.air_quality.seb_station);
+                    setVal('cfg-aq-name', config.sources.air_quality.location_name);
+                    setVal('cfg-lat', config.sources.air_quality.lat);
+                    setVal('cfg-lon', config.sources.air_quality.lon);
                 }
-                if (adv.quiet_mode) {
-                    document.getElementById('adv-quiet-threshold').value = adv.quiet_mode.stability_threshold_h || 24;
-                    document.getElementById('adv-quiet-auto').value = adv.quiet_mode.auto_confirm ? 'true' : 'false';
+
+                // Advanced settings
+                if (config.advanced) {
+                    const adv = config.advanced;
+                    if (adv.monitoring) {
+                        setVal('adv-push-min', adv.monitoring.push_interval_min);
+                        setVal('adv-push-max', adv.monitoring.push_interval_max);
+                    }
+                    if (adv.quiet_mode) {
+                        setVal('adv-quiet-threshold', adv.quiet_mode.stability_threshold_h);
+                    }
+                    if (adv.data_sources) {
+                        setVal('adv-ds-priority', adv.data_sources.priority);
+                        setVal('adv-ds-custom-url', adv.data_sources.custom_url);
+                        setVal('adv-ds-dedup', adv.data_sources.smart_deduplication ? 'true' : 'false');
+                        setVal('adv-ds-rollover', adv.data_sources.rollover_hour);
+                    }
+                    if (adv.retention) {
+                        setVal('adv-ret-log', adv.retention.event_log_days);
+                        setVal('adv-ret-sched', adv.retention.schedule_history_days);
+                    }
+                    if (adv.notifications) {
+                        setVal('adv-notif-times', (adv.notifications.report_times || []).join(', '));
+                    }
+                    if (adv.dashboard) {
+                        setVal('adv-db-aq', adv.dashboard.show_aq ? 'true' : 'false');
+                        setVal('adv-db-rad', adv.dashboard.show_radiation ? 'true' : 'false');
+                        setVal('adv-db-temp', adv.dashboard.show_temp_graph ? 'true' : 'false');
+                        setVal('adv-db-charts', adv.dashboard.show_charts ? 'true' : 'false');
+                    }
                 }
-                if (adv.data_sources) {
-                    document.getElementById('adv-ds-priority').value = adv.data_sources.priority || 'yasno';
-                    document.getElementById('adv-ds-dedup').value = adv.data_sources.smart_deduplication ? 'true' : 'false';
-                    document.getElementById('adv-ds-rollover').value = adv.data_sources.rollover_hour || 6;
+
+                // UI Templates & Icons
+                if (config.ui) {
+                    const ui = config.ui;
+                    if (ui.text) {
+                        setVal('ui-txt-up', ui.text.event_up);
+                        setVal('ui-txt-down', ui.text.event_down);
+                        setVal('ui-txt-dur-up', ui.text.dur_prefix_up);
+                        setVal('ui-txt-dur-down', ui.text.dur_prefix_down);
+                        setVal('ui-txt-next-up', ui.text.next_prefix_up);
+                        setVal('ui-txt-next-down', ui.text.next_prefix_down);
+                        setVal('ui-txt-on-full', ui.text.on_full);
+                        setVal('ui-txt-off-full', ui.text.off_full);
+                        setVal('ui-txt-emergency', ui.text.emergency);
+                    }
+                    if (ui.icons) {
+                        setVal('ui-ico-on', ui.icons.on);
+                        setVal('ui-ico-off', ui.icons.off);
+                    }
                 }
-                if (adv.retention) {
-                    document.getElementById('adv-ret-log').value = adv.retention.event_log_days || 30;
-                    document.getElementById('adv-ret-sched').value = adv.retention.schedule_history_days || 14;
-                }
-                if (adv.notifications) {
-                    document.getElementById('adv-notif-times').value = (adv.notifications.report_times || []).join(', ');
-                }
-                if (adv.dashboard) {
-                    document.getElementById('adv-db-aq').value = adv.dashboard.show_aq ? 'true' : 'false';
-                    document.getElementById('adv-db-rad').value = adv.dashboard.show_radiation ? 'true' : 'false';
-                    document.getElementById('adv-db-temp').value = adv.dashboard.show_temp_graph ? 'true' : 'false';
-                }
-            }
+            } catch(e) { console.error('Render config error:', e); }
         }
 
         function renderLogs(logs) {
-            const tbody = document.getElementById('log-table-body');
-            tbody.innerHTML = '';
-            
-            logs.forEach((log, index) => {
-                const tr = document.createElement('tr');
-                const eventLabel = log.event === 'up' ? 'UP' : 'DOWN';
-                const badgeClass = log.event === 'up' ? 'status-up' : 'status-down';
+            try {
+                const tbody = document.getElementById('log-table-body');
+                if (!tbody) return;
+                tbody.innerHTML = '';
                 
-                let durationStr = '-';
-                if (index === 0) {
-                    durationStr = '<i class="fas fa-hourglass-half" style="opacity: 0.6;"></i> ⏳';
-                } else {
-                    // Duration of the state that started at index 1 and ended at index 0, etc.
-                    // To show it next to the event that STARTED it, we look at index vs index-1
-                    const nextLog = logs[index - 1]; // chronologically later
-                    const diffSec = nextLog.timestamp - log.timestamp;
-                    if (diffSec > 0) {
-                        const h = Math.floor(diffSec / 3600);
-                        const m = Math.floor((diffSec % 3600) / 60);
-                        durationStr = h > 0 ? `${h} год ${m} хв` : `${m} хв`;
+                logs.forEach((log, index) => {
+                    const tr = document.createElement('tr');
+                    const eventLabel = log.event === 'up' ? 'UP' : 'DOWN';
+                    const badgeClass = log.event === 'up' ? 'status-up' : 'status-down';
+                    
+                    let durationStr = '-';
+                    if (index === 0) {
+                        durationStr = '<i class="fas fa-hourglass-half" style="opacity: 0.6;"></i> ⏳';
+                    } else {
+                        const nextLog = logs[index - 1]; 
+                        const diffSec = nextLog.timestamp - log.timestamp;
+                        if (diffSec > 0) {
+                            const h = Math.floor(diffSec / 3600);
+                            const m = Math.floor((diffSec % 3600) / 60);
+                            durationStr = h > 0 ? `${h} год ${m} хв` : `${m} хв`;
+                        }
                     }
-                }
-                
-                tr.innerHTML = `
-                    <td>${log.date_str}</td>
-                    <td><span class="status-badge ${badgeClass}">${eventLabel}</span></td>
-                    <td style="color: var(--text-secondary); font-size: 0.9em; opacity: 0.8;">${durationStr}</td>
-                    <td>
-                        <button class="btn btn-secondary btn-sm" onclick="deleteLog(${log.timestamp})" style="padding: 6px 10px;">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
+                    
+                    tr.innerHTML = `
+                        <td>${log.date_str}</td>
+                        <td><span class="status-badge ${badgeClass}">${eventLabel}</span></td>
+                        <td style="color: var(--text-secondary); font-size: 0.9em; opacity: 0.8;">${durationStr}</td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm" onclick="deleteLog(${log.timestamp})" style="padding: 6px 10px;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
 
-            const now = new Date();
-            document.getElementById('log-add-date').value = now.toISOString().split('T')[0];
-            document.getElementById('log-add-time').value = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                const now = new Date();
+                const logDateEl = document.getElementById('log-add-date');
+                if (logDateEl) logDateEl.value = now.toISOString().split('T')[0];
+                const logTimeEl = document.getElementById('log-add-time');
+                if (logTimeEl) logTimeEl.value = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            } catch(e) { console.error('Render logs error:', e); }
         }
 
         async function saveQuietMode() {
@@ -661,76 +906,96 @@
         }
 
         function collectAllConfig() {
-            const config = JSON.parse(JSON.stringify(currentConfig));
-            if (!config.settings) config.settings = {};
-            if (!config.advanced) config.advanced = {};
-            if (!config.sources) config.sources = {};
-            if (!config.sources.air_quality) config.sources.air_quality = {};
+            try {
+                const config = JSON.parse(JSON.stringify(currentConfig));
+                if (!config.settings) config.settings = {};
+                if (!config.advanced) config.advanced = {};
+                if (!config.sources) config.sources = {};
+                if (!config.sources.air_quality) config.sources.air_quality = {};
 
-            const getNum = (id, def) => {
-                const el = document.getElementById(id);
-                if (!el) return def;
-                return el.value !== "" ? parseInt(el.value) : def;
-            };
-            
-            const getCoord = (id) => {
-                const el = document.getElementById(id);
-                if (!el) return "";
-                return el.value.trim().replace(',', '.');
-            };
+                const getVal = (id) => {
+                    const el = document.getElementById(id);
+                    return el ? el.value : "";
+                };
 
-            // 1. Monitoring & Network
-            config.settings.telegram_bot_token = document.getElementById('cfg-tg-token').value;
-            config.settings.telegram_channel_id = document.getElementById('cfg-tg-chat').value;
-            config.settings.region = document.getElementById('cfg-region').value;
-            config.settings.groups = document.getElementById('cfg-groups').value.split(',').map(s => s.trim()).filter(s => s);
-            config.settings.admin_chat_id = document.getElementById('cfg-admin-chat').value;
-            config.settings.push_interval = getNum('cfg-push-interval', 30);
-            config.settings.safety_net_timeout = getNum('cfg-sn-timeout', 35);
-            
-            config.advanced.monitoring = {
-                push_timeout: getNum('cfg-sn-timeout', 35), // Sync with basic
-                push_interval_min: getNum('adv-push-min', 20),
-                push_interval_max: getNum('adv-push-max', 60),
-                safety_net_delay: getNum('adv-sn-delay', 5)
-            };
+                const getNum = (id, def) => {
+                    const val = getVal(id);
+                    return val !== "" ? parseInt(val) : def;
+                };
+                
+                const getCoord = (id) => {
+                    return getVal(id).trim().replace(',', '.');
+                };
 
-            // 2. Data Sources & Quiet Mode
-            config.advanced.quiet_mode = {
-                stability_threshold_h: getNum('adv-quiet-threshold', 24),
-                auto_confirm: document.getElementById('adv-quiet-auto').value === 'true'
-            };
-            config.advanced.data_sources = {
-                priority: document.getElementById('adv-ds-priority').value,
-                smart_deduplication: document.getElementById('adv-ds-dedup').value === 'true',
-                rollover_hour: getNum('adv-ds-rollover', 6)
-            };
+                config.settings.telegram_bot_token = getVal('cfg-tg-token');
+                config.settings.telegram_channel_id = getVal('cfg-tg-chat');
+                config.settings.region = getVal('cfg-region');
+                config.settings.groups = getVal('cfg-groups').split(',').map(s => s.trim()).filter(s => s);
+                config.settings.admin_chat_id = getVal('cfg-admin-chat');
+                config.settings.push_interval = getNum('cfg-push-interval', 30);
+                config.settings.safety_net_timeout = getNum('cfg-sn-timeout', 35);
+                
+                config.advanced.monitoring = {
+                    push_timeout: getNum('cfg-sn-timeout', 35),
+                    push_interval_min: getNum('adv-push-min', 20),
+                    push_interval_max: getNum('adv-push-max', 60),
+                    safety_net_delay: 5
+                };
 
-            // 3. Geo & AQI
-            config.sources.air_quality.seb_station = document.getElementById('cfg-aq-station').value.trim();
-            config.sources.air_quality.location_name = document.getElementById('cfg-aq-name').value.trim();
-            config.sources.air_quality.lat = getCoord('cfg-lat');
-            config.sources.air_quality.lon = getCoord('cfg-lon');
+                config.advanced.quiet_mode = {
+                    stability_threshold_h: getNum('adv-quiet-threshold', 24),
+                    auto_confirm: true
+                };
+                config.advanced.data_sources = {
+                    priority: getVal('adv-ds-priority'),
+                    custom_url: getVal('adv-ds-custom-url').trim(),
+                    smart_deduplication: getVal('adv-ds-dedup') === 'true',
+                    rollover_hour: getNum('adv-ds-rollover', 6)
+                };
 
-            // 4. Retention & Dash
-            config.advanced.retention = {
-                event_log_days: getNum('adv-ret-log', 30),
-                schedule_history_days: getNum('adv-ret-sched', 14)
-            };
-            config.advanced.notifications = {
-                report_times: document.getElementById('adv-notif-times').value.split(',').map(s => s.trim()).filter(s => s)
-            };
-            config.advanced.dashboard = {
-                show_aq: document.getElementById('adv-db-aq').value === 'true',
-                show_radiation: document.getElementById('adv-db-rad').value === 'true',
-                show_temp_graph: document.getElementById('adv-db-temp').value === 'true'
-            };
-            
-            return config;
+                config.sources.air_quality.seb_station = getVal('cfg-aq-station').trim();
+                config.sources.air_quality.location_name = getVal('cfg-aq-name').trim();
+                config.sources.air_quality.lat = getCoord('cfg-lat');
+                config.sources.air_quality.lon = getCoord('cfg-lon');
+
+                config.advanced.retention = {
+                    event_log_days: getNum('adv-ret-log', 30),
+                    schedule_history_days: getNum('adv-ret-sched', 14)
+                };
+                config.advanced.notifications = {
+                    report_times: getVal('adv-notif-times').split(',').map(s => s.trim()).filter(s => s)
+                };
+                config.advanced.dashboard = {
+                    show_aq: getVal('adv-db-aq') === 'true',
+                    show_radiation: getVal('adv-db-rad') === 'true',
+                    show_temp_graph: getVal('adv-db-temp') === 'true',
+                    show_charts: getVal('adv-db-charts') === 'true'
+                };
+
+                if (!config.ui) config.ui = {};
+                if (!config.ui.text) config.ui.text = {};
+                if (!config.ui.icons) config.ui.icons = {};
+
+                config.ui.text.event_up = getVal('ui-txt-up');
+                config.ui.text.event_down = getVal('ui-txt-down');
+                config.ui.text.dur_prefix_up = getVal('ui-txt-dur-up');
+                config.ui.text.dur_prefix_down = getVal('ui-txt-dur-down');
+                config.ui.text.next_prefix_up = getVal('ui-txt-next-up');
+                config.ui.text.next_prefix_down = getVal('ui-txt-next-down');
+                config.ui.text.on_full = getVal('ui-txt-on-full');
+                config.ui.text.off_full = getVal('ui-txt-off-full');
+                config.ui.text.emergency = getVal('ui-txt-emergency');
+                
+                config.ui.icons.on = getVal('ui-ico-on');
+                config.ui.icons.off = getVal('ui-ico-off');
+                
+                return config;
+            } catch(e) { console.error('Collect config error:', e); return null; }
         }
 
         async function saveAllSettings() {
             const config = collectAllConfig();
+            if (!config) { alert('Помилка збору налаштувань. Перевірте консоль.'); return; }
             try {
                 const response = await fetch(`/api/admin/config?t=${token}`, { 
                     method: 'POST', 
@@ -802,16 +1067,115 @@
 
         async function unmuteMonitor() {
             try {
-                const response = await fetch(`/api/admin/quiet/mode?t=${token}`, { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({mode: 'auto', unmute: true}) 
+                const response = await fetch(`/api/admin/quiet/mode?t=${token}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({mode: 'auto', unmute: true})
                 });
                 if (response.ok) fetchData();
                 else alert('Помилка зняття паузи');
             } catch(err) { alert('Помилка запиту'); }
         }
 
+        async function forceSyncSchedules() {
+            try {
+                const response = await fetch(`/api/admin/schedules/sync?t=${token}`, { method: 'POST' });
+                if (response.ok) alert('Запит на синхронізацію надіслано. Оновіть сторінку за кілька секунд.');
+                else alert('Помилка запиту на синхронізацію');
+            } catch(err) { alert('Помилка запиту'); }
+        }
+
+        async function renderBackups() {
+            try {
+                const response = await fetch(`/api/admin/backups?t=${token}`);
+                if (!response.ok) return;
+                const backups = await response.json();
+                const container = document.getElementById('backup-list');
+                if (!container) return;
+                
+                if (backups.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; padding: 10px;">Бекапів ще немає</div>';
+                    return;
+                }
+                
+                container.innerHTML = backups.map(b => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;">
+                        <div>
+                            <div style="font-weight: 600;">${b.date}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-secondary);">${b.label}</div>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="restoreBackup('${b.filename}')" style="padding: 4px 8px; font-size: 0.7rem;">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                `).join('');
+            } catch (err) { console.error('Backup list error:', err); }
+        }
+
+        async function createBackup() {
+            try {
+                const response = await fetch(`/api/admin/backups/create?t=${token}`, { method: 'POST' });
+                if (response.ok) {
+                    alert('Ручний бекап успішно створено!');
+                    renderBackups();
+                } else alert('Помилка створення бекапу');
+            } catch (err) { alert('Помилка запиту'); }
+        }
+
+        async function restoreBackup(filename) {
+            if (confirm('Ви впевнені? Поточні налаштування будуть замінені на копію від ' + filename)) {
+                try {
+                    const response = await fetch(`/api/admin/backups/restore?t=${token}`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({filename})
+                    });
+                    if (response.ok) {
+                        alert('Налаштування відновлено. Сервіси перезавантажуються...');
+                        setTimeout(() => window.location.reload(), 2000);
+                    } else alert('Помилка відновлення');
+                } catch (err) { alert('Помилка запиту'); }
+            }
+        }
+
+        async function regenPushKey() {
+            if (confirm('УВАГА! Це змінить ваш секретний ключ для API. Вам потрібно буде оновити налаштування на всіх пристроях (PRXMX тощо), що надсилають пуш-повідомлення. Продовжити?')) {
+                try {
+                    const response = await fetch(`/api/admin/security/regen_push_key?t=${token}`, { method: 'POST' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        alert('НОВИЙ API КЛЮЧ: ' + data.new_key + '\n\nЗапишіть його! Сторінка зараз оновиться.');
+                        fetchData();
+                    } else alert('Помилка регенерації');
+                } catch (err) { alert('Помилка запиту'); }
+            }
+        }
+
+        async function regenAdminToken() {
+            if (confirm('КРИТИЧНО! Ваш токен доступу до цієї адмін-панелі буде змінено. Вас буде негайно розлогінено. Продовжити?')) {
+                try {
+                    const response = await fetch(`/api/admin/security/regen_admin_token?t=${token}`, { method: 'POST' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        const newUrl = window.location.origin + window.location.pathname + '?t=' + data.new_token;
+                        
+                        // Create a temporary overlay to show the new token safely
+                        const msg = `
+                            НОВИЙ ТОКЕН АДМІНА: ${data.new_token}
+                            
+                            НОВЕ ПОСИЛАННЯ ДЛЯ ВХОДУ:
+                            ${newUrl}
+                            
+                            СКОПІЮЙТЕ ЦІ ДАНІ ЗАРАЗ! 
+                            Після натискання OK ви втратите доступ за поточним посиланням.
+                        `;
+                        
+                        alert(msg);
+                        window.location.href = newUrl;
+                    } else alert('Помилка регенерації');
+                } catch (err) { alert('Помилка запиту'); }
+            }
+        }
         document.querySelectorAll('.radio-group').forEach(group => {
             group.addEventListener('click', () => {
                 const radio = group.querySelector('input');

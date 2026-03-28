@@ -49,6 +49,123 @@ def get_push_interval():
     cfg = get_config()
     return int(cfg.get("settings", {}).get("push_interval", 30))
 
+def create_backup(label="manual"):
+    """Creates a backup of the current configuration and state."""
+    backup_dir = os.path.join(DATA_DIR, "backups")
+    os.makedirs(backup_dir, exist_ok=True)
+    
+    timestamp = datetime.datetime.now(KYIV_TZ).strftime("%Y%m%d_%H%M%S")
+    backup_name = f"backup_{timestamp}_{label}.json"
+    backup_path = os.path.join(backup_dir, backup_name)
+    
+    config = get_config()
+    # We also include state for safety
+    state_copy = {}
+    state_path = os.path.join(DATA_DIR, "power_monitor_state.json")
+    if os.path.exists(state_path):
+        try:
+            with open(state_path, 'r') as f: state_copy = json.load(f)
+        except: pass
+        
+    backup_data = {
+        "timestamp": time.time(),
+        "date_str": datetime.datetime.now(KYIV_TZ).strftime("%Y-%m-%d %H:%M:%S"),
+        "label": label,
+        "config": config,
+        "state": state_copy
+    }
+    
+    with open(backup_path, 'w', encoding='utf-8') as f:
+        json.dump(backup_data, f, ensure_ascii=False, indent=2)
+    
+    # Cleanup old backups (keep last 10)
+    try:
+        backups = sorted([f for f in os.listdir(backup_dir) if f.startswith("backup_") and f.endswith(".json")])
+        if len(backups) > 10:
+            for b in backups[:-10]:
+                os.remove(os.path.join(backup_dir, b))
+    except: pass
+    
+    return backup_name
+
+def list_backups():
+    backup_dir = os.path.join(DATA_DIR, "backups")
+    if not os.path.exists(backup_dir): return []
+    res = []
+    for f in sorted(os.listdir(backup_dir), reverse=True):
+        if f.startswith("backup_") and f.endswith(".json"):
+            path = os.path.join(backup_dir, f)
+            try:
+                with open(path, 'r') as b:
+                    data = json.load(b)
+                    res.append({
+                        "filename": f,
+                        "date": data.get("date_str"),
+                        "label": data.get("label", "unknown")
+                    })
+            except: pass
+    return res
+
+def restore_backup(filename):
+    backup_path = os.path.join(DATA_DIR, "backups", filename)
+    if not os.path.exists(backup_path): return False, "Backup not found"
+    
+    try:
+        with open(backup_path, 'r') as f:
+            data = json.load(f)
+            
+        # 1. Backup current config as "pre_restore" just in case
+        create_backup("pre_restore")
+        
+        # 2. Restore config
+        config_path = os.path.join(DATA_DIR, "config.json")
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(data["config"], f, ensure_ascii=False, indent=2)
+            
+        # 3. Restore state if available
+        if "state" in data:
+            state_path = os.path.join(DATA_DIR, "power_monitor_state.json")
+            with open(state_path, 'w', encoding='utf-8') as f:
+                json.dump(data["state"], f, ensure_ascii=False, indent=2)
+        
+        return True, "Success"
+    except Exception as e:
+        return False, str(e)
+
+def prune_old_data():
+    """Removes old events and schedule history based on retention settings."""
+    try:
+        cfg = get_config()
+        retention = cfg.get("advanced", {}).get("retention", {})
+        log_days = retention.get("event_log_days", 30)
+        sched_days = retention.get("schedule_history_days", 14)
+        
+        now = time.time()
+        
+        # 1. Prune event_log.json
+        if os.path.exists(EVENT_LOG_FILE):
+            cutoff = now - (log_days * 86400)
+            with open(EVENT_LOG_FILE, 'r') as f:
+                logs = json.load(f)
+            new_logs = [l for l in logs if l.get('timestamp', 0) > cutoff]
+            if len(new_logs) < len(logs):
+                with open(EVENT_LOG_FILE, 'w') as f:
+                    json.dump(new_logs, f, indent=2)
+                print(f"Pruned {len(logs) - len(new_logs)} old events.")
+
+        # 2. Prune schedule_history.json
+        if os.path.exists(HISTORY_FILE):
+            cutoff_date = (datetime.datetime.now(KYIV_TZ) - datetime.timedelta(days=sched_days)).strftime("%Y-%m-%d")
+            with open(HISTORY_FILE, 'r') as f:
+                history = json.load(f)
+            new_history = {d: v for d, v in history.items() if d >= cutoff_date}
+            if len(new_history) < len(history):
+                with open(HISTORY_FILE, 'w') as f:
+                    json.dump(new_history, f, indent=2)
+                print(f"Pruned {len(history) - len(new_history)} old schedule records.")
+    except Exception as e:
+        print(f"Error during data pruning: {e}")
+
 def get_advanced_setting(section, key, default):
     cfg = get_config()
     return cfg.get("advanced", {}).get(section, {}).get(key, default)
@@ -296,24 +413,37 @@ def format_duration(seconds):
 
 def get_best_source_internal(data, date_str):
     """Internal helper to find source with slots or fallback to emergency."""
+    cfg = get_config()
+    priority_order = ['yasno', 'github']
+    user_priority = cfg.get("advanced", {}).get("data_sources", {}).get("priority", "yasno")
+    
+    if user_priority in ['yasno', 'github']:
+        priority_order = [user_priority] + [s for s in priority_order if s != user_priority]
+    elif user_priority == 'custom':
+        priority_order = ['custom', 'yasno', 'github']
+
     best_source = None
     is_emergency = False
     
-    # 1. First pass: check for any emergency status in any source
-    for s_name in ['yasno', 'github']:
+    # 1. Pass: check for any emergency status in any source
+    for s_name in priority_order:
         src = data.get(s_name)
         if not src: continue
-        group_key = list(src.keys())[0]
+        group_keys = list(src.keys())
+        if not group_keys: continue
+        group_key = group_keys[0]
         day_data = src[group_key].get(date_str)
         if day_data and day_data.get('status') == 'emergency':
             is_emergency = True
             if not best_source: best_source = src
 
-    # 2. Second pass: prioritize sources with actual slots
-    for s_name in ['yasno', 'github']:
+    # 2. Pass: prioritize sources with actual slots
+    for s_name in priority_order:
         src = data.get(s_name)
         if not src: continue
-        group_key = list(src.keys())[0]
+        group_keys = list(src.keys())
+        if not group_keys: continue
+        group_key = group_keys[0]
         day_data = src[group_key].get(date_str)
         if day_data and day_data.get('slots'):
             return src, is_emergency
@@ -408,16 +538,18 @@ def get_next_scheduled_event(event_time, look_for_light):
 
 def format_event_message(is_up, event_time, prev_event_time):
     time_str = datetime.datetime.fromtimestamp(event_time, KYIV_TZ).strftime("%H:%M")
+    cfg = get_config()
+    txt = cfg.get("ui", {}).get("text", {})
     
     if is_up:
-        header = f"🟢 <b>{time_str} Світло з'явилося</b>"
-        duration_prefix = "Не було"
-        wait_prefix = "❌ Вимкнення через"
+        header = txt.get("event_up", "🟢 <b>{time} Світло з'явилося</b>").format(time=time_str)
+        duration_prefix = txt.get("dur_prefix_up", "Не було")
+        wait_prefix = txt.get("next_prefix_down", "❌ Вимкнення через")
         look_for_light = False # Next we wait for OFF
     else:
-        header = f"🔴 <b>{time_str} Світло зникло</b>"
-        duration_prefix = "Воно було"
-        wait_prefix = "💡 Очікуємо через"
+        header = txt.get("event_down", "🔴 <b>{time} Світло зникло</b>").format(time=time_str)
+        duration_prefix = txt.get("dur_prefix_down", "Воно було")
+        wait_prefix = txt.get("next_prefix_up", "💡 Очікуємо через")
         look_for_light = True # Next we wait for ON
 
     # 1. Deviation
@@ -428,9 +560,9 @@ def format_event_message(is_up, event_time, prev_event_time):
         if m:
             timing = m.group(1)
             value = m.group(2)
-            dev_line = f"⚡️ На {value} {timing} графіка"
+            dev_line = txt.get("dev_shift", "⚡️ На {value} {timing} графіка").format(value=value, timing=timing)
         elif "точно за графіком" in dev_msg:
-            dev_line = "⚡️ Точно за графіком"
+            dev_line = txt.get("dev_exact", "⚡️ Точно за графіком")
 
     # 2. Previous Duration
     if prev_event_time > 0:
@@ -847,18 +979,46 @@ def check_quiet_mode_eligibility():
 def schedule_loop():
     print("Schedule loop started...")
     weekly_sent_date = None
+    last_prune_date = None
+    
     while True:
         now = datetime.datetime.now(KYIV_TZ)
-        if now.hour == 0 and now.minute == 1: trigger_daily_report_update(is_final=True); time.sleep(65); continue
-        if now.hour == 0 and now.minute == 10: trigger_daily_report_update(is_final=False); time.sleep(65); continue
+        now_str = now.strftime("%H:%M")
+        today_date = now.strftime("%Y-%m-%d")
+        
+        # 1. Daily maintenance (at 00:01)
+        if now.hour == 0 and now.minute == 1:
+            trigger_daily_report_update(is_final=True)
+            if last_prune_date != today_date:
+                prune_old_data()
+                create_backup("daily_auto")
+                last_prune_date = today_date
+            time.sleep(65)
+            continue
+
+        # 2. Dynamic report times from config
+        cfg = get_config()
+        report_times = cfg.get("advanced", {}).get("notifications", {}).get("report_times", [])
+        if now_str in report_times:
+            print(f"Triggering scheduled report at {now_str}...")
+            trigger_daily_report_update(is_final=False)
+            time.sleep(65)
+            continue
+
+        # 3. Regular sync and status updates every 10 mins
         if now.minute % 10 == 0:
-            sync_schedules(); trigger_daily_report_update(is_final=False); trigger_text_report_update(); update_quiet_status()
+            sync_schedules()
+            trigger_daily_report_update(is_final=False)
+            trigger_text_report_update()
+            update_quiet_status()
+            
+        # 4. Weekly report (Monday morning)
         if now.weekday() == 0 and now.hour == 0 and 15 <= now.minute < 25:
-            today_str = now.strftime("%Y-%m-%d")
-            if weekly_sent_date != today_str:
+            if weekly_sent_date != today_date:
                 try:
                     base_dir = os.path.dirname(os.path.abspath(__file__))
                     subprocess.run([sys.executable, os.path.join(base_dir, "generate_weekly_report.py"), "--date", (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")], check=True, cwd=base_dir)
-                    weekly_sent_date = today_str
+                    weekly_sent_date = today_date
                 except: pass
+        
         time.sleep(60)

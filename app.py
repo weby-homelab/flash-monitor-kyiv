@@ -9,6 +9,7 @@ import re
 from bs4 import BeautifulSoup
 import threading
 import subprocess
+import secrets
 
 # Запуск ініціалізації для нових користувачів
 import bootstrap
@@ -22,7 +23,8 @@ from light_service import (
     format_event_message, get_next_scheduled_event,
     trigger_daily_report_update, trigger_weekly_report_update,
     get_air_raid_alert, get_push_interval, get_advanced_setting,
-    update_quiet_status,
+    update_quiet_status, sync_schedules,
+    create_backup, list_backups, restore_backup,
     TOKEN, CHAT_ID, ADMIN_CHAT_ID,
     KYIV_TZ, STATE_LOCK_FILE, DATA_DIR, EVENT_LOG_FILE
 )
@@ -524,6 +526,7 @@ def api_status():
     show_aq = get_advanced_setting("dashboard", "show_aq", True)
     show_rad = get_advanced_setting("dashboard", "show_radiation", True)
     show_graphs = get_advanced_setting("dashboard", "show_temp_graph", True)
+    show_charts = get_advanced_setting("dashboard", "show_charts", True)
     
     aq_data = get_air_quality() if show_aq else None
     rad_data = get_radiation() if show_rad else None
@@ -577,6 +580,7 @@ def api_status():
         "alert": alert_data,
         "group": group_name,
         "show_graphs": show_graphs,
+        "show_charts": show_charts,
         "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
     })
 
@@ -888,12 +892,15 @@ def admin_data():
 def admin_config_post():
     if not check_admin_token():
         return jsonify({"status": "error", "msg": "Access Denied"}), 403
-        
+
     new_config = request.get_json()
     if not new_config:
         return jsonify({"status": "error", "msg": "Invalid JSON"}), 400
-        
+
     try:
+        # Create auto-backup before saving
+        create_backup("auto_before_save")
+
         config_path = os.path.join(DATA_DIR, "config.json")
         if not os.path.exists(config_path):
             config_path = "config.json"
@@ -1008,17 +1015,81 @@ def admin_logs_delete(timestamp):
 def admin_service_restart():
     if not check_admin_token():
         return jsonify({"status": "error", "msg": "Access Denied"}), 403
-        
+
     try:
         def restart():
             time.sleep(1)
             subprocess.run(["systemctl", "restart", "flash-monitor.service", "flash-background.service"])
-            
+
         threading.Thread(target=restart).start()
         return jsonify({"status": "ok", "msg": "Services restarting..."})
     except Exception as e:
         return jsonify({"status": "error", "msg": str(e)}), 500
 
+@app.route('/api/admin/schedules/sync', methods=['POST'])
+def admin_schedules_sync():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+
+    try:
+        threading.Thread(target=sync_schedules).start()
+        return jsonify({"status": "ok", "msg": "Sync triggered"})
+    except Exception as e:
+        return jsonify({"status": "error", "msg": str(e)}), 500
+
+@app.route('/api/admin/backups', methods=['GET'])
+def admin_backups_list():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+    return jsonify(list_backups())
+
+@app.route('/api/admin/backups/create', methods=['POST'])
+def admin_backups_create():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+    name = create_backup("manual")
+    return jsonify({"status": "ok", "name": name})
+
+@app.route('/api/admin/backups/restore', methods=['POST'])
+def admin_backups_restore():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+    data = request.get_json()
+    filename = data.get("filename")
+    if not filename:
+        return jsonify({"status": "error", "msg": "Filename required"}), 400
+    
+    success, msg = restore_backup(filename)
+    if success:
+        return jsonify({"status": "ok", "msg": "Restored successfully. Restarting services..."})
+    else:
+        return jsonify({"status": "error", "msg": msg}), 500
+
+@app.route('/api/admin/security/regen_push_key', methods=['POST'])
+def admin_regen_push_key():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+    
+    with state_mgr:
+        load_state()
+        new_key = secrets.token_urlsafe(16)
+        state["secret_key"] = new_key
+        save_state()
+        
+    return jsonify({"status": "ok", "new_key": new_key})
+
+@app.route('/api/admin/security/regen_admin_token', methods=['POST'])
+def admin_regen_token():
+    if not check_admin_token():
+        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+    
+    with state_mgr:
+        load_state()
+        new_token = secrets.token_urlsafe(16)
+        state["admin_token"] = new_token
+        save_state()
+        
+    return jsonify({"status": "ok", "new_token": new_token})
 # Initialize State
 load_state()
 
