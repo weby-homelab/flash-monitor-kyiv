@@ -58,6 +58,25 @@ Modern **Glassmorphism** interface, fully mobile-optimized:
 
 ---
 
+## 🎛 Admin Control Panel
+
+A fully autonomous web interface to manage all aspects of the system without the need to edit configuration files via SSH.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
+</p>
+
+### Key Features:
+*   **Smart Backups:** Create manual and automatic restore points for your configuration. Instant one-click recovery with automatic service restart.
+*   **Flexible Source Management:** Change priority between Yasno, GitHub, or connect your own Custom JSON URL. Includes a manual force-sync button.
+*   **Geo-Adaptation & Dashboard:** Set coordinates (Lat/Lon) for accurate weather, SaveEcoBot station ID, and toggle widget visibility on the main page.
+*   **Complete Telegram Control:** Edit message templates, change status icons, and configure bot tokens and Chat IDs directly in the UI.
+*   **Security:** Instant regeneration of API keys and administrator tokens.
+
+---
+
 ## 🏗 Architecture / Architecture
 
 ```mermaid

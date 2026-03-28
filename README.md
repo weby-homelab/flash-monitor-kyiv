@@ -58,6 +58,25 @@
 
 ---
 
+## 🎛 Панель Керування (Admin Panel)
+
+Повністю автономний веб-інтерфейс для керування всіма аспектами системи без необхідності редагування конфігураційних файлів через SSH.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
+</p>
+
+### Основні функції:
+*   **Інтелектуальні бекапи:** Створення ручних та автоматичних точок відновлення конфігурації. Миттєве відновлення системи в один клік з авто-рестартом.
+*   **Гнучке налаштування джерел:** Зміна пріоритету між Yasno, GitHub або підключення власного Custom JSON URL. Кнопка примусової синхронізації.
+*   **Гео-адаптація та Дашборд:** Налаштування координат (Lat/Lon) для точної погоди, ID станції SaveEcoBot та керування відображенням віджетів на головній сторінці.
+*   **Повний контроль над Telegram:** Редактор шаблонів повідомлень, зміна іконок статусів, налаштування токенів бота та Chat ID безпосередньо в UI.
+*   **Безпека:** Можливість миттєвої регенерації API-ключів та токенів адміністратора.
+
+---
+
 ## 🏗 Архітектура / Architecture
 
 ```mermaid
