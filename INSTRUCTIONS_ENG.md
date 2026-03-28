@@ -80,13 +80,41 @@ For secure access and HTTPS without opening ports:
 
 ---
 
-## ⚙️ System Configuration (`config.json`)
+## ⚙️ System Configuration (`data/config.json`)
 
-You can configure the appearance of reports and the outage group in the `config.json` file:
+Core settings are now located in the `data/config.json` file. You can manage the system via this file or through the web admin panel. Basic structure example:
 
-*   `settings.groups`: Array of your groups (e.g., `["GPV36.1"]`).
-*   `settings.style`: Text chart style (`list` or `table`). In v1.9.7+, the "Black-and-White" style is recommended.
-*   `ui.icons`: Custom emojis for statuses.
+```json
+{
+  "settings": {
+    "region": "kyiv",
+    "groups": ["GPV36.1"],
+    "push_interval": 30,
+    "safety_net_timeout": 65
+  },
+  "sources": {
+    "air_quality": {
+      "lat": "50.408",
+      "lon": "30.400",
+      "seb_station": "24185"
+    }
+  }
+}
+```
+
+---
+
+## 🎛 Admin Control Panel
+
+Starting from version 2.0, the system features a powerful web-based administration panel.
+
+1.  **Access:** Navigate to your domain at `/admin`.
+2.  **Token:** Access requires a secure token. Your unique link is generated automatically. To retrieve it, run:
+    ```bash
+    cat data/power_monitor_state.json | grep admin_token
+    ```
+    Your login link will be: `https://your-domain.com/admin?t=YOUR_TOKEN`.
+3.  **Features:** Change schedule priority, set report times, edit Telegram notification templates, manage backups, and much more.
 
 ---
 

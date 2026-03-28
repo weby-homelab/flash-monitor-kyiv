@@ -22,7 +22,7 @@ git diff --cached
 
 ## 2. Branching Strategy
 The project uses two main branches:
-- `main` - for the Docker environment (IONOS test server).
+- `main` - for the Docker environment (PRXMX-02-LXC200 test server).
 - `classic` - for the Bare-Metal environment (HTZNR).
 
 **Never make changes directly to `main` or `classic`.** 
