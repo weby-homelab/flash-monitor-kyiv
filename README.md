@@ -18,12 +18,14 @@
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
 </p>
 
-# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
+# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) - Docker Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 **Flash Monitor Kyiv** — це професійна автономна система моніторингу критичної інфраструктури та екологічної безпеки. Проєкт забезпечує моніторинг електропостачання в реальному часі, відстеження повітряних тривог, якості повітря (AQI) та радіаційного фону.
 
+Ця гілка (`main`) містить **Docker Edition** проєкту, оптимізовану для швидкого розгортання в ізольованих контейнерах.
+
 > **Статус проєкту:** Stable v3.0.3 (Total Control & Safety Edition)
-> **Архітектура:** Python Flask + Background Workers + JSON Flat-DB
+> **Архітектура:** Python Flask + Background Workers + JSON Flat-DB + Docker
 > **Бренд:** Weby Homelab
 
 ---
