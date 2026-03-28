@@ -11,9 +11,9 @@
       "rollover_hour": 6
     },
     "monitoring": {
-      "push_timeout": 35,
+      "push_timeout": 65,
       "push_interval_min": 20,
-      "push_interval_max": 60,
+      "push_interval_max": 65,
       "safety_net_delay": 5
     },
     "notifications": {
@@ -39,7 +39,7 @@
     "max_messages": 1,
     "push_interval": 30,
     "region": "kyiv",
-    "safety_net_timeout": 35,
+    "safety_net_timeout": 65,
     "show_intervals_detail": false,
     "style": "list",
     "table_format": "code_lines",

@@ -12,8 +12,19 @@ load_dotenv()
 
 # --- Configuration ---
 DATA_DIR = os.environ.get("DATA_DIR", "data")
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
+def get_telegram_config():
+    cfg_path = os.path.join(DATA_DIR, "config.json")
+    if os.path.exists(cfg_path):
+        with open(cfg_path, 'r', encoding='utf-8') as f:
+            try:
+                cfg = json.load(f)
+                return cfg.get("settings", {}).get("telegram_bot_token"), cfg.get("settings", {}).get("telegram_channel_id")
+            except: pass
+    return None, None
+
+_cfg_token, _cfg_chat = get_telegram_config()
+TOKEN = _cfg_token or os.environ.get("TELEGRAM_BOT_TOKEN")
+CHAT_ID = _cfg_chat or os.environ.get("TELEGRAM_CHANNEL_ID")
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 TEXT_REPORT_ID_FILE = os.path.join(DATA_DIR, "text_report_id.json")

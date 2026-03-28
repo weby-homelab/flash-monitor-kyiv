@@ -15,7 +15,7 @@ import bootstrap
 bootstrap.perform_cold_start_if_needed()
 
 from light_service import (
-    load_state, save_state, state, state_lock,
+    load_state, save_state, state, state_mgr,
     monitor_loop, schedule_loop, get_current_time, format_duration,
     log_event, get_schedule_context, send_telegram,
     get_deviation_info, get_nearest_schedule_switch,
@@ -23,8 +23,8 @@ from light_service import (
     trigger_daily_report_update, trigger_weekly_report_update,
     get_air_raid_alert, get_push_interval, get_advanced_setting,
     update_quiet_status,
-    TOKEN, ADMIN_CHAT_ID,
-    KYIV_TZ, FileLock, STATE_LOCK_FILE, DATA_DIR, EVENT_LOG_FILE
+    TOKEN, CHAT_ID, ADMIN_CHAT_ID,
+    KYIV_TZ, STATE_LOCK_FILE, DATA_DIR, EVENT_LOG_FILE
 )
 
 
@@ -135,7 +135,7 @@ def get_power_events_data(limit=5):
                     
                     # Construct current status text
                     load_state()
-                    with state_lock:
+                    with state_mgr:
                         status = state.get("status", "unknown")
                     
                     target_evt = "up" if status == "up" else "down"
@@ -512,7 +512,7 @@ def admin_panel():
 @app.route('/api/status')
 def api_status():
     load_state()
-    with state_lock:
+    with state_mgr:
         current_status = state.get("status", "unknown")
         # Ensure we return strictly "on" or "off" for UI icons
         ui_light_state = "on" if current_status == "up" else "off"
@@ -589,8 +589,7 @@ def push_api(key):
         
     current_time = time.time()
     
-    with state_lock:
-        with FileLock(STATE_LOCK_FILE):
+    with state_mgr:
             load_state()  # Reload to get latest changes from other workers
             previous_status = state.get("status", "unknown")
             state["last_seen"] = current_time
@@ -630,8 +629,7 @@ def down_api(key):
         
     current_time = time.time()
     
-    with state_lock:
-        with FileLock(STATE_LOCK_FILE):
+    with state_mgr:
             load_state()
             previous_status = state.get("status", "unknown")
             
@@ -668,7 +666,7 @@ def tg_webhook():
         
         if cb_data.startswith('confirm_down_'):
             load_state()
-            with state_lock:
+            with state_mgr:
                 state['quiet_status'] = 'active'
                 state['pending_confirmation'] = False
                 state['safety_net_pending'] = False
@@ -703,7 +701,7 @@ def tg_webhook():
 
         elif cb_data.startswith('ignore_down_'):
             load_state()
-            with state_lock:
+            with state_mgr:
                 state['pending_confirmation'] = False
                 save_state()
 
@@ -747,7 +745,7 @@ def tg_webhook():
             parts = cb_data.split('_')
             minutes = int(parts[1])
             load_state()
-            with state_lock:
+            with state_mgr:
                 state['muted_until'] = time.time() + (minutes * 60)
                 state['safety_net_pending'] = False
                 save_state()
@@ -765,7 +763,7 @@ def tg_webhook():
 
         elif cb_data.startswith('sn_dontknow_'):
             load_state()
-            with state_lock:
+            with state_mgr:
                 state['safety_net_pending'] = False
                 save_state()
 
@@ -783,7 +781,7 @@ def tg_webhook():
         elif cb_data.startswith('sn_down_'):
             # Confirm DOWN instantly
             load_state()
-            with state_lock:
+            with state_mgr:
                 state['safety_net_pending'] = False
                 state['quiet_status'] = 'active'
                 state["status"] = "down"
@@ -879,7 +877,11 @@ def admin_data():
         "config": config,
         "state": state,
         "logs": logs[-20:][::-1], # Last 20, newest first
-        "version": version
+        "version": version,
+        "env": {
+            "telegram_bot_token": TOKEN,
+            "telegram_channel_id": CHAT_ID
+        }
     })
 
 @app.route('/api/admin/config', methods=['POST'])
@@ -918,7 +920,7 @@ def admin_quiet_mode():
     if mode not in ['auto', 'forced_on', 'forced_off']:
         return jsonify({"status": "error", "msg": "Invalid mode"}), 400
 
-    with state_lock:
+    with state_mgr:
         load_state()
         state['quiet_mode'] = mode
         if unmute:
@@ -938,7 +940,7 @@ def admin_safety_net_react():
     action = data.get('action')
     value = data.get('value') # For tech mute duration
 
-    with state_lock:
+    with state_mgr:
         load_state()
         if action == 'down':
             state['safety_net_pending'] = False
@@ -987,7 +989,7 @@ def admin_logs_delete(timestamp):
         return jsonify({"status": "error", "msg": "Access Denied"}), 403
         
     try:
-        with FileLock(STATE_LOCK_FILE):
+        with state_mgr:
             if os.path.exists(EVENT_LOG_FILE):
                 with open(EVENT_LOG_FILE, 'r') as f:
                     logs = json.load(f)

@@ -332,11 +332,25 @@
                 <div class="section-header"><i class="fas fa-microchip"></i> Системні налаштування</div>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                    
+
+                    <!-- Telegram & API -->
+                    <div class="settings-card">
+                        <div class="settings-card-title"><i class="fas fa-paper-plane"></i> Telegram & API</div>
+                        <div class="form-group"><label>Telegram Bot Token</label><input type="text" id="cfg-tg-token" placeholder="З .env або введіть новий"></div>
+                        <div class="form-group"><label>Telegram Chat ID</label><input type="text" id="cfg-tg-chat" placeholder="З .env або введіть новий"></div>
+                        <div class="form-group">
+                            <label>API Пуш-повідомлень (Webhook)</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="text" id="info-push-api" readonly style="background: rgba(255,255,255,0.05); color: #888;">
+                                <button type="button" class="btn btn-outline" style="padding: 8px; flex-shrink: 0;" onclick="navigator.clipboard.writeText(document.getElementById('info-push-api').value); alert('Скопійовано!')"><i class="fas fa-copy"></i></button>
+                            </div>
+                            <small style="color: #666; font-size: 0.8rem; margin-top: 5px; display: block;">Секрет: <span id="info-push-secret"></span></small>
+                        </div>
+                    </div>
+
                     <!-- Monitoring & Network -->
                     <div class="settings-card">
-                        <div class="settings-card-title"><i class="fas fa-broadcast-tower"></i> Моніторинг</div>
-                        <div class="form-group"><label>Регіон (ID)</label><input type="text" id="cfg-region"></div>
+                        <div class="settings-card-title"><i class="fas fa-broadcast-tower"></i> Моніторинг</div>                        <div class="form-group"><label>Регіон (ID)</label><input type="text" id="cfg-region"></div>
                         <div class="form-group"><label>Групи (через кому)</label><input type="text" id="cfg-groups"></div>
                         <div class="form-group"><label>Chat ID Адміна</label><input type="text" id="cfg-admin-chat"></div>
                         <div class="form-group"><label>Пуш інтервал (сек)</label><input type="number" id="cfg-push-interval"></div>
@@ -472,7 +486,7 @@
                 
                 currentConfig = data.config;
                 renderStatus(data.state);
-                renderConfig(data.config);
+                renderConfig(data.config, data);
                 renderLogs(data.logs);
                 
                 if (data.version) {
@@ -524,9 +538,21 @@
             }
         }
 
-        function renderConfig(config) {
+        function renderConfig(config, data) {
             if (!config.settings) return;
-            
+
+            // Telegram & API
+            if (data.env) {
+                document.getElementById('cfg-tg-token').value = config.settings.telegram_bot_token || data.env.telegram_bot_token || '';
+                document.getElementById('cfg-tg-chat').value = config.settings.telegram_channel_id || data.env.telegram_channel_id || '';
+            }
+            if (data.state && data.state.secret_key) {
+                const protocol = window.location.protocol;
+                const host = window.location.host;
+                document.getElementById('info-push-api').value = `${protocol}//${host}/api/push/${data.state.secret_key}`;
+                document.getElementById('info-push-secret').textContent = data.state.secret_key;
+            }
+
             // Basic Settings
             document.getElementById('cfg-region').value = config.settings.region || '';
             document.getElementById('cfg-groups').value = (config.settings.groups || []).join(', ');
@@ -654,6 +680,8 @@
             };
 
             // 1. Monitoring & Network
+            config.settings.telegram_bot_token = document.getElementById('cfg-tg-token').value;
+            config.settings.telegram_channel_id = document.getElementById('cfg-tg-chat').value;
             config.settings.region = document.getElementById('cfg-region').value;
             config.settings.groups = document.getElementById('cfg-groups').value.split(',').map(s => s.trim()).filter(s => s);
             config.settings.admin_chat_id = document.getElementById('cfg-admin-chat').value;

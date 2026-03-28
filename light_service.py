@@ -53,8 +53,16 @@ def get_advanced_setting(section, key, default):
     cfg = get_config()
     return cfg.get("advanced", {}).get(section, {}).get(key, default)
 
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
+def get_telegram_token():
+    cfg = get_config()
+    return cfg.get("settings", {}).get("telegram_bot_token") or os.environ.get("TELEGRAM_BOT_TOKEN")
+
+def get_telegram_channel_id_cfg():
+    cfg = get_config()
+    return cfg.get("settings", {}).get("telegram_channel_id") or os.environ.get("TELEGRAM_CHANNEL_ID")
+
+TOKEN = get_telegram_token()
+CHAT_ID = get_telegram_channel_id_cfg()
 ADMIN_CHAT_ID = get_admin_chat_id()
 PORT = 8889
 # SECRET_KEY handled in state
@@ -62,34 +70,27 @@ STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
 STATE_LOCK_FILE = os.path.join(DATA_DIR, "power_monitor_state.lock")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 
-_process_locks = {}
-_process_locks_lock = threading.Lock()
-
-class FileLock:
-    def __init__(self, file_path):
-        self.file_path = file_path
+class SafeStateContext:
+    def __init__(self):
+        self.state_lock = threading.RLock()
+        self.file_lock_path = STATE_LOCK_FILE
 
     def __enter__(self):
-        with _process_locks_lock:
-            if self.file_path not in _process_locks:
-                # Use 'a' to avoid truncating concurrent readers/writers unexpectedly, 
-                # although it's just a lock file.
-                f = open(self.file_path, 'a')
-                _process_locks[self.file_path] = {'file': f, 'count': 0, 'thread_lock': threading.RLock()}
-            lock_info = _process_locks[self.file_path]
-            
-        lock_info['thread_lock'].acquire()
-        if lock_info['count'] == 0:
-            fcntl.flock(lock_info['file'], fcntl.LOCK_EX)
-        lock_info['count'] += 1
+        # Always acquire thread lock first, then file lock to prevent deadlocks
+        self.state_lock.acquire()
+        self.flock_file = open(self.file_lock_path, 'a')
+        fcntl.flock(self.flock_file, fcntl.LOCK_EX)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        lock_info = _process_locks[self.file_path]
-        lock_info['count'] -= 1
-        if lock_info['count'] == 0:
-            fcntl.flock(lock_info['file'], fcntl.LOCK_UN)
-        lock_info['thread_lock'].release()
+        try:
+            fcntl.flock(self.flock_file, fcntl.LOCK_UN)
+            self.flock_file.close()
+        finally:
+            self.state_lock.release()
+
+state_mgr = SafeStateContext()
+
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 SCHEDULE_API_URL = os.environ.get("SCHEDULE_API_URL", "")
@@ -131,8 +132,6 @@ state = {
     "admin_token": None,
     "last_schedule_hash": None
 }
-
-state_lock = threading.RLock()
 
 def trigger_daily_report_update(is_final=False):
     """
@@ -210,7 +209,7 @@ def log_event(event_type, timestamp):
             "date_str": datetime.datetime.fromtimestamp(timestamp, KYIV_TZ).strftime("%Y-%m-%d %H:%M:%S")
         }
         
-        with FileLock(STATE_LOCK_FILE):
+        with state_mgr:
             logs = []
             if os.path.exists(EVENT_LOG_FILE):
                 try:
@@ -237,7 +236,7 @@ def log_event(event_type, timestamp):
 
 def load_state():
     global state
-    with FileLock(STATE_LOCK_FILE):
+    with state_mgr:
         if os.path.exists(STATE_FILE):
             try:
                 with open(STATE_FILE, 'r') as f:
@@ -247,23 +246,24 @@ def load_state():
                 print(f"Error loading state: {e}")
     
     if not state.get("secret_key"):
-        state["secret_key"] = secrets.token_urlsafe(16)
-        save_state()
+        with state_mgr:
+            state["secret_key"] = secrets.token_urlsafe(16)
+            save_state()
 
     if not state.get("admin_token"):
-        state["admin_token"] = secrets.token_urlsafe(16)
-        save_state()
+        with state_mgr:
+            state["admin_token"] = secrets.token_urlsafe(16)
+            save_state()
 
 def save_state():
-    with state_lock:
-        with FileLock(STATE_LOCK_FILE):
-            try:
-                temp_file = STATE_FILE + '.tmp'
-                with open(temp_file, 'w') as f:
-                    json.dump(state, f)
-                os.replace(temp_file, STATE_FILE)
-            except Exception as e:
-                print(f"Error saving state: {e}")
+    with state_mgr:
+        try:
+            temp_file = STATE_FILE + '.tmp'
+            with open(temp_file, 'w') as f:
+                json.dump(state, f)
+            os.replace(temp_file, STATE_FILE)
+        except Exception as e:
+            print(f"Error saving state: {e}")
 
 def get_current_time():
     # Returns local time timestamp
@@ -410,10 +410,8 @@ def format_event_message(is_up, event_time, prev_event_time):
 
     # 1. Deviation
     dev_msg = get_deviation_info(event_time, is_up)
-    # get_deviation_info returns: "• Увімкнули пізніше на 10 хв"
     dev_line = ""
     if dev_msg:
-        # Expected: "⚡️ На 10 хв пізніше графіка"
         m = re.search(r"(?:Увімкнули|Вимкнули)\s+(раніше|пізніше)\s+на\s+(.+)$", dev_msg)
         if m:
             timing = m.group(1)
@@ -444,7 +442,6 @@ def format_event_message(is_up, event_time, prev_event_time):
         wait_line = f"{wait_prefix} ~ {wait_dur}"
         interval_line = f"🗓 ({next_info['interval']})"
     else:
-        # Ensure fallback message is user-friendly.
         wait_line = f"{wait_prefix} час невідомий 🤷‍♂️"
 
     msg = f"{header}\n"
@@ -477,7 +474,6 @@ def get_schedule_context():
                 return (None, None, "⚠️ Екстрені відключення", None, True)
             return (None, None, "Графік відсутній", None, False)
             
-        # Combine today and tomorrow slots for a 48h view (96 slots)
         slots = list(schedule_data[today_str]['slots'])
         has_tomorrow = False
         if tomorrow_str in schedule_data and schedule_data[tomorrow_str].get('slots'):
@@ -489,7 +485,6 @@ def get_schedule_context():
         current_slot_idx = (now.hour * 2) + (1 if now.minute >= 30 else 0)
         is_light_now = slots[current_slot_idx]
         
-        # Find end of current block
         end_idx = len(slots)
         for i in range(current_slot_idx + 1, len(slots)):
             if slots[i] != is_light_now:
@@ -541,23 +536,21 @@ def get_schedule_context():
         return (None, None, "Помилка", None, False)
 
 def send_telegram(message):
-    # Mask token for logging
-    token_masked = TOKEN[:5] + "..." + TOKEN[-5:] if TOKEN else "None"
+    if not TOKEN or not CHAT_ID:
+        print("Telegram configuration missing (TOKEN or CHAT_ID)")
+        return
+    token_masked = TOKEN[:5] + "..." + TOKEN[-5:]
     print(f"DEBUG: Sending telegram message to {CHAT_ID} via bot {token_masked}")
-    
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": message,
-        "parse_mode": "HTML"
-    }
+    payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"}
     try:
         r = requests.post(url, json=payload, timeout=5)
-        print(f"DEBUG: Telegram Response: {r.status_code} {r.text}")
         if r.status_code != 200:
-            print(f"Telegram API Error: {r.status_code} {r.text}")
+            err_msg = r.text.replace(TOKEN, "[REDACTED_TOKEN]")
+            print(f"Telegram API Error (Status {r.status_code}): {err_msg}")
     except Exception as e:
-        print(f"Failed to send Telegram message: {e}")
+        err_str = str(e).replace(TOKEN, "[REDACTED_TOKEN]")
+        print(f"Failed to send Telegram message: {err_str}")
 
 def send_admin_confirmation(timestamp):
     msg = "⚠️ Зафіксовано втрату зв'язку! Режим 'Інформаційний спокій' активний. Це вимкнення світла чи збій обладнання?"
@@ -567,17 +560,12 @@ def send_admin_confirmation(timestamp):
         "text": msg,
         "parse_mode": "HTML",
         "reply_markup": {
-            "inline_keyboard": [
-                [
-                    {"text": "🔴 Світло зникло", "callback_data": f"confirm_down_{timestamp}"},
-                    {"text": "🟢 Збій / Роботи", "callback_data": f"ignore_down_{timestamp}"}
-                ]
-            ]
+            "inline_keyboard": [[{"text": "🔴 Світло зникло", "callback_data": f"confirm_down_{timestamp}"},
+                                 {"text": "🟢 Збій / Роботи", "callback_data": f"ignore_down_{timestamp}"}]]
         }
     }
     try:
         r = requests.post(url, json=payload, timeout=5)
-        print(f"DEBUG: Admin Confirmation Response: {r.status_code} {r.text}")
     except Exception as e:
         print(f"Failed to send admin confirmation: {e}")
 
@@ -590,44 +578,30 @@ def send_safety_net_admin(timestamp):
         "parse_mode": "HTML",
         "reply_markup": {
             "inline_keyboard": [
-                [
-                    {"text": "🔴 Світло зникло?", "callback_data": f"sn_down_{timestamp}"},
-                    {"text": "🛠 Технічний збій?", "callback_data": f"sn_tech_{timestamp}"}
-                ],
-                [
-                    {"text": "🤷‍♂️ Не знаю!", "callback_data": f"sn_dontknow_{timestamp}"}
-                ]
+                [{"text": "🔴 Світло зникло?", "callback_data": f"sn_down_{timestamp}"},
+                 {"text": "🛠 Технічний збій?", "callback_data": f"sn_tech_{timestamp}"}],
+                [{"text": "🤷‍♂️ Не знаю!", "callback_data": f"sn_dontknow_{timestamp}"}]
             ]
         }
     }
     try:
         r = requests.post(url, json=payload, timeout=5)
-        print(f"DEBUG: Safety Net Response: {r.status_code} {r.text}")
     except Exception as e:
         print(f"Failed to send safety net admin: {e}")
 
 def get_deviation_info(event_time, is_up):
-    # event_time: timestamp (float)
-    # is_up: True if light appeared, False if disappeared
-    
     try:
         if not os.path.exists(SCHEDULE_FILE): return ""
         with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
-        
         dt = datetime.datetime.fromtimestamp(event_time, KYIV_TZ)
         date_str = dt.strftime("%Y-%m-%d")
-        
         source, is_emergency = get_best_source_internal(data, date_str)
         if not source: return ""
-        
         group_key = list(source.keys())[0]
         schedule_data = source[group_key]
-        
         if date_str not in schedule_data or not schedule_data[date_str].get('slots'):
             return ""
-            
         slots = schedule_data[date_str]['slots']
-        
         best_diff = 9999
         for i in range(49):
             state_before = slots[i-1] if i > 0 else (not slots[0])
@@ -640,7 +614,6 @@ def get_deviation_info(event_time, is_up):
                     trans_dt = dt.replace(hour=trans_h, minute=trans_m, second=0, microsecond=0)
                     diff = (dt - trans_dt).total_seconds() / 60
                     if abs(diff) < abs(best_diff): best_diff = int(diff)
-
         if abs(best_diff) > 180: return ""
         abs_diff = abs(best_diff)
         h, m = abs_diff // 60, abs_diff % 60
@@ -657,11 +630,6 @@ def get_deviation_info(event_time, is_up):
         return ""
 
 def get_nearest_schedule_switch(event_time, target_is_up):
-    """
-    Finds the nearest scheduled switch time for the given event.
-    target_is_up: True if we are looking for ON switch, False for OFF.
-    Returns: Formatted time string "HH:MM" or None.
-    """
     try:
         if not os.path.exists(SCHEDULE_FILE): return None
         with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
@@ -693,8 +661,6 @@ def get_nearest_schedule_switch(event_time, target_is_up):
     except:
         return None
 
-
-
 def get_air_raid_alert():
     try:
         r = requests.get(ALERTS_API_URL, timeout=5)
@@ -703,48 +669,24 @@ def get_air_raid_alert():
             alerts = data.get("states", {})
             is_alert_city = "м. Київ" in alerts and alerts["м. Київ"].get("alertnow", False)
             is_alert_region = "Київська область" in alerts and alerts["Київська область"].get("alertnow", False)
-            
-            if is_alert_city:
-                status_text = "active"
-                location = "м. Київ"
-            elif is_alert_region:
-                status_text = "region"
-                location = "Київська область"
-            else:
-                status_text = "clear"
-                location = "Тривоги немає"
-
-            return {
-                "city": is_alert_city,
-                "region": is_alert_region,
-                "status": status_text,
-                "location": location
-            }
+            status_text = "active" if is_alert_city else ("region" if is_alert_region else "clear")
+            location = "м. Київ" if is_alert_city else ("Київська область" if is_alert_region else "Тривоги немає")
+            return {"city": is_alert_city, "region": is_alert_region, "status": status_text, "location": location}
     except Exception as e:
         print(f"Error fetching alerts: {e}")
     return {"status": "unknown", "location": "Невідомо"}
 
 def update_quiet_status():
-    """Calculates and updates quiet_status based on current mode and eligibility."""
-    with state_lock:
+    with state_mgr:
         q_mode = state.get("quiet_mode", "auto")
         old_status = state.get("quiet_status", "active")
         is_eligible = check_quiet_mode_eligibility()
-        
-        new_status = old_status
-        if q_mode == "forced_on":
-            new_status = "quiet"
-        elif q_mode == "forced_off":
-            new_status = "active"
-        else: # auto
-            new_status = "quiet" if is_eligible else "active"
-        
+        new_status = "quiet" if q_mode == "forced_on" else ("active" if q_mode == "forced_off" else ("quiet" if is_eligible else "active"))
         if new_status != old_status:
             state["quiet_status"] = new_status
             if new_status == "quiet":
                 state["stability_start"] = time.time()
             else:
-                # Trigger detailed text report generation
                 def trigger_report():
                     try:
                         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -754,96 +696,60 @@ def update_quiet_status():
                         subprocess.run([python_exec, script_path, "--force-new"], check=True, cwd=base_dir)
                     except Exception as e:
                         print(f"Failed to trigger text report: {e}")
-                
                 threading.Thread(target=trigger_report).start()
-            
             save_state()
-            print(f"Quiet mode status immediately updated to: {new_status}")
+            print(f"Quiet mode status updated to: {new_status}")
 
-# --- Monitor Loop ---
 def monitor_loop():
     print("Monitor loop started...")
     while True:
-        time.sleep(5) # Check every 5 seconds for fast response
-        
-        # Reload state to sync with other workers/processes
+        time.sleep(5)
         load_state()
-        
-        with state_lock:
+        with state_mgr:
             current_time = get_current_time()
             last_seen = state["last_seen"]
             status = state["status"]
-            
-            # Check if we are muted (Technical failure mode)
-            if state.get("muted_until", 0) > current_time:
-                continue
-
-            # 1. Safety Net Trigger (e.g. at 35s gap)
+            if state.get("muted_until", 0) > current_time: continue
             safety_net_timeout = get_safety_net_timeout()
             if status == "up" and (current_time - last_seen) > safety_net_timeout and \
                not state.get("safety_net_pending") and state.get("safety_net_triggered_for") != last_seen:
-                
-                # Only trigger if we haven't reached the 180s mark yet
                 if (current_time - last_seen) < 180:
                     state["safety_net_pending"] = True
                     state["safety_net_sent_at"] = current_time
                     state["safety_net_triggered_for"] = last_seen
                     save_state()
                     threading.Thread(target=send_safety_net_admin, args=(current_time,)).start()
-            
-            # 2. Auto-close Safety Net waiting after 30 seconds
             sent_at = state.get("safety_net_sent_at", 0)
             if state.get("safety_net_pending") and (current_time - sent_at) > 30:
                 state["safety_net_pending"] = False
                 save_state()
-                # Just wait for the hard 180s timeout now
-
-            # 3. Hard Timeout: 3 minutes (180 seconds)
             if status == "up" and (current_time - last_seen) > 180:
-                # Timeout detected!
                 state["status"] = "down"
-                state["safety_net_pending"] = False # Reset if it was still pending
-                
-                # Assume outage happened shortly after last ping (using configured push_interval)
+                state["safety_net_pending"] = False
                 down_time_ts = last_seen + get_push_interval()
                 state["went_down_at"] = down_time_ts
                 log_event("down", down_time_ts)
-                
-                # New compact message format
                 msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
-
                 if state.get('quiet_status') == 'quiet':
                     state['pending_confirmation'] = True
                     threading.Thread(target=send_admin_confirmation, args=(down_time_ts,)).start()
                 else:
                     threading.Thread(target=send_telegram, args=(msg,)).start()
-                
                 save_state()
 
 def alerts_loop():
-    """
-    Polls the air raid alert API every minute and sends Telegram notifications on status changes.
-    """
     print("Alerts loop started...")
     while True:
         try:
             current_alert = get_air_raid_alert()
             new_status = current_alert.get("status")
-
             if new_status != "unknown":
-                # Reload state to get latest alert_status
                 load_state()
-
-                with state_lock:
+                with state_mgr:
                     old_status = state.get("alert_status", "clear")
-
-                    # We only care about "м. Київ" alerts for Telegram notifications
-                    # active = м. Київ, region = Київська область, clear = No alert
-
                     if new_status != old_status:
                         now_dt = datetime.datetime.now(KYIV_TZ)
                         time_str = now_dt.strftime("%H:%M")
-
                         if new_status == "active":
                             state["alert_start_time"] = now_dt.timestamp()
                             msg = f"⚠️ <b>{time_str} ПОВІТРЯНА ТРИВОГА! КИЇВ</b>"
@@ -853,246 +759,94 @@ def alerts_loop():
                             duration_str = ""
                             if start_ts:
                                 duration_sec = int(now_dt.timestamp() - start_ts)
-                                hours = duration_sec // 3600
-                                mins = (duration_sec % 3600) // 60
-                                if hours > 0:
-                                    duration_str = f"\nяка тривала {hours} год {mins} хв"
-                                else:
-                                    duration_str = f"\nяка тривала {mins} хв"
-                            
+                                hours, mins = duration_sec // 3600, (duration_sec % 3600) // 60
+                                duration_str = f"\nяка тривала {hours} год {mins} хв" if hours > 0 else f"\nяка тривала {mins} хв"
                             msg = f"✅ <b>{time_str} ВІДБІЙ ТРИВОГИ</b>{duration_str}"
                             threading.Thread(target=send_telegram, args=(msg,)).start()
-
-                        # Update state
                         state["alert_status"] = new_status
                         save_state()
-
-        except Exception as e:            print(f"Error in alerts loop: {e}")
-            
+        except Exception as e: print(f"Error in alerts loop: {e}")
         time.sleep(60)
 
 def sync_schedules():
-    """
-    Downloads schedule files from the primary project via HTTP.
-    If sync fails or URL is not set, falls back to local parsing.
-    """
     sync_success = False
-    
     if SCHEDULE_API_URL:
         try:
             print(f"Syncing schedules from {SCHEDULE_API_URL}...")
-            urls = {
-                SCHEDULE_FILE: f"{SCHEDULE_API_URL}/last_schedules.json",
-                HISTORY_FILE: f"{SCHEDULE_API_URL}/schedule_history.json"
-            }
+            urls = {SCHEDULE_FILE: f"{SCHEDULE_API_URL}/last_schedules.json", HISTORY_FILE: f"{SCHEDULE_API_URL}/schedule_history.json"}
             for local_file, url in urls.items():
                 r = requests.get(url, timeout=10)
                 if r.status_code == 200:
-                    with open(local_file, "wb") as f:
-                        f.write(r.content)
+                    with open(local_file, "wb") as f: f.write(r.content)
             sync_success = True
-            print("Schedules synced successfully.")
-        except Exception as e:
-            print(f"Failed to sync schedules from API: {e}")
-
-    # Fallback to local parsing if remote sync failed or was skipped
+        except Exception as e: print(f"Failed to sync schedules: {e}")
     if not sync_success:
         print("Starting local schedule parsing...")
         config_path = os.path.join(os.path.dirname(__file__), "config.json")
         result = update_local_schedules(config_path, SCHEDULE_FILE)
-        
-        has_changed = False
-        if isinstance(result, tuple) and len(result) == 2:
-            success, has_changed = result
-            
+        has_changed = result[1] if isinstance(result, tuple) and len(result) == 2 else False
         if has_changed:
-            print("Schedule changes detected! Triggering report updates...")
             trigger_daily_report_update()
             trigger_weekly_report_update()
-            
-            # Send alert ONLY if there are planned outages in the new schedule
             should_alert = False
             try:
                 if os.path.exists(SCHEDULE_FILE):
-                    with open(SCHEDULE_FILE, 'r') as f:
-                        data = json.load(f)
-                    
-                    # Check both github and yasno for any False slots
+                    with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
                     for s_key in ['github', 'yasno']:
                         sources = data.get(s_key, {})
                         for group_name, days in sources.items():
-                            for date_str, day_data in days.items():
-                                slots = day_data.get('slots')
-                                if slots and any(s is False for s in slots):
-                                    should_alert = True
-                                    break
+                            for d, day_data in days.items():
+                                if day_data.get('slots') and any(s is False for s in day_data['slots']):
+                                    should_alert = True; break
                             if should_alert: break
                         if should_alert: break
-                    
-                    # Deduplicate: Check if effective slots are the same as last alerted
                     if should_alert:
-                        # Extract slots structure for hashing (Deduplication v2)
-                        # We only care about days that actually have outages.
-                        # This prevents alerts when a "pending" day becomes "all-light" (normal).
-                        slots_structure = {}
-                        for s_key in ['github', 'yasno']:
-                            sources = data.get(s_key, {})
-                            slots_structure[s_key] = {}
-                            for group_name, days in sources.items():
-                                day_slots = {}
-                                for d, day_data in days.items():
-                                    slots = day_data.get('slots')
-                                    # Only include the day in hash if it has actual outages (at least one False)
-                                    if slots and any(s is False for s in slots):
-                                        day_slots[d] = slots
-                                if day_slots:
-                                    slots_structure[s_key][group_name] = day_slots
-                        
+                        slots_structure = {s_key: {gn: {d: day_data['slots'] for d, day_data in days.items() if day_data.get('slots') and any(s is False for s in day_data['slots'])} for gn, days in data.get(s_key, {}).items()} for s_key in ['github', 'yasno']}
                         current_hash = hashlib.md5(json.dumps(slots_structure, sort_keys=True).encode()).hexdigest()
-                        last_hash = state.get("last_schedule_hash")
-                        
-                        with state_lock:
-                            if current_hash == last_hash:
-                                should_alert = False
-                                print(f"Schedule changed in sources, but outages are identical (Hash: {current_hash}). Skipping Telegram alert.")
-                            else:
-                                print(f"Schedule changed: New Hash {current_hash} (was {last_hash}). Proceeding with alert.")
-                                state["last_schedule_hash"] = current_hash
-                                save_state()
-
-            except Exception as e:
-                print(f"Error checking for outages or deduplicating: {e}")
-                should_alert = True # Fallback to alert if check fails
-
-            if should_alert:
-                print("Schedule updated. Telegram alert suppressed by configuration.")
-                # send_telegram("⚠️ <b>Увага!</b>\n<b>Оновлено графіки відключень!</b>\nНові дані вже доступні в каналі та на сайті\n⚡️ FLASH.srvrs.top")
-            else:
-                print("Schedule updated but alert skipped (deduplicated or no outages).")
+                        with state_mgr:
+                            if current_hash == state.get("last_schedule_hash"): should_alert = False
+                            else: state["last_schedule_hash"] = current_hash; save_state()
+            except: should_alert = True
+            if should_alert: print("Schedule updated (alert suppressed).")
 
 def check_quiet_mode_eligibility():
-    """
-    Checks if the system is eligible for Quiet Mode.
-    Past 24 hours must have no 'down' events in event_log.json.
-    Future 24 hours from now in last_schedules.json must have no 'False' slots.
-    """
     now = time.time()
     cutoff_24h_ago = now - (24 * 3600)
-    
-    # 1. Check History (Past 24h)
     try:
         if os.path.exists(EVENT_LOG_FILE):
             with open(EVENT_LOG_FILE, 'r') as f:
                 logs = json.load(f)
-                if isinstance(logs, list):
-                    for entry in logs:
-                        if entry.get("event") == "down" and entry.get("timestamp", 0) >= cutoff_24h_ago:
-                            print(f"Quiet Mode: Ineligible due to past outage at {entry.get('date_str')}")
-                            return False
-    except Exception as e:
-        print(f"Error checking event log for quiet mode: {e}")
-        return False
-
-    # 2. Check Schedule (Future 24h)
+                if any(entry.get("event") == "down" and entry.get("timestamp", 0) >= cutoff_24h_ago for entry in logs): return False
+    except: return False
     try:
         if os.path.exists(SCHEDULE_FILE):
-            with open(SCHEDULE_FILE, 'r') as f:
-                data = json.load(f)
-            
+            with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
             now_dt = datetime.datetime.fromtimestamp(now, KYIV_TZ)
-            today_str = now_dt.strftime("%Y-%m-%d")
-            tomorrow_str = (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+            today_str, tomorrow_str = now_dt.strftime("%Y-%m-%d"), (now_dt + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
             current_slot_idx = (now_dt.hour * 2) + (1 if now_dt.minute >= 30 else 0)
-            
-            found_outage = False
             for s_key in ['github', 'yasno']:
-                sources = data.get(s_key, {})
-                for group_name, days in sources.items():
-                    # Construct a list of slots for today and tomorrow to look ahead 24h (48 slots)
-                    all_slots = []
-                    today_data = days.get(today_str)
-                    if today_data and today_data.get('slots'):
-                        all_slots.extend(today_data['slots'])
-                    else:
-                        all_slots.extend([True] * 48) # Assume light if no data
-                        
-                    tomorrow_data = days.get(tomorrow_str)
-                    if tomorrow_data and tomorrow_data.get('slots'):
-                        all_slots.extend(tomorrow_data['slots'])
-                    else:
-                        # If no tomorrow schedule yet, we only check until end of today
-                        all_slots.extend([True] * 48)
-
-                    # Check next 48 slots starting from current
-                    look_ahead_limit = min(current_slot_idx + 48, len(all_slots))
-                    for i in range(current_slot_idx, look_ahead_limit):
-                        if all_slots[i] is False:
-                            print(f"Quiet Mode: Ineligible due to planned outage in the next 24h in {s_key}/{group_name}")
-                            found_outage = True
-                            break
-                    if found_outage: break
-                if found_outage: break
-            
-            if found_outage:
-                return False
-        else:
-            return False 
-    except Exception as e:
-        print(f"Error checking schedule for quiet mode: {e}")
-        return False
-
+                for gn, days in data.get(s_key, {}).items():
+                    all_slots = (days.get(today_str, {}).get('slots') or ([True]*48)) + (days.get(tomorrow_str, {}).get('slots') or ([True]*48))
+                    if any(all_slots[i] is False for i in range(current_slot_idx, min(current_slot_idx + 48, len(all_slots)))): return False
+        else: return False
+    except: return False
     return True
 
 def schedule_loop():
-    """
-    Periodically triggers report updates to keep charts and texts fresh.
-    - Sync Schedules: every 10 mins
-    - Daily Image: every 10 mins (plus special 00:01 final and 00:10 start)
-    - Text Report: every 10 mins
-    - Weekly Telegram: Monday 00:15
-    """
-    print("Schedule loop started (60 sec precision)...")
+    print("Schedule loop started...")
     weekly_sent_date = None
-    
     while True:
         now = datetime.datetime.now(KYIV_TZ)
-        hour = now.hour
-        minute = now.minute
-
-        # 1. Special Midnight Logic
-        if hour == 0 and minute == 1:
-            # Final summary for yesterday as a NEW message
-            trigger_daily_report_update(is_final=True)
-            time.sleep(65) # Avoid double trigger in the same minute
-            continue
-            
-        if hour == 0 and minute == 10:
-            # Start of today's monitoring
-            trigger_daily_report_update(is_final=False)
-            time.sleep(65)
-            continue
-
-        # 2. Regular 10-minute tasks (at 0, 10, 20, 30, 40, 50 minutes, except 00:10)
-        if minute % 10 == 0:
-            sync_schedules()
-            trigger_daily_report_update(is_final=False)
-            trigger_text_report_update()
-            update_quiet_status()
-            
-        # 3. Weekly Telegram Report (Monday around 00:15)
-        if now.weekday() == 0 and hour == 0 and 15 <= minute < 25:
+        if now.hour == 0 and now.minute == 1: trigger_daily_report_update(is_final=True); time.sleep(65); continue
+        if now.hour == 0 and now.minute == 10: trigger_daily_report_update(is_final=False); time.sleep(65); continue
+        if now.minute % 10 == 0:
+            sync_schedules(); trigger_daily_report_update(is_final=False); trigger_text_report_update(); update_quiet_status()
+        if now.weekday() == 0 and now.hour == 0 and 15 <= now.minute < 25:
             today_str = now.strftime("%Y-%m-%d")
             if weekly_sent_date != today_str:
                 try:
-                    print("Triggering weekly Telegram report...")
                     base_dir = os.path.dirname(os.path.abspath(__file__))
-                    python_exec = sys.executable
-                    script_path = os.path.join(base_dir, "generate_weekly_report.py")
-                    yesterday = (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-                    subprocess.run([python_exec, script_path, "--date", yesterday], check=True, cwd=base_dir)
+                    subprocess.run([sys.executable, os.path.join(base_dir, "generate_weekly_report.py"), "--date", (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")], check=True, cwd=base_dir)
                     weekly_sent_date = today_str
-                except Exception as e:
-                    print(f"Failed to trigger weekly telegram report: {e}")
-            
+                except: pass
         time.sleep(60)
-
