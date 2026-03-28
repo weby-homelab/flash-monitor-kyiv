@@ -17,8 +17,19 @@ from generate_daily_report import load_events, get_intervals_for_date, format_du
 
 # --- Configuration ---
 DATA_DIR = os.environ.get("DATA_DIR", "data")
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
+def get_telegram_config():
+    cfg_path = os.path.join(DATA_DIR, "config.json")
+    if os.path.exists(cfg_path):
+        with open(cfg_path, 'r', encoding='utf-8') as f:
+            try:
+                cfg = json.load(f)
+                return cfg.get("settings", {}).get("telegram_bot_token"), cfg.get("settings", {}).get("telegram_channel_id")
+            except: pass
+    return None, None
+
+_cfg_token, _cfg_chat = get_telegram_config()
+TOKEN = _cfg_token or os.environ.get("TELEGRAM_BOT_TOKEN")
+CHAT_ID = _cfg_chat or os.environ.get("TELEGRAM_CHANNEL_ID")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 

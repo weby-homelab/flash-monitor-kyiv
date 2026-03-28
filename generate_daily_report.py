@@ -14,8 +14,19 @@ load_dotenv()
 
 # --- Configuration ---
 DATA_DIR = os.environ.get("DATA_DIR", "data")
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.environ.get("TELEGRAM_CHANNEL_ID")
+def get_telegram_config():
+    cfg_path = os.path.join(DATA_DIR, "config.json")
+    if os.path.exists(cfg_path):
+        with open(cfg_path, 'r', encoding='utf-8') as f:
+            try:
+                cfg = json.load(f)
+                return cfg.get("settings", {}).get("telegram_bot_token"), cfg.get("settings", {}).get("telegram_channel_id")
+            except: pass
+    return None, None
+
+_cfg_token, _cfg_chat = get_telegram_config()
+TOKEN = _cfg_token or os.environ.get("TELEGRAM_BOT_TOKEN")
+CHAT_ID = _cfg_chat or os.environ.get("TELEGRAM_CHANNEL_ID")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
@@ -568,7 +579,7 @@ if __name__ == "__main__":
         if is_final:
             print("Quiet mode active. Sending special text summary instead of graphical report...")
             # Send the special quiet mode summary text instead of photo
-            msg = f"{target_date.strftime('%d.%m')} ({DAYS_UA[target_date.weekday()]}): Світло є 24 год. 🔆"
+            msg = f"{target_date.strftime('%d.%m')} ({DAYS_UA[target_date.weekday()]}): Світло було 24 год. 🔆"
             url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
             payload = {"chat_id": CHAT_ID, "text": f"<b>{msg}</b>", "parse_mode": "HTML"}
             try:
