@@ -503,6 +503,27 @@ def index():
     # Force dark theme preference for the dashboard
     return render_template('index.html')
 
+@app.route('/robots.txt')
+def robots_txt():
+    content = "User-agent: *\nDisallow: /admin\nDisallow: /api/\nAllow: /\n\nSitemap: https://flash.srvrs.top/sitemap.xml"
+    response = make_response(content)
+    response.headers["Content-Type"] = "text/plain"
+    return response
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    content = '''<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://flash.srvrs.top/</loc>
+    <changefreq>hourly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>'''
+    response = make_response(content)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
 @app.route('/admin')
 def admin_panel():
     # Support token in URL params OR in X-Admin-Token header
