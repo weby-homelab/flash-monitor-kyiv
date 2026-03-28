@@ -537,7 +537,7 @@
                     <label>Пріоритет джерела <span class="info-icon">i<span class="tooltip">Оберіть, яке джерело графіку вважати основним при конфліктах даних.</span></span></label>
                     <select id="adv-ds-priority">
                         <option value="yasno">Yasno (Пріоритет)</option>
-                        <option value="github">GitHub (Пріоритет)</option>
+                        <option value="github">GitHub (Пріритет)</option>
                         <option value="custom">Свій URL (Пріоритет)</option>
                     </select>
                 </div>
@@ -767,9 +767,9 @@
             try {
                 if (!config.settings) return;
 
-                const setVal = (id, val) => {
+                const setVal = (id, val, def = '') => {
                     const el = document.getElementById(id);
-                    if (el) el.value = val !== undefined ? val : '';
+                    if (el) el.value = val !== undefined && val !== null && val !== "" ? val : def;
                 };
 
                 // Telegram & API
@@ -833,24 +833,23 @@
                 }
 
                 // UI Templates & Icons
-                if (config.ui) {
-                    const ui = config.ui;
-                    if (ui.text) {
-                        setVal('ui-txt-up', ui.text.event_up);
-                        setVal('ui-txt-down', ui.text.event_down);
-                        setVal('ui-txt-dur-up', ui.text.dur_prefix_up);
-                        setVal('ui-txt-dur-down', ui.text.dur_prefix_down);
-                        setVal('ui-txt-next-up', ui.text.next_prefix_up);
-                        setVal('ui-txt-next-down', ui.text.next_prefix_down);
-                        setVal('ui-txt-on-full', ui.text.on_full);
-                        setVal('ui-txt-off-full', ui.text.off_full);
-                        setVal('ui-txt-emergency', ui.text.emergency);
-                    }
-                    if (ui.icons) {
-                        setVal('ui-ico-on', ui.icons.on);
-                        setVal('ui-ico-off', ui.icons.off);
-                    }
-                }
+                const ui = config.ui || {};
+                const txt = ui.text || {};
+                const icons = ui.icons || {};
+
+                setVal('ui-txt-up', txt.event_up, "🟢 <b>{time} Світло з'явилося</b>");
+                setVal('ui-txt-down', txt.event_down, "🔴 <b>{time} Світло зникло</b>");
+                setVal('ui-txt-dur-up', txt.dur_prefix_up, "Воно було");
+                setVal('ui-txt-dur-down', txt.dur_prefix_down, "Не було");
+                setVal('ui-txt-next-up', txt.next_prefix_up, "💡 Очікуємо через");
+                setVal('ui-txt-next-down', txt.next_prefix_down, "❌ Вимкнення через");
+                setVal('ui-txt-on-full', txt.on_full, "Є СВІТЛО");
+                setVal('ui-txt-off-full', txt.off_full, "НЕМАЄ СВІТЛА");
+                setVal('ui-txt-emergency', txt.emergency, "Аварійне Відключення!");
+                
+                setVal('ui-ico-on', icons.on, "⚡️");
+                setVal('ui-ico-off', icons.off, "🌑");
+
             } catch(e) { console.error('Render config error:', e); }
         }
 
