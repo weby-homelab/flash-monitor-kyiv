@@ -142,6 +142,19 @@ flowchart TD
 
 ---
 
+## 📥 Installation & Setup Guides
+
+The project has two main branches:
+1.  **`main` (Docker Edition):** Recommended for a quick start.
+2.  **`classic` (Bare-Metal Edition):** For running directly on the system via `systemd`.
+
+📖 **Complete Documentation:**
+*   [Installation Guide (Step-by-Step)](INSTRUCTIONS_INSTALL_ENG.md)
+*   [Detailed Configuration Setup](INSTRUCTIONS_ENG.md)
+*   [Development Rules & Guidelines](DEVELOPMENT_ENG.md)
+
+---
+
 ## 📜 License
 Distributed under the **MIT** license.
 

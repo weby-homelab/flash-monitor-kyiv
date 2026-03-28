@@ -151,6 +151,11 @@ flowchart TD
     ```
 2.  **`classic` (Bare-Metal Edition):** Для роботи безпосередньо в системі через `systemd`.
 
+📖 **Повні інструкції:**
+*   [Інструкція зі встановлення (Installation Guide)](INSTRUCTIONS_INSTALL.md)
+*   [Детальне налаштування та конфігурація](INSTRUCTIONS.md)
+*   [Правила розробки (Development Rules)](DEVELOPMENT.md)
+
 ### Швидкий старт (Smart Bootstrap):
 Система автоматично ініціалізується при першому запуску:
 1.  Генерує унікальні `SECRET_KEY` та `ADMIN_TOKEN`.
