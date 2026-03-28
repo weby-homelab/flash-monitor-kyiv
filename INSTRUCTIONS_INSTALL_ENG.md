@@ -23,25 +23,9 @@ apt-get install -y docker-compose-plugin
 ## 2. File Structure Setup
 Create the working directory and download the required files:
 ```bash
-mkdir -p flash-monitor/data/static
+mkdir -p flash-monitor
 cd flash-monitor
 curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
-```
-
-### Create `config.json` configuration file
-Example configuration for Kyiv (replace `your_group` with your outage group, e.g., `"1"`, `"2"`, or `"3"`):
-```json
-{
-  "settings": {
-    "region": "kyiv",
-    "groups": ["1"],
-    "style": "list"
-  },
-  "sources": {
-    "dtek": { "enabled": true },
-    "yasno": { "enabled": true, "region_id": "25", "dso_id": "902" }
-  }
-}
 ```
 
 ### Create `.env` environment file
@@ -54,22 +38,31 @@ TELEGRAM_CHANNEL_ID=your_channel_id
 SCHEDULE_API_URL=
 ```
 
-## 3. System Launch
-Start the containers in the background:
+## 3. System Launch (Smart Bootstrap)
+The system will automatically generate all necessary configuration files on the first launch:
 ```bash
 docker compose pull && docker compose up -d
 ```
 The dashboard will be available at port `:5050`.
+The Admin Control Panel is available at `/admin`.
 
-## 4. Power Monitoring Setup (Heartbeat)
-To enable power status and charts, configure your IoT device (ESP8266/ESP32, Mikrotik) or another server (e.g., Uptime Kuma) to send a "pulse":
+## 4. Access and Configuration
+After the first launch, the system will automatically generate unique tokens for access and the API.
 
-1. Find your automatically generated secret key (the file is created after the first launch):
+1. Find your `admin_token` (for Admin Panel access) and `secret_key` (for push signals):
    ```bash
+   cat data/power_monitor_state.json | grep token
    cat data/power_monitor_state.json | grep secret_key
    ```
-2. Configure your device to send a GET request every minute:
-   `https://your-domain/api/push/YOUR_SECRET_KEY`
+2. Go to the Admin Panel using the link:
+   `https://your-domain/admin?t=YOUR_ADMIN_TOKEN`
+3. All further settings (region, outage groups, delays) are made **directly through the web interface**.
+
+## 5. Power Monitoring Setup (Heartbeat)
+To enable power status and charts, configure your IoT device (ESP8266/ESP32, Mikrotik) or another server (e.g., Uptime Kuma) to send a "pulse".
+
+Configure your device to send a GET request every minute:
+`https://your-domain/api/push/YOUR_SECRET_KEY`
 
 **Additional (Manual Override):**
 Starting with version `v1.16.0`, you can manually trigger a power outage event (without waiting for a timeout) by sending a GET request to:
