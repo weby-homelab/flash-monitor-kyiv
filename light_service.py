@@ -72,22 +72,34 @@ SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 
 class SafeStateContext:
     def __init__(self):
-        self.state_lock = threading.RLock()
+        self._lock = threading.RLock()
+        self._counter = 0
+        self._flock_file = None
         self.file_lock_path = STATE_LOCK_FILE
 
     def __enter__(self):
-        # Always acquire thread lock first, then file lock to prevent deadlocks
-        self.state_lock.acquire()
-        self.flock_file = open(self.file_lock_path, 'a')
-        fcntl.flock(self.flock_file, fcntl.LOCK_EX)
+        self._lock.acquire()
+        self._counter += 1
+        if self._counter == 1:
+            try:
+                self._flock_file = open(self.file_lock_path, 'a')
+                fcntl.flock(self._flock_file, fcntl.LOCK_EX)
+            except Exception as e:
+                print(f"Error acquiring file lock: {e}")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
-            fcntl.flock(self.flock_file, fcntl.LOCK_UN)
-            self.flock_file.close()
+            if self._counter == 1 and self._flock_file:
+                try:
+                    fcntl.flock(self._flock_file, fcntl.LOCK_UN)
+                    self._flock_file.close()
+                except:
+                    pass
+                self._flock_file = None
         finally:
-            self.state_lock.release()
+            self._counter -= 1
+            self._lock.release()
 
 state_mgr = SafeStateContext()
 
