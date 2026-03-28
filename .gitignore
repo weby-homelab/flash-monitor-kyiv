@@ -2,21 +2,34 @@
 .env
 venv/
 __pycache__/
+.pytest_cache/
+*.pyc
 
-# State files
+# Runtime Data
+data/
+!data/config.json
+
+# JSON files
 *.json
 !config.json
+!data/config.json
 !manifest.json
-*.png
-!static/icon-192.png
-!static/icon-512.png
-!static/favicon.png
-*.jpg
-!dashboard_preview.jpg
+
+# State files
 *.lock
 *.state
 *.bak
 *.log
+
+# Images
+*.png
+!static/icon-192.png
+!static/icon-512.png
+!static/favicon.png
+!Admin-control-panel-*.png
+
+*.jpg
+!dashboard_preview.jpg
 
 # IDE / OS
 .idea/

@@ -1,7 +1,15 @@
 .env
 venv/
 __pycache__/
+.pytest_cache/
 *.pyc
 .git/
 .github/
 data/
+tests/
+*.md
+*.jpg
+*.png
+!static/icon-192.png
+!static/icon-512.png
+!static/favicon.png
