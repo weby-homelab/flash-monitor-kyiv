@@ -61,6 +61,32 @@ app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
 
 
+
+# --- SSE Logic ---
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[asyncio.Queue] = []
+
+    async def connect(self, q: asyncio.Queue):
+        self.active_connections.append(q)
+
+    def disconnect(self, q: asyncio.Queue):
+        if q in self.active_connections:
+            self.active_connections.remove(q)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                connection.put_nowait(message)
+            except asyncio.QueueFull:
+                pass
+
+manager = ConnectionManager()
+
+async def broadcast_state_update():
+    status_data = await api_status()
+    await manager.broadcast({"type": "update", "data": status_data})
+
 # --- Caching ---
 CACHE = cachetools.TTLCache(maxsize=100, ttl=60)
 cache_lock = asyncio.Lock()
@@ -663,6 +689,7 @@ async def push_api(key: str, background_tasks: BackgroundTasks, x_secret_key: st
                 else:
                     msg = format_event_message(True, current_time, state.get("went_down_at", 0))
                     background_tasks.add_task(send_telegram, msg)
+                background_tasks.add_task(broadcast_state_update)
                 
             await save_state()
         
@@ -695,6 +722,7 @@ async def down_api(key: str, background_tasks: BackgroundTasks, x_secret_key: st
                 else:
                     msg = format_event_message(False, current_time, state.get("came_up_at", 0))
                     background_tasks.add_task(send_telegram, msg)
+                background_tasks.add_task(broadcast_state_update)
                 
             await save_state()
         
@@ -729,6 +757,7 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
 
                 msg = format_event_message(False, timestamp, state.get("came_up_at", 0))
                 background_tasks.add_task(send_telegram, msg)
+                background_tasks.add_task(broadcast_state_update)
 
                 # Update status
                 state["status"] = "down"
@@ -845,6 +874,7 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
                 
                 msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
                 background_tasks.add_task(send_telegram, msg)
+                background_tasks.add_task(broadcast_state_update)
                 await save_state()
 
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
@@ -1003,6 +1033,7 @@ async def admin_safety_net_react(request: Request, data: dict = Body(None), back
             log_event("down", down_time_ts)
             msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
             background_tasks.add_task(send_telegram, msg)
+            background_tasks.add_task(broadcast_state_update)
         
         elif action == 'tech':
             minutes = int(value or 30)
@@ -1134,6 +1165,40 @@ async def admin_regen_token(request: Request):
         await save_state()
         
     return {"status": "ok", "new_token": new_token}
+
+
+@app.get('/api/status/stream')
+async def status_stream(request: Request):
+    q = asyncio.Queue(maxsize=100)
+    await manager.connect(q)
+    
+    async def event_generator():
+        try:
+            # Initial burst
+            initial_data = await api_status()
+            yield {
+                "event": "update",
+                "data": json.dumps({"type": "update", "data": initial_data})
+            }
+            
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    message = await asyncio.wait_for(q.get(), timeout=15.0)
+                    yield {
+                        "event": "update",
+                        "data": json.dumps(message)
+                    }
+                except asyncio.TimeoutError:
+                    yield {
+                        "event": "ping",
+                        "data": "keep-alive"
+                    }
+        finally:
+            manager.disconnect(q)
+            
+    return EventSourceResponse(event_generator())
 
 if __name__ == '__main__':
     import uvicorn

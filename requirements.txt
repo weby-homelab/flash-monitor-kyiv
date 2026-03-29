@@ -16,3 +16,4 @@ jinja2
 pydantic
 cachetools
 httpx
+sse-starlette
