@@ -1,9 +1,12 @@
 import os
 import json
-import requests
+import httpx
+import asyncio
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Optional
+import aiofiles
 
 def get_timezone():
     try:
@@ -21,22 +24,62 @@ KYIV_TZ = get_timezone()
 GITHUB_URL = "https://raw.githubusercontent.com/Baskerville42/outage-data-ua/main/data/{region}.json"
 YASNO_URL = "https://app.yasno.ua/api/blackout-service/public/shutdowns/regions/{region_id}/dsos/{dso_id}/planned-outages"
 
-def fetch_github(cfg: dict) -> Optional[dict]:
+# --- Circuit Breaker Pattern for Yasno API ---
+class CircuitBreaker:
+    def __init__(self, failure_threshold=3, recovery_timeout=60):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failure_count = 0
+        self.state = "CLOSED" # CLOSED, OPEN, HALF-OPEN
+        self.last_failure_time = 0
+
+    def can_execute(self):
+        if self.state == "CLOSED":
+            return True
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF-OPEN"
+                return True
+            return False
+        if self.state == "HALF-OPEN":
+            return False # Only one request should try when HALF-OPEN
+        return True
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"
+
+    def record_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+        else:
+            self.state = "CLOSED"
+
+yasno_cb = CircuitBreaker()
+
+async def fetch_github(client: httpx.AsyncClient, cfg: dict) -> Optional[dict]:
     if not cfg.get('sources', {}).get('github', {}).get('enabled', False):
         return None
     try:
         url = GITHUB_URL.format(region=cfg['settings'].get('region', 'kyiv'))
-        r = requests.get(url, timeout=20)
+        r = await client.get(url, timeout=20)
         r.raise_for_status()
         return r.json()
     except Exception as e:
         print(f"GitHub fetch error: {e}")
         return None
 
-def fetch_yasno(cfg: dict) -> Optional[dict]:
+async def fetch_yasno(client: httpx.AsyncClient, cfg: dict) -> Optional[dict]:
     yasno_cfg = cfg.get('sources', {}).get('yasno', {})
     if not yasno_cfg.get('enabled', False):
         return None
+        
+    if not yasno_cb.can_execute():
+        print(f"Yasno API Circuit Breaker is {yasno_cb.state}. Skipping request.")
+        return None
+        
     try:
         region_id = str(yasno_cfg.get('region_id', '25'))
         dso_id = str(yasno_cfg.get('dso_id', '902'))
@@ -50,19 +93,26 @@ def fetch_yasno(cfg: dict) -> Optional[dict]:
             region_id=region_id,
             dso_id=dso_id
         )
-        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
+        if yasno_cb.state == "HALF-OPEN":
+            # Test request
+            pass
+            
+        r = await client.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
         r.raise_for_status()
+        
+        yasno_cb.record_success()
         return r.json()
     except Exception as e:
         print(f"Yasno fetch error: {e}")
+        yasno_cb.record_failure()
         return None
 
-def fetch_custom(cfg: dict) -> Optional[dict]:
+async def fetch_custom(client: httpx.AsyncClient, cfg: dict) -> Optional[dict]:
     custom_url = cfg.get('advanced', {}).get('data_sources', {}).get('custom_url')
     if not custom_url:
         return None
     try:
-        r = requests.get(custom_url, headers={"User-Agent": "Flash-Monitor/2.7"}, timeout=20)
+        r = await client.get(custom_url, headers={"User-Agent": "Flash-Monitor/2.7"}, timeout=20)
         r.raise_for_status()
         return r.json()
     except Exception as e:
@@ -145,14 +195,18 @@ def has_schedule_changed(old_cache: dict, new_cache: dict) -> bool:
                     return True
     return False
 
-def update_local_schedules(config_path: str, output_path: str):
+async def update_local_schedules(config_path: str, output_path: str):
     try:
-        with open(config_path, "r") as f:
-            cfg = json.load(f)
+        async with aiofiles.open(config_path, "r") as f:
+            content = await f.read()
+            cfg = json.loads(content)
 
-        gh_data = fetch_github(cfg)
-        ys_data = fetch_yasno(cfg)
-        cu_data = fetch_custom(cfg)
+        async with httpx.AsyncClient() as client:
+            gh_task = fetch_github(client, cfg)
+            ys_task = fetch_yasno(client, cfg)
+            cu_task = fetch_custom(client, cfg)
+            
+            gh_data, ys_data, cu_data = await asyncio.gather(gh_task, ys_task, cu_task)
 
         github_cache = extract_github(gh_data, cfg)
         yasno_cache = extract_yasno(ys_data, cfg)
@@ -167,8 +221,9 @@ def update_local_schedules(config_path: str, output_path: str):
         old_cache = {}
         if os.path.exists(output_path):
             try:
-                with open(output_path, "r") as f:
-                    old_cache = json.load(f)
+                async with aiofiles.open(output_path, "r") as f:
+                    content = await f.read()
+                    old_cache = json.loads(content)
             except Exception:
                 pass
 
@@ -180,12 +235,17 @@ def update_local_schedules(config_path: str, output_path: str):
         if custom_cache:
             new_cache["custom"] = custom_cache
             
+        # Graceful degradation: if all are empty but we have old data, return stale data
+        if not new_cache and old_cache:
+            print("All schedule sources failed. Degrading gracefully to cached data.")
+            return True, False
+            
         has_changed = has_schedule_changed(old_cache, new_cache)
             
         new_cache["last_update"] = datetime.now(KYIV_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
-        with open(output_path, "w") as f:
-            json.dump(new_cache, f, indent=2)
+        async with aiofiles.open(output_path, "w") as f:
+            await f.write(json.dumps(new_cache, indent=2))
 
         # Update schedule_history.json to preserve historical plans
         data_dir = os.environ.get("DATA_DIR", ".")
@@ -193,8 +253,9 @@ def update_local_schedules(config_path: str, output_path: str):
         history = {}
         if os.path.exists(history_path):
             try:
-                with open(history_path, "r") as f:
-                    history = json.load(f)
+                async with aiofiles.open(history_path, "r") as f:
+                    content = await f.read()
+                    history = json.loads(content)
             except Exception:
                 pass
 
@@ -239,8 +300,8 @@ def update_local_schedules(config_path: str, output_path: str):
                 history_updated = True
 
         if history_updated:
-            with open(history_path, "w") as f:
-                json.dump(history, f, indent=2)
+            async with aiofiles.open(history_path, "w") as f:
+                await f.write(json.dumps(history, indent=2))
 
         print(f"Local schedules updated successfully at {new_cache['last_update']}. Changed: {has_changed}")
         return True, has_changed

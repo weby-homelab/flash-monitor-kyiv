@@ -951,7 +951,7 @@ async def sync_schedules():
     if not sync_success:
         print("Starting local schedule parsing...")
         config_path = os.path.join(os.path.dirname(__file__), "config.json")
-        result = update_local_schedules(config_path, SCHEDULE_FILE)
+        result = await update_local_schedules(config_path, SCHEDULE_FILE)
         has_changed = result[1] if isinstance(result, tuple) and len(result) == 2 else False
         if has_changed:
             trigger_daily_report_update()
