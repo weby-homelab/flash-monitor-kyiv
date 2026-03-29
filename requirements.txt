@@ -8,3 +8,8 @@ pandas
 numpy
 tzdata
 pytest
+fastapi
+uvicorn[standard]
+structlog
+aiofiles
+jinja2

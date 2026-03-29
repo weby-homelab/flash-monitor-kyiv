@@ -1,5 +1,4 @@
 import requests
-from flask import Flask, render_template, jsonify, send_from_directory, make_response, request
 import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -10,6 +9,12 @@ from bs4 import BeautifulSoup
 import threading
 import subprocess
 import secrets
+import structlog
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request, Response, Header, Body, Query, HTTPException
+from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 # Запуск ініціалізації для нових користувачів
 import bootstrap
@@ -29,8 +34,27 @@ from light_service import (
     KYIV_TZ, STATE_LOCK_FILE, DATA_DIR, EVENT_LOG_FILE
 )
 
+# Structlog configuration
+structlog.configure(
+    processors=[
+        structlog.processors.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.JSONRenderer()
+    ]
+)
+logger = structlog.get_logger()
 
-app = Flask(__name__, static_folder=None)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("application_startup")
+    load_state()
+    yield
+    # Shutdown
+    logger.info("application_shutdown")
+
+app = FastAPI(lifespan=lifespan)
+templates = Jinja2Templates(directory="templates")
 
 # --- Caching ---
 CACHE = {}
@@ -49,37 +73,40 @@ def cached_fetch(key, func):
             CACHE[key] = {'time': now, 'data': data}
             return data
         except Exception as e:
-            print(f"Cache update error for {key}: {e}")
+            logger.error("cache_update_error", key=key, error=str(e))
             return CACHE.get(key, {}).get('data') # Return stale data on error
 
 # --- PWA Routes ---
-@app.route('/manifest.json')
+@app.get('/manifest.json')
 def manifest():
-    return send_from_directory('static', 'manifest.json')
+    return FileResponse('static/manifest.json')
 
-@app.route('/service-worker.js')
+@app.get('/service-worker.js')
 def service_worker():
-    return send_from_directory('static', 'service-worker.js')
+    return FileResponse('static/service-worker.js')
 
-from werkzeug.exceptions import NotFound
-
-@app.route('/static/<path:filename>')
-def serve_static(filename):
+@app.get('/static/{filename:path}')
+def serve_static(filename: str):
     # Try data dir first (for generated charts), then code dir
-    data_static = os.path.join(DATA_DIR, 'static')
+    data_static = os.path.join(DATA_DIR, 'static', filename)
+    code_static = os.path.join('static', filename)
     
-    try:
-        response = make_response(send_from_directory(data_static, filename))
-    except NotFound:
-        response = make_response(send_from_directory('static', filename))
+    file_path = data_static if os.path.exists(data_static) else code_static
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Not Found")
     
+    headers = {}
     # Disable caching for images to ensure they refresh in PWA/Mobile
     if filename.endswith('.png'):
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
+        headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        headers['Pragma'] = 'no-cache'
+        headers['Expires'] = '0'
     
-    return response
+    return FileResponse(file_path, headers=headers)
+
+@app.get('/health')
+def health_check():
+    return {"status": "ok"}
 
 def get_radiation():
     # Return stable background value
@@ -204,7 +231,7 @@ def get_power_events_data(limit=5):
                         latest_event_text = f"• Наступне планове: {next_range}"
                     
     except Exception as e:
-        print(f"Error reading events: {e}")
+        logger.error("error_reading_events", error=str(e))
         pass
         
     return latest_event_text, recent_events
@@ -367,7 +394,7 @@ def get_today_schedule_text():
 
         return "".join(output)
     except Exception as e:
-        print(f"Error building schedule text: {e}")
+        logger.error("error_building_schedule_text", error=str(e))
         return "Помилка завантаження графіка"
 
 def get_air_quality():
@@ -457,7 +484,7 @@ def get_air_quality():
                         hum_history.append(h_val)
 
             except Exception as e:
-                print(f"AQ History Error: {e}")
+                logger.error("aq_history_error", error=str(e))
 
             # Simple AQI calculation based on PM2.5 (standard European scale approx)
             aqi = int(pm25 * 3) # rough proxy for simplified dashboard
@@ -490,7 +517,7 @@ def get_air_quality():
 
         return cached_fetch("air_quality", fetch_all)
     except Exception as e:
-        print(f"AQ Error: {e}")
+        logger.error("aq_error", error=str(e))
         return {"status": "error", "text": "Дані відсутні"}
 
 def get_wind_label(deg):
@@ -498,19 +525,17 @@ def get_wind_label(deg):
     labels = ["Пн", "ПнСх", "Сх", "ПдСх", "Пд", "ПдЗх", "Зх", "ПнЗх"]
     return labels[int((deg + 22.5) % 360 / 45)]
 
-@app.route('/')
-def index():
+@app.get('/')
+def index(request: Request):
     # Force dark theme preference for the dashboard
-    return render_template('index.html')
+    return templates.TemplateResponse("index.html", {"request": request})
 
-@app.route('/robots.txt')
+@app.get('/robots.txt')
 def robots_txt():
     content = "User-agent: *\nDisallow: /admin\nDisallow: /api/\nAllow: /\n\nSitemap: https://flash.srvrs.top/sitemap.xml"
-    response = make_response(content)
-    response.headers["Content-Type"] = "text/plain"
-    return response
+    return PlainTextResponse(content)
 
-@app.route('/sitemap.xml')
+@app.get('/sitemap.xml')
 def sitemap_xml():
     content = '''<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -520,19 +545,16 @@ def sitemap_xml():
     <priority>1.0</priority>
   </url>
 </urlset>'''
-    response = make_response(content)
-    response.headers["Content-Type"] = "application/xml"
-    return response
+    return Response(content=content, media_type="application/xml")
 
-@app.route('/admin')
-def admin_panel():
-    # Support token in URL params OR in X-Admin-Token header
-    token = request.args.get('t') or request.headers.get('X-Admin-Token')
+@app.get('/admin')
+def admin_panel(request: Request, t: str = Query(None), x_admin_token: str = Header(None, alias="X-Admin-Token")):
+    token = t or x_admin_token
     if token and token == state.get('admin_token'):
-        return render_template('admin.html')
-    return "Access Denied", 403
+        return templates.TemplateResponse('admin.html', {"request": request})
+    return PlainTextResponse("Access Denied", status_code=403)
 
-@app.route('/api/status')
+@app.get('/api/status')
 def api_status():
     load_state()
     with state_mgr:
@@ -566,7 +588,6 @@ def api_status():
                 group_name = groups[0].replace('GPV', '')
 
     # Extra: get raw slots for graph bar
-    from datetime import timedelta
     now = datetime.now(KYIV_TZ)
     date_str = now.strftime("%Y-%m-%d")
     slots = [True] * 48
@@ -590,7 +611,7 @@ def api_status():
                 if merged: slots = merged
         except: pass
 
-    return jsonify({
+    return {
         "light": ui_light_state,
         "light_event": latest_event_text,
         "recent_events": recent_events,
@@ -603,14 +624,13 @@ def api_status():
         "show_graphs": show_graphs,
         "show_charts": show_charts,
         "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
-    })
+    }
 
-@app.route('/api/push/<key>')
-def push_api(key):
-    # Support key in path OR X-Secret-Key header
-    secret_key = request.headers.get('X-Secret-Key') or key
+@app.get('/api/push/{key}')
+def push_api(key: str, x_secret_key: str = Header(None, alias="X-Secret-Key")):
+    secret_key = x_secret_key or key
     if secret_key != state.get('secret_key'):
-        return jsonify({"status": "error", "msg": "invalid_key"}), 403
+        return JSONResponse({"status": "error", "msg": "invalid_key"}, status_code=403)
         
     current_time = time.time()
     
@@ -632,25 +652,24 @@ def push_api(key):
                 
                 # Quiet Mode check: skip message if status is 'quiet'
                 if state.get("quiet_status") == "quiet":
-                    print("Quiet mode active: Skipping 'Light Up' Telegram message.")
+                    logger.info("Quiet mode active: Skipping 'Light Up' Telegram message.")
                 else:
                     msg = format_event_message(True, current_time, state.get("went_down_at", 0))
                     threading.Thread(target=send_telegram, args=(msg,)).start()
                 
             save_state()
         
-    return jsonify({
+    return {
         "status": "ok", 
         "msg": "heartbeat_received",
         "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
-    })
+    }
 
-@app.route('/api/down/<key>')
-def down_api(key):
-    # Support key in path OR X-Secret-Key header
-    secret_key = request.headers.get('X-Secret-Key') or key
+@app.get('/api/down/{key}')
+def down_api(key: str, x_secret_key: str = Header(None, alias="X-Secret-Key")):
+    secret_key = x_secret_key or key
     if secret_key != state.get('secret_key'):
-        return jsonify({"status": "error", "msg": "invalid_key"}), 403
+        return JSONResponse({"status": "error", "msg": "invalid_key"}, status_code=403)
         
     current_time = time.time()
     
@@ -665,23 +684,22 @@ def down_api(key):
                 
                 # Quiet Mode check
                 if state.get("quiet_status") == "quiet":
-                    print("Quiet mode active: Skipping 'Light Down' Telegram message from API.")
+                    logger.info("Quiet mode active: Skipping 'Light Down' Telegram message from API.")
                 else:
                     msg = format_event_message(False, current_time, state.get("came_up_at", 0))
                     threading.Thread(target=send_telegram, args=(msg,)).start()
                 
             save_state()
         
-    return jsonify({
+    return {
         "status": "ok", 
         "msg": "manual_down_received",
         "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
-    })
+    }
 
-@app.route('/api/tg/webhook', methods=['POST'])
-def tg_webhook():
-    data = request.get_json()
-    if not data: return "OK"
+@app.post('/api/tg/webhook')
+def tg_webhook(data: dict = Body(None)):
+    if not data: return PlainTextResponse("OK")
     
     if 'callback_query' in data:
         cb = data['callback_query']
@@ -860,21 +878,20 @@ def tg_webhook():
                 "text": "Назад"
             })
             
-    return "OK"
+    return PlainTextResponse("OK")
 
 # --- Admin APIs ---
 
-def check_admin_token():
-    # Support token in URL params OR in X-Admin-Token header
-    t = request.args.get('t') or request.headers.get('X-Admin-Token')
+def check_admin_token(request: Request):
+    t = request.query_params.get('t') or request.headers.get('X-Admin-Token')
     if not t or t != state.get('admin_token'):
         return False
     return True
 
-@app.route('/api/admin/data')
-def admin_data():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.get('/api/admin/data')
+def admin_data(request: Request):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
     
     config_path = os.path.join(DATA_DIR, "config.json")
     if not os.path.exists(config_path):
@@ -898,7 +915,7 @@ def admin_data():
         with open(version_path, 'r') as f:
             version = f.read().strip()
 
-    return jsonify({
+    return {
         "config": config,
         "state": state,
         "logs": logs[-20:][::-1], # Last 20, newest first
@@ -907,16 +924,15 @@ def admin_data():
             "telegram_bot_token": TOKEN,
             "telegram_channel_id": CHAT_ID
         }
-    })
+    }
 
-@app.route('/api/admin/config', methods=['POST'])
-def admin_config_post():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.post('/api/admin/config')
+def admin_config_post(request: Request, new_config: dict = Body(None)):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
 
-    new_config = request.get_json()
     if not new_config:
-        return jsonify({"status": "error", "msg": "Invalid JSON"}), 400
+        return JSONResponse({"status": "error", "msg": "Invalid JSON"}, status_code=400)
 
     try:
         # Create auto-backup before saving
@@ -932,21 +948,21 @@ def admin_config_post():
         with cache_lock:
             CACHE.clear()
             
-        return jsonify({"status": "ok"})
+        return {"status": "ok"}
     except Exception as e:
-        return jsonify({"status": "error", "msg": str(e)}), 500
+        return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
-@app.route('/api/admin/quiet/mode', methods=['POST'])
-def admin_quiet_mode():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.post('/api/admin/quiet/mode')
+def admin_quiet_mode(request: Request, data: dict = Body(None)):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
         
-    data = request.get_json()
+    if not data: data = {}
     mode = data.get('mode')
     unmute = data.get('unmute', False)
 
     if mode not in ['auto', 'forced_on', 'forced_off']:
-        return jsonify({"status": "error", "msg": "Invalid mode"}), 400
+        return JSONResponse({"status": "error", "msg": "Invalid mode"}, status_code=400)
 
     with state_mgr:
         load_state()
@@ -957,14 +973,14 @@ def admin_quiet_mode():
         save_state()
         # Immediately recalculate actual status
         update_quiet_status()
-    return jsonify({"status": "ok"})
+    return {"status": "ok"}
 
-@app.route('/api/admin/safety_net/react', methods=['POST'])
-def admin_safety_net_react():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.post('/api/admin/safety_net/react')
+def admin_safety_net_react(request: Request, data: dict = Body(None)):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
 
-    data = request.get_json()
+    if not data: data = {}
     action = data.get('action')
     value = data.get('value') # For tech mute duration
 
@@ -991,30 +1007,30 @@ def admin_safety_net_react():
             
         save_state()
 
-    return jsonify({"status": "ok"})
+    return {"status": "ok"}
 
-@app.route('/api/admin/logs/add', methods=['POST'])
-def admin_logs_add():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.post('/api/admin/logs/add')
+def admin_logs_add(request: Request, data: dict = Body(None)):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
         
-    data = request.get_json()
+    if not data: data = {}
     event = data.get('event')
     timestamp = data.get('timestamp')
     
     if not event or not timestamp:
-        return jsonify({"status": "error", "msg": "Missing event or timestamp"}), 400
+        return JSONResponse({"status": "error", "msg": "Missing event or timestamp"}, status_code=400)
         
     try:
         log_event(event, float(timestamp))
-        return jsonify({"status": "ok"})
+        return {"status": "ok"}
     except Exception as e:
-        return jsonify({"status": "error", "msg": str(e)}), 500
+        return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
-@app.route('/api/admin/logs/<float:timestamp>', methods=['DELETE'])
-def admin_logs_delete(timestamp):
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.delete('/api/admin/logs/{timestamp}')
+def admin_logs_delete(request: Request, timestamp: float):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
         
     try:
         with state_mgr:
@@ -1028,14 +1044,14 @@ def admin_logs_delete(timestamp):
                 with open(EVENT_LOG_FILE, 'w') as f:
                     json.dump(new_logs, f, indent=2)
                     
-        return jsonify({"status": "ok"})
+        return {"status": "ok"}
     except Exception as e:
-        return jsonify({"status": "error", "msg": str(e)}), 500
+        return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
-@app.route('/api/admin/service/restart', methods=['POST'])
-def admin_service_restart():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.post('/api/admin/service/restart')
+def admin_service_restart(request: Request):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
 
     try:
         def restart():
@@ -1043,53 +1059,53 @@ def admin_service_restart():
             subprocess.run(["systemctl", "restart", "flash-monitor.service", "flash-background.service"])
 
         threading.Thread(target=restart).start()
-        return jsonify({"status": "ok", "msg": "Services restarting..."})
+        return {"status": "ok", "msg": "Services restarting..."}
     except Exception as e:
-        return jsonify({"status": "error", "msg": str(e)}), 500
+        return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
-@app.route('/api/admin/schedules/sync', methods=['POST'])
-def admin_schedules_sync():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.post('/api/admin/schedules/sync')
+def admin_schedules_sync(request: Request):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
 
     try:
         threading.Thread(target=sync_schedules).start()
-        return jsonify({"status": "ok", "msg": "Sync triggered"})
+        return {"status": "ok", "msg": "Sync triggered"}
     except Exception as e:
-        return jsonify({"status": "error", "msg": str(e)}), 500
+        return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
-@app.route('/api/admin/backups', methods=['GET'])
-def admin_backups_list():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
-    return jsonify(list_backups())
+@app.get('/api/admin/backups')
+def admin_backups_list(request: Request):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
+    return list_backups()
 
-@app.route('/api/admin/backups/create', methods=['POST'])
-def admin_backups_create():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.post('/api/admin/backups/create')
+def admin_backups_create(request: Request):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
     name = create_backup("manual")
-    return jsonify({"status": "ok", "name": name})
+    return {"status": "ok", "name": name}
 
-@app.route('/api/admin/backups/restore', methods=['POST'])
-def admin_backups_restore():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
-    data = request.get_json()
+@app.post('/api/admin/backups/restore')
+def admin_backups_restore(request: Request, data: dict = Body(None)):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
+    if not data: data = {}
     filename = data.get("filename")
     if not filename:
-        return jsonify({"status": "error", "msg": "Filename required"}), 400
+        return JSONResponse({"status": "error", "msg": "Filename required"}, status_code=400)
     
     success, msg = restore_backup(filename)
     if success:
-        return jsonify({"status": "ok", "msg": "Restored successfully. Restarting services..."})
+        return {"status": "ok", "msg": "Restored successfully. Restarting services..."}
     else:
-        return jsonify({"status": "error", "msg": msg}), 500
+        return JSONResponse({"status": "error", "msg": msg}, status_code=500)
 
-@app.route('/api/admin/security/regen_push_key', methods=['POST'])
-def admin_regen_push_key():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.post('/api/admin/security/regen_push_key')
+def admin_regen_push_key(request: Request):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
     
     with state_mgr:
         load_state()
@@ -1097,12 +1113,12 @@ def admin_regen_push_key():
         state["secret_key"] = new_key
         save_state()
         
-    return jsonify({"status": "ok", "new_key": new_key})
+    return {"status": "ok", "new_key": new_key}
 
-@app.route('/api/admin/security/regen_admin_token', methods=['POST'])
-def admin_regen_token():
-    if not check_admin_token():
-        return jsonify({"status": "error", "msg": "Access Denied"}), 403
+@app.post('/api/admin/security/regen_admin_token')
+def admin_regen_token(request: Request):
+    if not check_admin_token(request):
+        return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
     
     with state_mgr:
         load_state()
@@ -1110,9 +1126,8 @@ def admin_regen_token():
         state["admin_token"] = new_token
         save_state()
         
-    return jsonify({"status": "ok", "new_token": new_token})
-# Initialize State
-load_state()
+    return {"status": "ok", "new_token": new_token}
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5050)
+    import uvicorn
+    uvicorn.run("app:app", host='0.0.0.0', port=5050)

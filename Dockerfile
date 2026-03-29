@@ -26,4 +26,4 @@ RUN mkdir -p /app/data/static
 EXPOSE 5050
 
 # За замовчуванням запускаємо веб-сервер
-CMD ["gunicorn", "--workers", "4", "--threads", "4", "-b", "0.0.0.0:5050", "app:app"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5050", "--workers", "4"]
