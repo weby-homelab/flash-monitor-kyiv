@@ -21,6 +21,8 @@ from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse, HTM
 from fastapi.templating import Jinja2Templates
 from prometheus_client import make_asgi_app, Gauge, Histogram
 
+from sse_starlette.sse import EventSourceResponse
+
 # Запуск ініціалізації для нових користувачів
 import bootstrap
 bootstrap.perform_cold_start_if_needed()
