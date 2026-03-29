@@ -871,9 +871,14 @@
                         const nextLog = logs[index - 1]; 
                         const diffSec = nextLog.timestamp - log.timestamp;
                         if (diffSec > 0) {
-                            const h = Math.floor(diffSec / 3600);
+                            const d = Math.floor(diffSec / 86400);
+                            const h = Math.floor((diffSec % 86400) / 3600);
                             const m = Math.floor((diffSec % 3600) / 60);
-                            durationStr = h > 0 ? `${h} год ${m} хв` : `${m} хв`;
+                            if (d > 0) {
+                                durationStr = `${d} дн ${h} год ${m} хв`;
+                            } else {
+                                durationStr = h > 0 ? `${h} год ${m} хв` : `${m} хв`;
+                            }
                         }
                     }
                     
