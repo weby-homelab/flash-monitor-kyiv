@@ -19,6 +19,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response, Header, Body, Query, HTTPException
 from fastapi.responses import JSONResponse, FileResponse, PlainTextResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
+from prometheus_client import make_asgi_app, Gauge, Histogram
 
 # Запуск ініціалізації для нових користувачів
 import bootstrap
@@ -60,7 +61,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
 
+# Prometheus Metrics
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
 
+ACTIVE_SSE_CONNECTIONS = Gauge('flash_active_sse_connections', 'Number of active SSE connections')
+PARSING_DURATION = Histogram('flash_parsing_duration_seconds', 'Time spent parsing schedules')
 
 # --- SSE Logic ---
 class ConnectionManager:
@@ -69,10 +75,12 @@ class ConnectionManager:
 
     async def connect(self, q: asyncio.Queue):
         self.active_connections.append(q)
+        ACTIVE_SSE_CONNECTIONS.inc()
 
     def disconnect(self, q: asyncio.Queue):
         if q in self.active_connections:
             self.active_connections.remove(q)
+            ACTIVE_SSE_CONNECTIONS.dec()
 
     async def broadcast(self, message: dict):
         for connection in self.active_connections:

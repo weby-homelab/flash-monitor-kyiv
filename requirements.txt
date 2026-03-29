@@ -17,3 +17,4 @@ pydantic
 cachetools
 httpx
 sse-starlette
+prometheus-client

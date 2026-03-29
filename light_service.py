@@ -950,8 +950,16 @@ async def sync_schedules():
         except Exception as e: print(f"Failed to sync schedules: {e}")
     if not sync_success:
         print("Starting local schedule parsing...")
+        start_time = time.time()
         config_path = os.path.join(os.path.dirname(__file__), "config.json")
         result = await update_local_schedules(config_path, SCHEDULE_FILE)
+        
+        try:
+            from app import PARSING_DURATION
+            PARSING_DURATION.observe(time.time() - start_time)
+        except ImportError:
+            pass
+            
         has_changed = result[1] if isinstance(result, tuple) and len(result) == 2 else False
         if has_changed:
             trigger_daily_report_update()
