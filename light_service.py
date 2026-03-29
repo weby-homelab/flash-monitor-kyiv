@@ -3,6 +3,9 @@ import socketserver
 import threading
 import time
 import json
+import asyncio
+import aiofiles
+from models import AppConfig, AppState
 import os
 import secrets
 import datetime
@@ -32,10 +35,15 @@ def get_config():
             
         if os.path.exists(config_path):
             with open(config_path, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+                try:
+                    return AppConfig(**data).dict(exclude_unset=False, by_alias=True)
+                except Exception as e:
+                    print(f"Config validation error: {e}")
+                    return data
     except:
         pass
-    return {}
+    return AppConfig().dict()
 
 def get_admin_chat_id():
     cfg = get_config()
@@ -187,38 +195,42 @@ STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
 STATE_LOCK_FILE = os.path.join(DATA_DIR, "power_monitor_state.lock")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 
-class SafeStateContext:
+class SafeStateContextAsync:
     def __init__(self):
-        self._lock = threading.RLock()
+        self._lock = asyncio.Lock()
         self._counter = 0
         self._flock_file = None
         self.file_lock_path = STATE_LOCK_FILE
 
-    def __enter__(self):
-        self._lock.acquire()
+    async def __aenter__(self):
+        await self._lock.acquire()
         self._counter += 1
         if self._counter == 1:
             try:
-                self._flock_file = open(self.file_lock_path, 'a')
-                fcntl.flock(self._flock_file, fcntl.LOCK_EX)
+                def _acquire():
+                    self._flock_file = open(self.file_lock_path, 'a')
+                    fcntl.flock(self._flock_file, fcntl.LOCK_EX)
+                await asyncio.to_thread(_acquire)
             except Exception as e:
                 print(f"Error acquiring file lock: {e}")
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         try:
             if self._counter == 1 and self._flock_file:
-                try:
-                    fcntl.flock(self._flock_file, fcntl.LOCK_UN)
-                    self._flock_file.close()
-                except:
-                    pass
+                def _release():
+                    try:
+                        fcntl.flock(self._flock_file, fcntl.LOCK_UN)
+                        self._flock_file.close()
+                    except:
+                        pass
+                await asyncio.to_thread(_release)
                 self._flock_file = None
         finally:
             self._counter -= 1
             self._lock.release()
 
-state_mgr = SafeStateContext()
+state_mgr = SafeStateContextAsync()
 
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
@@ -327,7 +339,7 @@ def trigger_weekly_report_update():
 
     threading.Thread(target=run_script).start()
 
-def log_event(event_type, timestamp):
+async def log_event(event_type, timestamp):
     """
     Logs an event (up/down) to a JSON file for historical analysis.
     """
@@ -338,14 +350,14 @@ def log_event(event_type, timestamp):
             "date_str": datetime.datetime.fromtimestamp(timestamp, KYIV_TZ).strftime("%Y-%m-%d %H:%M:%S")
         }
         
-        with state_mgr:
+        async with state_mgr:
             logs = []
             if os.path.exists(EVENT_LOG_FILE):
                 try:
-                    with open(EVENT_LOG_FILE, 'r') as f:
-                        content = f.read().strip()
-                        if content:
-                            logs = json.loads(content)
+                    async with aiofiles.open(EVENT_LOG_FILE, 'r') as f:
+                        file_content = (await f.read()).strip()
+                        if file_content:
+                            logs = json.loads(file_content)
                             if not isinstance(logs, list):
                                 logs = []
                 except (json.JSONDecodeError, FileNotFoundError):
@@ -356,41 +368,53 @@ def log_event(event_type, timestamp):
                 logs = logs[-1000:]
                 
             temp_file = EVENT_LOG_FILE + '.tmp'
-            with open(temp_file, 'w') as f:
-                json.dump(logs, f, indent=2)
-            os.replace(temp_file, EVENT_LOG_FILE)
+            async with aiofiles.open(temp_file, 'w') as f:
+                await f.write(json.dumps(logs, indent=2))
+            
+            def _replace():
+                os.replace(temp_file, EVENT_LOG_FILE)
+            await asyncio.to_thread(_replace)
                 
     except Exception as e:
         print(f"Failed to log event: {e}")
 
-def load_state():
+async def load_state():
     global state
-    with state_mgr:
+    async with state_mgr:
         if os.path.exists(STATE_FILE):
             try:
-                with open(STATE_FILE, 'r') as f:
-                    saved_state = json.load(f)
+                async with aiofiles.open(STATE_FILE, 'r') as f:
+                    file_content = await f.read()
+                    saved_state = json.loads(file_content)
                     state.update(saved_state)
             except Exception as e:
                 print(f"Error loading state: {e}")
-    
+                
+        try:
+            validated_state = AppState(**state).dict(exclude_unset=False)
+            state.update(validated_state)
+        except Exception as e:
+            print(f"State validation error: {e}")
+
     if not state.get("secret_key"):
-        with state_mgr:
+        async with state_mgr:
             state["secret_key"] = secrets.token_urlsafe(16)
-            save_state()
+            await save_state()
 
     if not state.get("admin_token"):
-        with state_mgr:
+        async with state_mgr:
             state["admin_token"] = secrets.token_urlsafe(16)
-            save_state()
+            await save_state()
 
-def save_state():
-    with state_mgr:
+async def save_state():
+    async with state_mgr:
         try:
             temp_file = STATE_FILE + '.tmp'
-            with open(temp_file, 'w') as f:
-                json.dump(state, f)
-            os.replace(temp_file, STATE_FILE)
+            async with aiofiles.open(temp_file, 'w') as f:
+                await f.write(json.dumps(state))
+            def _replace():
+                os.replace(temp_file, STATE_FILE)
+            await asyncio.to_thread(_replace)
         except Exception as e:
             print(f"Error saving state: {e}")
 
@@ -820,8 +844,8 @@ def get_air_raid_alert():
         print(f"Error fetching alerts: {e}")
     return {"status": "unknown", "location": "Невідомо"}
 
-def update_quiet_status():
-    with state_mgr:
+async def update_quiet_status():
+    async with state_mgr:
         q_mode = state.get("quiet_mode", "auto")
         old_status = state.get("quiet_status", "active")
         is_eligible = check_quiet_mode_eligibility()
@@ -841,15 +865,15 @@ def update_quiet_status():
                     except Exception as e:
                         print(f"Failed to trigger text report: {e}")
                 threading.Thread(target=trigger_report).start()
-            save_state()
+            await save_state()
             print(f"Quiet mode status updated to: {new_status}")
 
-def monitor_loop():
+async def monitor_loop():
     print("Monitor loop started...")
     while True:
-        time.sleep(5)
-        load_state()
-        with state_mgr:
+        await asyncio.sleep(5)
+        await load_state()
+        async with state_mgr:
             current_time = get_current_time()
             last_seen = state["last_seen"]
             status = state["status"]
@@ -861,35 +885,35 @@ def monitor_loop():
                     state["safety_net_pending"] = True
                     state["safety_net_sent_at"] = current_time
                     state["safety_net_triggered_for"] = last_seen
-                    save_state()
+                    await save_state()
                     threading.Thread(target=send_safety_net_admin, args=(current_time,)).start()
             sent_at = state.get("safety_net_sent_at", 0)
             if state.get("safety_net_pending") and (current_time - sent_at) > 30:
                 state["safety_net_pending"] = False
-                save_state()
+                await save_state()
             if status == "up" and (current_time - last_seen) > 180:
                 state["status"] = "down"
                 state["safety_net_pending"] = False
                 down_time_ts = last_seen + get_push_interval()
                 state["went_down_at"] = down_time_ts
-                log_event("down", down_time_ts)
+                await log_event("down", down_time_ts)
                 msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
                 if state.get('quiet_status') == 'quiet':
                     state['pending_confirmation'] = True
                     threading.Thread(target=send_admin_confirmation, args=(down_time_ts,)).start()
                 else:
                     threading.Thread(target=send_telegram, args=(msg,)).start()
-                save_state()
+                await save_state()
 
-def alerts_loop():
+async def alerts_loop():
     print("Alerts loop started...")
     while True:
         try:
             current_alert = get_air_raid_alert()
             new_status = current_alert.get("status")
             if new_status != "unknown":
-                load_state()
-                with state_mgr:
+                await load_state()
+                async with state_mgr:
                     old_status = state.get("alert_status", "clear")
                     if new_status != old_status:
                         now_dt = datetime.datetime.now(KYIV_TZ)
@@ -908,11 +932,11 @@ def alerts_loop():
                             msg = f"✅ <b>{time_str} ВІДБІЙ ТРИВОГИ</b>{duration_str}"
                             threading.Thread(target=send_telegram, args=(msg,)).start()
                         state["alert_status"] = new_status
-                        save_state()
+                        await save_state()
         except Exception as e: print(f"Error in alerts loop: {e}")
-        time.sleep(60)
+        await asyncio.sleep(60)
 
-def sync_schedules():
+async def sync_schedules():
     sync_success = False
     if SCHEDULE_API_URL:
         try:
@@ -947,9 +971,9 @@ def sync_schedules():
                     if should_alert:
                         slots_structure = {s_key: {gn: {d: day_data['slots'] for d, day_data in days.items() if day_data.get('slots') and any(s is False for s in day_data['slots'])} for gn, days in data.get(s_key, {}).items()} for s_key in ['github', 'yasno']}
                         current_hash = hashlib.md5(json.dumps(slots_structure, sort_keys=True).encode()).hexdigest()
-                        with state_mgr:
+                        async with state_mgr:
                             if current_hash == state.get("last_schedule_hash"): should_alert = False
-                            else: state["last_schedule_hash"] = current_hash; save_state()
+                            else: state["last_schedule_hash"] = current_hash; await save_state()
             except: should_alert = True
             if should_alert: print("Schedule updated (alert suppressed).")
 
@@ -976,7 +1000,7 @@ def check_quiet_mode_eligibility():
     except: return False
     return True
 
-def schedule_loop():
+async def schedule_loop():
     print("Schedule loop started...")
     weekly_sent_date = None
     last_prune_date = None
@@ -993,7 +1017,7 @@ def schedule_loop():
                 prune_old_data()
                 create_backup("daily_auto")
                 last_prune_date = today_date
-            time.sleep(65)
+            await asyncio.sleep(65)
             continue
 
         # 2. Dynamic report times from config
@@ -1002,15 +1026,15 @@ def schedule_loop():
         if now_str in report_times:
             print(f"Triggering scheduled report at {now_str}...")
             trigger_daily_report_update(is_final=False)
-            time.sleep(65)
+            await asyncio.sleep(65)
             continue
 
         # 3. Regular sync and status updates every 10 mins
         if now.minute % 10 == 0:
-            sync_schedules()
+            await sync_schedules()
             trigger_daily_report_update(is_final=False)
             trigger_text_report_update()
-            update_quiet_status()
+            await update_quiet_status()
             
         # 4. Weekly report (Monday morning)
         if now.weekday() == 0 and now.hour == 0 and 15 <= now.minute < 25:
@@ -1021,4 +1045,4 @@ def schedule_loop():
                     weekly_sent_date = today_date
                 except: pass
         
-        time.sleep(60)
+        await asyncio.sleep(60)

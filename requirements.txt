@@ -13,3 +13,5 @@ uvicorn[standard]
 structlog
 aiofiles
 jinja2
+pydantic
+cachetools

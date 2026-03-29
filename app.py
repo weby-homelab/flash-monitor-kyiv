@@ -7,6 +7,9 @@ import time
 import re
 from bs4 import BeautifulSoup
 import threading
+import asyncio
+import cachetools
+from fastapi import BackgroundTasks
 import subprocess
 import secrets
 import structlog
@@ -48,7 +51,7 @@ logger = structlog.get_logger()
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("application_startup")
-    load_state()
+    await load_state()
     yield
     # Shutdown
     logger.info("application_shutdown")
@@ -56,27 +59,30 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
 
-# --- Caching ---
-CACHE = {}
-CACHE_TTL = 60
-cache_lock = threading.Lock()
 
-def cached_fetch(key, func):
-    with cache_lock:
-        now = time.time()
-        if key in CACHE and now - CACHE[key]['time'] < CACHE_TTL:
-            return CACHE[key]['data']
+# --- Caching ---
+CACHE = cachetools.TTLCache(maxsize=100, ttl=60)
+cache_lock = asyncio.Lock()
+
+async def cached_fetch(key, func):
+    async with cache_lock:
+        if key in CACHE:
+            return CACHE[key]
         
-        # If we are here, we need to update
         try:
-            data = func()
-            CACHE[key] = {'time': now, 'data': data}
+            if asyncio.iscoroutinefunction(func):
+                data = await func()
+            else:
+                data = await asyncio.to_thread(func)
+            CACHE[key] = data
             return data
         except Exception as e:
             logger.error("cache_update_error", key=key, error=str(e))
-            return CACHE.get(key, {}).get('data') # Return stale data on error
+            # TTLCache doesn't keep expired, so we might return None if it fails
+            return None
 
 # --- PWA Routes ---
+
 @app.get('/manifest.json')
 def manifest():
     return FileResponse('static/manifest.json')
@@ -118,7 +124,7 @@ def get_radiation():
         "status": "normal"
     }
 
-def get_power_events_data(limit=5):
+async def get_power_events_data(limit=5):
     recent_events = []
     
     # Default schedule info
@@ -163,8 +169,8 @@ def get_power_events_data(limit=5):
                         })
                     
                     # Construct current status text
-                    load_state()
-                    with state_mgr:
+                    await load_state()
+                    async with state_mgr:
                         status = state.get("status", "unknown")
                     
                     target_evt = "up" if status == "up" else "down"
@@ -397,7 +403,7 @@ def get_today_schedule_text():
         logger.error("error_building_schedule_text", error=str(e))
         return "Помилка завантаження графіка"
 
-def get_air_quality():
+async def get_air_quality():
     try:
         config_path = os.path.join(DATA_DIR, "config.json")
         if not os.path.exists(config_path):
@@ -515,7 +521,7 @@ def get_air_quality():
                 "location": aq_cfg.get("location_name", "Київ")
             }
 
-        return cached_fetch("air_quality", fetch_all)
+        return await cached_fetch("air_quality", fetch_all)
     except Exception as e:
         logger.error("aq_error", error=str(e))
         return {"status": "error", "text": "Дані відсутні"}
@@ -555,14 +561,14 @@ def admin_panel(request: Request, t: str = Query(None), x_admin_token: str = Hea
     return PlainTextResponse("Access Denied", status_code=403)
 
 @app.get('/api/status')
-def api_status():
-    load_state()
-    with state_mgr:
+async def api_status():
+    await load_state()
+    async with state_mgr:
         current_status = state.get("status", "unknown")
         # Ensure we return strictly "on" or "off" for UI icons
         ui_light_state = "on" if current_status == "up" else "off"
         
-    latest_event_text, recent_events = get_power_events_data()
+    latest_event_text, recent_events = await get_power_events_data()
     schedule_text = get_today_schedule_text()
     
     # Dashboard toggles
@@ -571,7 +577,7 @@ def api_status():
     show_graphs = get_advanced_setting("dashboard", "show_temp_graph", True)
     show_charts = get_advanced_setting("dashboard", "show_charts", True)
     
-    aq_data = get_air_quality() if show_aq else None
+    aq_data = await get_air_quality() if show_aq else None
     rad_data = get_radiation() if show_rad else None
     alert_data = get_air_raid_alert()
     
@@ -627,15 +633,15 @@ def api_status():
     }
 
 @app.get('/api/push/{key}')
-def push_api(key: str, x_secret_key: str = Header(None, alias="X-Secret-Key")):
+async def push_api(key: str, background_tasks: BackgroundTasks, x_secret_key: str = Header(None, alias="X-Secret-Key")):
     secret_key = x_secret_key or key
     if secret_key != state.get('secret_key'):
         return JSONResponse({"status": "error", "msg": "invalid_key"}, status_code=403)
         
     current_time = time.time()
     
-    with state_mgr:
-            load_state()  # Reload to get latest changes from other workers
+    async with state_mgr:
+            await load_state()  # Reload to get latest changes from other workers
             previous_status = state.get("status", "unknown")
             state["last_seen"] = current_time
             state["safety_net_pending"] = False # Reset on heartbeat
@@ -648,16 +654,16 @@ def push_api(key: str, x_secret_key: str = Header(None, alias="X-Secret-Key")):
             if previous_status == "down" or previous_status == "unknown":
                 state["status"] = "up"
                 state["came_up_at"] = current_time
-                log_event("up", current_time)
+                await log_event("up", current_time)
                 
                 # Quiet Mode check: skip message if status is 'quiet'
                 if state.get("quiet_status") == "quiet":
                     logger.info("Quiet mode active: Skipping 'Light Up' Telegram message.")
                 else:
                     msg = format_event_message(True, current_time, state.get("went_down_at", 0))
-                    threading.Thread(target=send_telegram, args=(msg,)).start()
+                    background_tasks.add_task(send_telegram, msg)
                 
-            save_state()
+            await save_state()
         
     return {
         "status": "ok", 
@@ -666,15 +672,15 @@ def push_api(key: str, x_secret_key: str = Header(None, alias="X-Secret-Key")):
     }
 
 @app.get('/api/down/{key}')
-def down_api(key: str, x_secret_key: str = Header(None, alias="X-Secret-Key")):
+async def down_api(key: str, background_tasks: BackgroundTasks, x_secret_key: str = Header(None, alias="X-Secret-Key")):
     secret_key = x_secret_key or key
     if secret_key != state.get('secret_key'):
         return JSONResponse({"status": "error", "msg": "invalid_key"}, status_code=403)
         
     current_time = time.time()
     
-    with state_mgr:
-            load_state()
+    async with state_mgr:
+            await load_state()
             previous_status = state.get("status", "unknown")
             
             if previous_status == "up" or previous_status == "unknown":
@@ -687,9 +693,9 @@ def down_api(key: str, x_secret_key: str = Header(None, alias="X-Secret-Key")):
                     logger.info("Quiet mode active: Skipping 'Light Down' Telegram message from API.")
                 else:
                     msg = format_event_message(False, current_time, state.get("came_up_at", 0))
-                    threading.Thread(target=send_telegram, args=(msg,)).start()
+                    background_tasks.add_task(send_telegram, msg)
                 
-            save_state()
+            await save_state()
         
     return {
         "status": "ok", 
@@ -698,7 +704,7 @@ def down_api(key: str, x_secret_key: str = Header(None, alias="X-Secret-Key")):
     }
 
 @app.post('/api/tg/webhook')
-def tg_webhook(data: dict = Body(None)):
+async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks = BackgroundTasks()):
     if not data: return PlainTextResponse("OK")
     
     if 'callback_query' in data:
@@ -708,8 +714,8 @@ def tg_webhook(data: dict = Body(None)):
         chat_id = cb.get('message', {}).get('chat', {}).get('id')
         
         if cb_data.startswith('confirm_down_'):
-            load_state()
-            with state_mgr:
+            await load_state()
+            async with state_mgr:
                 state['quiet_status'] = 'active'
                 state['pending_confirmation'] = False
                 state['safety_net_pending'] = False
@@ -721,13 +727,13 @@ def tg_webhook(data: dict = Body(None)):
                     timestamp = time.time()
 
                 msg = format_event_message(False, timestamp, state.get("came_up_at", 0))
-                threading.Thread(target=send_telegram, args=(msg,)).start()
+                background_tasks.add_task(send_telegram, msg)
 
                 # Update status
                 state["status"] = "down"
                 state["went_down_at"] = timestamp
                 log_event("down", timestamp)
-                save_state()
+                await save_state()
 
             # Answer callback
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
@@ -743,10 +749,10 @@ def tg_webhook(data: dict = Body(None)):
             })
 
         elif cb_data.startswith('ignore_down_'):
-            load_state()
-            with state_mgr:
+            await load_state()
+            async with state_mgr:
                 state['pending_confirmation'] = False
-                save_state()
+                await save_state()
 
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
@@ -787,11 +793,11 @@ def tg_webhook(data: dict = Body(None)):
         elif cb_data.startswith('mute_'):
             parts = cb_data.split('_')
             minutes = int(parts[1])
-            load_state()
-            with state_mgr:
+            await load_state()
+            async with state_mgr:
                 state['muted_until'] = time.time() + (minutes * 60)
                 state['safety_net_pending'] = False
-                save_state()
+                await save_state()
 
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
@@ -805,10 +811,10 @@ def tg_webhook(data: dict = Body(None)):
             })
 
         elif cb_data.startswith('sn_dontknow_'):
-            load_state()
-            with state_mgr:
+            await load_state()
+            async with state_mgr:
                 state['safety_net_pending'] = False
-                save_state()
+                await save_state()
 
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
@@ -823,8 +829,8 @@ def tg_webhook(data: dict = Body(None)):
 
         elif cb_data.startswith('sn_down_'):
             # Confirm DOWN instantly
-            load_state()
-            with state_mgr:
+            await load_state()
+            async with state_mgr:
                 state['safety_net_pending'] = False
                 state['quiet_status'] = 'active'
                 state["status"] = "down"
@@ -837,8 +843,8 @@ def tg_webhook(data: dict = Body(None)):
                 log_event("down", down_time_ts)
                 
                 msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
-                threading.Thread(target=send_telegram, args=(msg,)).start()
-                save_state()
+                background_tasks.add_task(send_telegram, msg)
+                await save_state()
 
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
@@ -889,7 +895,7 @@ def check_admin_token(request: Request):
     return True
 
 @app.get('/api/admin/data')
-def admin_data(request: Request):
+async def admin_data(request: Request):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
     
@@ -901,7 +907,7 @@ def admin_data(request: Request):
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
             
-    load_state()
+    await load_state()
     
     logs = []
     if os.path.exists(EVENT_LOG_FILE):
@@ -953,7 +959,7 @@ def admin_config_post(request: Request, new_config: dict = Body(None)):
         return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
 @app.post('/api/admin/quiet/mode')
-def admin_quiet_mode(request: Request, data: dict = Body(None)):
+async def admin_quiet_mode(request: Request, data: dict = Body(None)):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
         
@@ -964,19 +970,19 @@ def admin_quiet_mode(request: Request, data: dict = Body(None)):
     if mode not in ['auto', 'forced_on', 'forced_off']:
         return JSONResponse({"status": "error", "msg": "Invalid mode"}, status_code=400)
 
-    with state_mgr:
-        load_state()
+    async with state_mgr:
+        await load_state()
         state['quiet_mode'] = mode
         if unmute:
             state['muted_until'] = 0
             state['safety_net_pending'] = False
-        save_state()
+        await save_state()
         # Immediately recalculate actual status
-        update_quiet_status()
+        await update_quiet_status()
     return {"status": "ok"}
 
 @app.post('/api/admin/safety_net/react')
-def admin_safety_net_react(request: Request, data: dict = Body(None)):
+async def admin_safety_net_react(request: Request, data: dict = Body(None), background_tasks: BackgroundTasks = BackgroundTasks()):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
 
@@ -984,8 +990,8 @@ def admin_safety_net_react(request: Request, data: dict = Body(None)):
     action = data.get('action')
     value = data.get('value') # For tech mute duration
 
-    with state_mgr:
-        load_state()
+    async with state_mgr:
+        await load_state()
         if action == 'down':
             state['safety_net_pending'] = False
             state["status"] = "down"
@@ -995,7 +1001,7 @@ def admin_safety_net_react(request: Request, data: dict = Body(None)):
             state["went_down_at"] = down_time_ts
             log_event("down", down_time_ts)
             msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
-            threading.Thread(target=send_telegram, args=(msg,)).start()
+            background_tasks.add_task(send_telegram, msg)
         
         elif action == 'tech':
             minutes = int(value or 30)
@@ -1005,12 +1011,12 @@ def admin_safety_net_react(request: Request, data: dict = Body(None)):
         elif action == 'dontknow':
             state['safety_net_pending'] = False
             
-        save_state()
+        await save_state()
 
     return {"status": "ok"}
 
 @app.post('/api/admin/logs/add')
-def admin_logs_add(request: Request, data: dict = Body(None)):
+async def admin_logs_add(request: Request, data: dict = Body(None)):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
         
@@ -1028,12 +1034,12 @@ def admin_logs_add(request: Request, data: dict = Body(None)):
         return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
 @app.delete('/api/admin/logs/{timestamp}')
-def admin_logs_delete(request: Request, timestamp: float):
+async def admin_logs_delete(request: Request, timestamp: float):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
         
     try:
-        with state_mgr:
+        async with state_mgr:
             if os.path.exists(EVENT_LOG_FILE):
                 with open(EVENT_LOG_FILE, 'r') as f:
                     logs = json.load(f)
@@ -1049,7 +1055,7 @@ def admin_logs_delete(request: Request, timestamp: float):
         return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
 @app.post('/api/admin/service/restart')
-def admin_service_restart(request: Request):
+async def admin_service_restart(request: Request, background_tasks: BackgroundTasks = BackgroundTasks()):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
 
@@ -1064,12 +1070,12 @@ def admin_service_restart(request: Request):
         return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
 @app.post('/api/admin/schedules/sync')
-def admin_schedules_sync(request: Request):
+async def admin_schedules_sync(request: Request, background_tasks: BackgroundTasks = BackgroundTasks()):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
 
     try:
-        threading.Thread(target=sync_schedules).start()
+        background_tasks.add_task(sync_schedules)
         return {"status": "ok", "msg": "Sync triggered"}
     except Exception as e:
         return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
@@ -1103,28 +1109,28 @@ def admin_backups_restore(request: Request, data: dict = Body(None)):
         return JSONResponse({"status": "error", "msg": msg}, status_code=500)
 
 @app.post('/api/admin/security/regen_push_key')
-def admin_regen_push_key(request: Request):
+async def admin_regen_push_key(request: Request):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
     
-    with state_mgr:
-        load_state()
+    async with state_mgr:
+        await load_state()
         new_key = secrets.token_urlsafe(16)
         state["secret_key"] = new_key
-        save_state()
+        await save_state()
         
     return {"status": "ok", "new_key": new_key}
 
 @app.post('/api/admin/security/regen_admin_token')
-def admin_regen_token(request: Request):
+async def admin_regen_token(request: Request):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
     
-    with state_mgr:
-        load_state()
+    async with state_mgr:
+        await load_state()
         new_token = secrets.token_urlsafe(16)
         state["admin_token"] = new_token
-        save_state()
+        await save_state()
         
     return {"status": "ok", "new_token": new_token}
 
