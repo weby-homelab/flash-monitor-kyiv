@@ -968,7 +968,7 @@ async def admin_data(request: Request):
     }
 
 @app.post('/api/admin/config')
-def admin_config_post(request: Request, new_config: dict = Body(None)):
+async def admin_config_post(request: Request, new_config: dict = Body(None)):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
 
@@ -977,16 +977,20 @@ def admin_config_post(request: Request, new_config: dict = Body(None)):
 
     try:
         # Create auto-backup before saving
-        create_backup("auto_before_save")
+        await asyncio.to_thread(create_backup, "auto_before_save")
 
         config_path = os.path.join(DATA_DIR, "config.json")
         if not os.path.exists(config_path):
             config_path = "config.json"
-        with open(config_path, 'w', encoding='utf-8') as f:
-            json.dump(new_config, f, indent=2, ensure_ascii=False)
         
+        def save_config():
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(new_config, f, indent=2, ensure_ascii=False)
+        
+        await asyncio.to_thread(save_config)
+
         # Clear cache to reflect changes immediately (AQ, etc.)
-        with cache_lock:
+        async with cache_lock:
             CACHE.clear()
             
         return {"status": "ok"}
@@ -1113,20 +1117,20 @@ async def admin_schedules_sync(request: Request, background_tasks: BackgroundTas
         return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
 @app.get('/api/admin/backups')
-def admin_backups_list(request: Request):
+async def admin_backups_list(request: Request):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
-    return list_backups()
+    return await asyncio.to_thread(list_backups)
 
 @app.post('/api/admin/backups/create')
-def admin_backups_create(request: Request):
+async def admin_backups_create(request: Request):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
-    name = create_backup("manual")
+    name = await asyncio.to_thread(create_backup, "manual")
     return {"status": "ok", "name": name}
 
 @app.post('/api/admin/backups/restore')
-def admin_backups_restore(request: Request, data: dict = Body(None)):
+async def admin_backups_restore(request: Request, data: dict = Body(None)):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
     if not data: data = {}
@@ -1134,7 +1138,7 @@ def admin_backups_restore(request: Request, data: dict = Body(None)):
     if not filename:
         return JSONResponse({"status": "error", "msg": "Filename required"}, status_code=400)
     
-    success, msg = restore_backup(filename)
+    success, msg = await asyncio.to_thread(restore_backup, filename)
     if success:
         return {"status": "ok", "msg": "Restored successfully. Restarting services..."}
     else:
