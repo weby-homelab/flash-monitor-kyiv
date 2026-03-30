@@ -594,7 +594,6 @@
                     <div class="form-group"><label>Графіки (днів) <span class="info-icon">i<span class="tooltip">Глибина зберігання згенерованих тижневих графіків на диску.</span></span></label><input type="number" id="adv-ret-sched"></div>
                 </div>
                 <div class="form-group"><label>Час звітів <span class="info-icon">i<span class="tooltip">Години для розсилки статистики у Telegram (через кому). Приклад: 08:00, 21:00</span></span></label><input type="text" id="adv-notif-times" placeholder="08:00, 20:00"></div>
-                <div class="form-group"><label>Тривоги в Telegram <span class="info-icon">i<span class="tooltip">Надсилати сповіщення про початок та відбій повітряної тривоги.</span></span></label><select id="adv-notif-alerts"><option value="true">Увімкнено</option><option value="false">Вимкнено</option></select></div>
                 <div class="form-group"><label>Поріг спокою (год) <span class="info-icon">i<span class="tooltip">Години безперервної наявності світла для переходу в Режим Спокою. Стандарт: 24</span></span></label><input type="number" id="adv-quiet-threshold"></div>
             </div>
 
@@ -1197,6 +1196,28 @@
                             
                             СКОПІЮЙТЕ ЦІ ДАНІ ЗАРАЗ! 
                             Після натискання OK ви втратите доступ за поточним посиланням.
+                        `;
+                        
+                        alert(msg);
+                        window.location.href = newUrl;
+                    } else alert('Помилка регенерації');
+                } catch (err) { alert('Помилка запиту'); }
+            }
+        }
+        document.querySelectorAll('.radio-group').forEach(group => {
+            group.addEventListener('click', () => {
+                const radio = group.querySelector('input');
+                radio.checked = true;
+                document.querySelectorAll('.radio-group').forEach(g => g.classList.remove('active'));
+                group.classList.add('active');
+            });
+        });
+
+        fetchData();
+        setInterval(fetchData, 10000);
+    </script>
+</body>
+</html>                Після натискання OK ви втратите доступ за поточним посиланням.
                         `;
                         
                         alert(msg);
