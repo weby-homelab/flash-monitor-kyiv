@@ -1186,18 +1186,17 @@
                     if (response.ok) {
                         const data = await response.json();
                         const newUrl = window.location.origin + window.location.pathname + '?t=' + data.new_token;
-                        
-                        // Create a temporary overlay to show the new token safely
+
                         const msg = `
                             НОВИЙ ТОКЕН АДМІНА: ${data.new_token}
-                            
+
                             НОВЕ ПОСИЛАННЯ ДЛЯ ВХОДУ:
                             ${newUrl}
-                            
+
                             СКОПІЮЙТЕ ЦІ ДАНІ ЗАРАЗ! 
                             Після натискання OK ви втратите доступ за поточним посиланням.
                         `;
-                        
+
                         alert(msg);
                         window.location.href = newUrl;
                     } else alert('Помилка регенерації');
@@ -1215,28 +1214,6 @@
 
         fetchData();
         setInterval(fetchData, 10000);
-    </script>
-</body>
-</html>                Після натискання OK ви втратите доступ за поточним посиланням.
-                        `;
-                        
-                        alert(msg);
-                        window.location.href = newUrl;
-                    } else alert('Помилка регенерації');
-                } catch (err) { alert('Помилка запиту'); }
-            }
-        }
-        document.querySelectorAll('.radio-group').forEach(group => {
-            group.addEventListener('click', () => {
-                const radio = group.querySelector('input');
-                radio.checked = true;
-                document.querySelectorAll('.radio-group').forEach(g => g.classList.remove('active'));
-                group.classList.add('active');
-            });
-        });
-
-        fetchData();
-        setInterval(fetchData, 10000);
-    </script>
-</body>
-</html>
+        </script>
+        </body>
+        </html>
