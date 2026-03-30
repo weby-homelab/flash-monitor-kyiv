@@ -511,10 +511,10 @@
                     <input type="text" id="cfg-tg-chat" placeholder="З .env або введіть новий">
                 </div>
                 <div class="form-group">
-                    <label>API Пуш (Webhook) <span class="info-icon">i<span class="tooltip">URL для зовнішніх скриптів моніторингу. На цей адрес пристрій має слати запити для підтвердження наявності світла.</span></span></label>
-                    <div style="display: flex; gap: 5px;">
-                        <input type="text" id="info-push-api" readonly style="background: rgba(255,255,255,0.05); color: #888;">
-                        <button type="button" class="btn btn-outline" style="padding: 8px; flex-shrink: 0;" onclick="navigator.clipboard.writeText(document.getElementById('info-push-api').value); alert('Скопійовано!')"><i class="fas fa-copy"></i></button>
+                    <label style="white-space: nowrap; display: flex; align-items: center; gap: 5px;">API Пуш (Webhook) <span class="info-icon">i<span class="tooltip">URL для зовнішніх скриптів моніторингу. На цей адрес пристрій має слати запити для підтвердження наявності світла.</span></span></label>
+                    <div style="display: flex; gap: 5px; align-items: center; width: 100%;">
+                        <input type="text" id="info-push-api" readonly style="background: rgba(255,255,255,0.05); color: #888; flex: 1; min-width: 0;">
+                        <button type="button" class="btn btn-outline" style="padding: 12px; flex-shrink: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;" onclick="navigator.clipboard.writeText(document.getElementById('info-push-api').value); alert('Скопійовано!')"><i class="fas fa-copy"></i></button>
                     </div>
                     <small style="color: #666; font-size: 0.8rem; margin-top: 5px; display: block;">Секрет: <span id="info-push-secret"></span></small>
                 </div>
