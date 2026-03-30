@@ -634,8 +634,10 @@
                 <div class="form-group"><label>Аварійне відключення <span class="info-icon">i<span class="tooltip">Заголовок для повідомлень про екстрені відключення поза графіком.</span></span></label><input type="text" id="ui-txt-emergency"></div>
             </div>
 
+            </div> <!-- End of admin-grid -->
+
             <!-- Log Editor -->
-            <div class="admin-section full-width">
+            <div class="admin-section full-width" style="margin-top: 28px;">
                 <div class="section-header"><i class="fas fa-history"></i> Редактор подій</div>
                 
                 <div id="log-add-form">
@@ -676,8 +678,8 @@
                 </div>
             </div>
 
-            <!-- Save Button Row (Moved to bottom) -->
-            <div class="full-width" style="display: flex; justify-content: center; margin: 10px 0 20px 0;">
+            <!-- Save Button Row (Moved to bottom and outside grid) -->
+            <div style="display: flex; justify-content: center; margin: 20px 0 20px 0; width: 100%;">
                 <button class="btn btn-primary" onclick="saveAllSettings()" style="width: 100%; padding: 18px; font-size: 1.2rem; box-shadow: 0 15px 30px -10px rgba(59, 130, 246, 0.5); border-radius: 20px;">
                     <i class="fas fa-save"></i> ЗБЕРЕГТИ ВСІ НАЛАШТУВАННЯ
                 </button>
