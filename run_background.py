@@ -1,5 +1,4 @@
-import threading
-import time
+import asyncio
 
 # Запуск ініціалізації для нових користувачів
 import bootstrap
@@ -7,21 +6,19 @@ bootstrap.perform_cold_start_if_needed()
 
 from light_service import monitor_loop, schedule_loop, alerts_loop, load_state
 
-if __name__ == "__main__":
-    print("Starting Flash Monitor Background Services...")
-    load_state()
+async def main():
+    print("Starting Flash Monitor Background Services (Async)...")
+    await load_state()
     
-    # Start Monitor (timeout detection)
-    t1 = threading.Thread(target=monitor_loop)
-    t1.daemon = True
-    t1.start()
+    # Run all loops concurrently
+    await asyncio.gather(
+        monitor_loop(),
+        alerts_loop(),
+        schedule_loop()
+    )
 
-    # Start Alerts (air raid)
-    t2 = threading.Thread(target=alerts_loop)
-    t2.daemon = True
-    t2.start()
-    
-    # Start Scheduler (periodic reports)
-    # We don't use daemon here to keep the main process alive
-    print("Scheduler loop starting in main thread...")
-    schedule_loop()
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass

@@ -62,6 +62,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
+templates.env.cache = None  # Disable cache to bypass unhashable key bug
 
 # Prometheus Metrics
 metrics_app = make_asgi_app()
@@ -207,9 +208,8 @@ async def get_power_events_data(limit=5):
                     
                     # Construct current status text
                     await load_state()
-                    async with state_mgr:
-                        status = state.get("status", "unknown")
-                    
+                    status = state.get("status", "unknown")
+
                     target_evt = "up" if status == "up" else "down"
                     
                     # Find the latest log entry that matches current status
@@ -571,7 +571,7 @@ def get_wind_label(deg):
 @app.get('/')
 def index(request: Request):
     # Force dark theme preference for the dashboard
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 @app.get('/robots.txt')
 def robots_txt():
@@ -594,17 +594,16 @@ def sitemap_xml():
 def admin_panel(request: Request, t: str = Query(None), x_admin_token: str = Header(None, alias="X-Admin-Token")):
     token = t or x_admin_token
     if token and token == state.get('admin_token'):
-        return templates.TemplateResponse('admin.html', {"request": request})
+        return templates.TemplateResponse(request=request, name="admin.html")
     return PlainTextResponse("Access Denied", status_code=403)
 
 @app.get('/api/status')
 async def api_status():
     await load_state()
-    async with state_mgr:
-        current_status = state.get("status", "unknown")
-        # Ensure we return strictly "on" or "off" for UI icons
-        ui_light_state = "on" if current_status == "up" else "off"
-        
+    current_status = state.get("status", "unknown")
+    # Ensure we return strictly "on" or "off" for UI icons
+    ui_light_state = "on" if current_status == "up" else "off"
+    
     latest_event_text, recent_events = await get_power_events_data()
     schedule_text = get_today_schedule_text()
     
@@ -678,35 +677,35 @@ async def push_api(key: str, background_tasks: BackgroundTasks, x_secret_key: st
     current_time = time.time()
     
     async with state_mgr:
-            await load_state()  # Reload to get latest changes from other workers
-            previous_status = state.get("status", "unknown")
-            state["last_seen"] = current_time
-            state["safety_net_pending"] = False # Reset on heartbeat
-            state["safety_net_sent_at"] = 0     # Reset on heartbeat
-            state["safety_net_triggered_for"] = 0 # Reset on heartbeat
-            
-            if (previous_status == "down" or previous_status == "unknown") and state.get("status") == "unknown": # Skip if already up
-                pass
-            
-            if previous_status == "down" or previous_status == "unknown":
-                state["status"] = "up"
-                state["came_up_at"] = current_time
-                await log_event("up", current_time)
-                
-                # Quiet Mode check: skip message if status is 'quiet'
-                if state.get("quiet_status") == "quiet":
-                    logger.info("Quiet mode active: Skipping 'Light Up' Telegram message.")
-                else:
-                    msg = format_event_message(True, current_time, state.get("went_down_at", 0))
-                    background_tasks.add_task(send_telegram, msg)
-                background_tasks.add_task(broadcast_state_update)
-                
-            await save_state()
+        await load_state()  # Reload to get latest changes from other workers
+        previous_status = state.get("status", "unknown")
+        state["last_seen"] = current_time
+        state["safety_net_pending"] = False # Reset on heartbeat
+        state["safety_net_sent_at"] = 0     # Reset on heartbeat
+        state["safety_net_triggered_for"] = 0 # Reset on heartbeat
         
+        if (previous_status == "down" or previous_status == "unknown") and state.get("status") == "unknown": # Skip if already up
+            pass
+        
+        if previous_status == "down" or previous_status == "unknown":
+            state["status"] = "up"
+            state["came_up_at"] = current_time
+            await log_event("up", current_time)
+            
+            # Quiet Mode check: skip message if status is 'quiet'
+            if state.get("quiet_status") == "quiet":
+                logger.info("Quiet mode active: Skipping 'Light Up' Telegram message.")
+            else:
+                msg = format_event_message(True, current_time, state.get("went_down_at", 0))
+                background_tasks.add_task(send_telegram, msg)
+            background_tasks.add_task(broadcast_state_update)
+            
+        await save_state()
+    
     return {
-        "status": "ok", 
-        "msg": "heartbeat_received",
-        "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
+    "status": "ok", 
+    "msg": "heartbeat_received",
+    "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
     }
 
 @app.get('/api/down/{key}')
@@ -718,28 +717,28 @@ async def down_api(key: str, background_tasks: BackgroundTasks, x_secret_key: st
     current_time = time.time()
     
     async with state_mgr:
-            await load_state()
-            previous_status = state.get("status", "unknown")
-            
-            if previous_status == "up" or previous_status == "unknown":
-                state["status"] = "down"
-                state["went_down_at"] = current_time
-                log_event("down", current_time)
-                
-                # Quiet Mode check
-                if state.get("quiet_status") == "quiet":
-                    logger.info("Quiet mode active: Skipping 'Light Down' Telegram message from API.")
-                else:
-                    msg = format_event_message(False, current_time, state.get("came_up_at", 0))
-                    background_tasks.add_task(send_telegram, msg)
-                background_tasks.add_task(broadcast_state_update)
-                
-            await save_state()
+        await load_state()
+        previous_status = state.get("status", "unknown")
         
+        if previous_status == "up" or previous_status == "unknown":
+            state["status"] = "down"
+            state["went_down_at"] = current_time
+            await log_event("down", current_time)
+            
+            # Quiet Mode check
+            if state.get("quiet_status") == "quiet":
+                logger.info("Quiet mode active: Skipping 'Light Down' Telegram message from API.")
+            else:
+                msg = format_event_message(False, current_time, state.get("came_up_at", 0))
+                background_tasks.add_task(send_telegram, msg)
+            background_tasks.add_task(broadcast_state_update)
+            
+        await save_state()
+    
     return {
-        "status": "ok", 
-        "msg": "manual_down_received",
-        "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
+    "status": "ok", 
+    "msg": "manual_down_received",
+    "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
     }
 
 @app.post('/api/tg/webhook')
@@ -754,26 +753,25 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
         
         if cb_data.startswith('confirm_down_'):
             await load_state()
-            async with state_mgr:
-                state['quiet_status'] = 'active'
-                state['pending_confirmation'] = False
-                state['safety_net_pending'] = False
+            state['quiet_status'] = 'active'
+            state['pending_confirmation'] = False
+            state['safety_net_pending'] = False
 
-                # Send the public Telegram alert
-                try:
-                    timestamp = float(cb_data.split('_')[-1])
-                except:
-                    timestamp = time.time()
+            # Send the public Telegram alert
+            try:
+                timestamp = float(cb_data.split('_')[-1])
+            except:
+                timestamp = time.time()
 
-                msg = format_event_message(False, timestamp, state.get("came_up_at", 0))
-                background_tasks.add_task(send_telegram, msg)
-                background_tasks.add_task(broadcast_state_update)
+            msg = format_event_message(False, timestamp, state.get("came_up_at", 0))
+            background_tasks.add_task(send_telegram, msg)
+            background_tasks.add_task(broadcast_state_update)
 
-                # Update status
-                state["status"] = "down"
-                state["went_down_at"] = timestamp
-                log_event("down", timestamp)
-                await save_state()
+            # Update status
+            state["status"] = "down"
+            state["went_down_at"] = timestamp
+            await log_event("down", timestamp)
+            await save_state()
 
             # Answer callback
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
@@ -790,9 +788,8 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
 
         elif cb_data.startswith('ignore_down_'):
             await load_state()
-            async with state_mgr:
-                state['pending_confirmation'] = False
-                await save_state()
+            state['pending_confirmation'] = False
+            await save_state()
 
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
@@ -834,10 +831,9 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
             parts = cb_data.split('_')
             minutes = int(parts[1])
             await load_state()
-            async with state_mgr:
-                state['muted_until'] = time.time() + (minutes * 60)
-                state['safety_net_pending'] = False
-                await save_state()
+            state['muted_until'] = time.time() + (minutes * 60)
+            state['safety_net_pending'] = False
+            await save_state()
 
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
@@ -852,9 +848,8 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
 
         elif cb_data.startswith('sn_dontknow_'):
             await load_state()
-            async with state_mgr:
-                state['safety_net_pending'] = False
-                await save_state()
+            state['safety_net_pending'] = False
+            await save_state()
 
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
@@ -870,22 +865,21 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
         elif cb_data.startswith('sn_down_'):
             # Confirm DOWN instantly
             await load_state()
-            async with state_mgr:
-                state['safety_net_pending'] = False
-                state['quiet_status'] = 'active'
-                state["status"] = "down"
-                
-                # Apply standard correction (last_seen + configured interval)
-                last_seen = state.get("last_seen", time.time())
-                down_time_ts = last_seen + get_push_interval()
-                
-                state["went_down_at"] = down_time_ts
-                log_event("down", down_time_ts)
-                
-                msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
-                background_tasks.add_task(send_telegram, msg)
-                background_tasks.add_task(broadcast_state_update)
-                await save_state()
+            state['safety_net_pending'] = False
+            state['quiet_status'] = 'active'
+            state["status"] = "down"
+            
+            # Apply standard correction (last_seen + configured interval)
+            last_seen = state.get("last_seen", time.time())
+            down_time_ts = last_seen + get_push_interval()
+            
+            state["went_down_at"] = down_time_ts
+            await log_event("down", down_time_ts)
+            
+            msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
+            background_tasks.add_task(send_telegram, msg)
+            background_tasks.add_task(broadcast_state_update)
+            await save_state()
 
             requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
@@ -1011,15 +1005,14 @@ async def admin_quiet_mode(request: Request, data: dict = Body(None)):
     if mode not in ['auto', 'forced_on', 'forced_off']:
         return JSONResponse({"status": "error", "msg": "Invalid mode"}, status_code=400)
 
-    async with state_mgr:
-        await load_state()
-        state['quiet_mode'] = mode
-        if unmute:
-            state['muted_until'] = 0
-            state['safety_net_pending'] = False
-        await save_state()
-        # Immediately recalculate actual status
-        await update_quiet_status()
+    await load_state()
+    state['quiet_mode'] = mode
+    if unmute:
+        state['muted_until'] = 0
+        state['safety_net_pending'] = False
+    await save_state()
+    # Immediately recalculate actual status
+    await update_quiet_status()
     return {"status": "ok"}
 
 @app.post('/api/admin/safety_net/react')
@@ -1031,29 +1024,28 @@ async def admin_safety_net_react(request: Request, data: dict = Body(None), back
     action = data.get('action')
     value = data.get('value') # For tech mute duration
 
-    async with state_mgr:
-        await load_state()
-        if action == 'down':
-            state['safety_net_pending'] = False
-            state["status"] = "down"
-            # Apply standard correction (last_seen + configured interval)
-            last_seen = state.get("last_seen", time.time())
-            down_time_ts = last_seen + get_push_interval()
-            state["went_down_at"] = down_time_ts
-            log_event("down", down_time_ts)
-            msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
-            background_tasks.add_task(send_telegram, msg)
-            background_tasks.add_task(broadcast_state_update)
+    await load_state()
+    if action == 'down':
+        state['safety_net_pending'] = False
+        state["status"] = "down"
+        # Apply standard correction (last_seen + configured interval)
+        last_seen = state.get("last_seen", time.time())
+        down_time_ts = last_seen + get_push_interval()
+        state["went_down_at"] = down_time_ts
+        await log_event("down", down_time_ts)
+        msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
+        background_tasks.add_task(send_telegram, msg)
+        background_tasks.add_task(broadcast_state_update)
+    
+    elif action == 'tech':
+        minutes = int(value or 30)
+        state['muted_until'] = time.time() + (minutes * 60)
+        state['safety_net_pending'] = False
         
-        elif action == 'tech':
-            minutes = int(value or 30)
-            state['muted_until'] = time.time() + (minutes * 60)
-            state['safety_net_pending'] = False
-            
-        elif action == 'dontknow':
-            state['safety_net_pending'] = False
-            
-        await save_state()
+    elif action == 'dontknow':
+        state['safety_net_pending'] = False
+        
+    await save_state()
 
     return {"status": "ok"}
 
@@ -1061,16 +1053,16 @@ async def admin_safety_net_react(request: Request, data: dict = Body(None), back
 async def admin_logs_add(request: Request, data: dict = Body(None)):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
-        
+
     if not data: data = {}
     event = data.get('event')
     timestamp = data.get('timestamp')
-    
+
     if not event or not timestamp:
         return JSONResponse({"status": "error", "msg": "Missing event or timestamp"}, status_code=400)
-        
+
     try:
-        log_event(event, float(timestamp))
+        await log_event(event, float(timestamp))
         return {"status": "ok"}
     except Exception as e:
         return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
@@ -1079,23 +1071,21 @@ async def admin_logs_add(request: Request, data: dict = Body(None)):
 async def admin_logs_delete(request: Request, timestamp: float):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
-        
+
     try:
-        async with state_mgr:
-            if os.path.exists(EVENT_LOG_FILE):
-                with open(EVENT_LOG_FILE, 'r') as f:
-                    logs = json.load(f)
-                
-                # Filter out the log with given timestamp (within small margin for float)
-                new_logs = [log for log in logs if abs(log.get('timestamp', 0) - timestamp) > 0.1]
-                
-                with open(EVENT_LOG_FILE, 'w') as f:
-                    json.dump(new_logs, f, indent=2)
-                    
+        if os.path.exists(EVENT_LOG_FILE):
+            with open(EVENT_LOG_FILE, 'r') as f:
+                logs = json.load(f)
+
+            # Filter out the log with given timestamp (within small margin for float)
+            new_logs = [log for log in logs if abs(log.get('timestamp', 0) - timestamp) > 0.1]
+
+            with open(EVENT_LOG_FILE, 'w') as f:
+                json.dump(new_logs, f, indent=2)
+
         return {"status": "ok"}
     except Exception as e:
         return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
-
 @app.post('/api/admin/service/restart')
 async def admin_service_restart(request: Request, background_tasks: BackgroundTasks = BackgroundTasks()):
     if not check_admin_token(request):
@@ -1155,12 +1145,11 @@ async def admin_regen_push_key(request: Request):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
     
-    async with state_mgr:
-        await load_state()
-        new_key = secrets.token_urlsafe(16)
-        state["secret_key"] = new_key
-        await save_state()
-        
+    await load_state()
+    new_key = secrets.token_urlsafe(16)
+    state["secret_key"] = new_key
+    await save_state()
+    
     return {"status": "ok", "new_key": new_key}
 
 @app.post('/api/admin/security/regen_admin_token')
@@ -1168,12 +1157,11 @@ async def admin_regen_token(request: Request):
     if not check_admin_token(request):
         return JSONResponse({"status": "error", "msg": "Access Denied"}, status_code=403)
     
-    async with state_mgr:
-        await load_state()
-        new_token = secrets.token_urlsafe(16)
-        state["admin_token"] = new_token
-        await save_state()
-        
+    await load_state()
+    new_token = secrets.token_urlsafe(16)
+    state["admin_token"] = new_token
+    await save_state()
+    
     return {"status": "ok", "new_token": new_token}
 
 

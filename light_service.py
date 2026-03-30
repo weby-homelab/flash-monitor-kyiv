@@ -37,13 +37,13 @@ def get_config():
             with open(config_path, 'r') as f:
                 data = json.load(f)
                 try:
-                    return AppConfig(**data).dict(exclude_unset=False, by_alias=True)
+                    return AppConfig(**data) .model_dump(exclude_unset=False, by_alias=True)
                 except Exception as e:
                     print(f"Config validation error: {e}")
                     return data
     except:
         pass
-    return AppConfig().dict()
+    return AppConfig() .model_dump()
 
 def get_admin_chat_id():
     cfg = get_config()
@@ -195,29 +195,43 @@ STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
 STATE_LOCK_FILE = os.path.join(DATA_DIR, "power_monitor_state.lock")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 
+
 class SafeStateContextAsync:
     def __init__(self):
         self._lock = asyncio.Lock()
         self._counter = 0
+        self._owner = None
         self._flock_file = None
         self.file_lock_path = STATE_LOCK_FILE
 
     async def __aenter__(self):
+        task = asyncio.current_task()
+        if self._owner == task:
+            self._counter += 1
+            return self
+            
         await self._lock.acquire()
-        self._counter += 1
-        if self._counter == 1:
-            try:
-                def _acquire():
-                    self._flock_file = open(self.file_lock_path, 'a')
-                    fcntl.flock(self._flock_file, fcntl.LOCK_EX)
-                await asyncio.to_thread(_acquire)
-            except Exception as e:
-                print(f"Error acquiring file lock: {e}")
+        self._owner = task
+        self._counter = 1
+        try:
+            def _acquire():
+                self._flock_file = open(self.file_lock_path, 'a')
+                fcntl.flock(self._flock_file, fcntl.LOCK_EX)
+            await asyncio.to_thread(_acquire)
+        except Exception as e:
+            print(f"Error acquiring file lock: {e}")
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._owner != asyncio.current_task():
+            return
+            
+        if self._counter > 1:
+            self._counter -= 1
+            return
+            
         try:
-            if self._counter == 1 and self._flock_file:
+            if self._flock_file:
                 def _release():
                     try:
                         fcntl.flock(self._flock_file, fcntl.LOCK_UN)
@@ -227,7 +241,8 @@ class SafeStateContextAsync:
                 await asyncio.to_thread(_release)
                 self._flock_file = None
         finally:
-            self._counter -= 1
+            self._counter = 0
+            self._owner = None
             self._lock.release()
 
 state_mgr = SafeStateContextAsync()
@@ -391,7 +406,7 @@ async def load_state():
                 print(f"Error loading state: {e}")
                 
         try:
-            validated_state = AppState(**state).dict(exclude_unset=False)
+            validated_state = AppState(**state) .model_dump(exclude_unset=False)
             state.update(validated_state)
         except Exception as e:
             print(f"State validation error: {e}")
