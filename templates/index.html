@@ -235,7 +235,7 @@
         
         <footer>
             Оновлено: <span id="last-update">--:--:--</span><br>
-            © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv" target="_blank">Weby Homelab</a>
+            © 2026 <a href="https://github.com/weby-homelab/flash-monitor-kyiv" target="_blank">Weby Homelab</a><span id="footer-version"></span>
         </footer>
     </div>
     <div id="modal" onclick="this.style.display='none'"><img id="modal-img" src=""></div>
@@ -626,6 +626,9 @@
                 
                 const lastUpdateEl = document.getElementById('last-update');
                 if (lastUpdateEl) lastUpdateEl.innerText = data.timestamp;
+                
+                const footerVersionEl = document.getElementById('footer-version');
+                if (footerVersionEl && data.version) footerVersionEl.innerText = ' • v' + data.version;
             });
         }
 

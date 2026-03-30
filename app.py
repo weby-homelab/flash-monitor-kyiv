@@ -392,7 +392,7 @@ def get_today_schedule_text():
                             if s[i] is False: tomorrow_slots[i] = False
 
         if today_slots is None and not emergency_sources: 
-            return "Дані не знайдені"
+            return "🟢 <b>Графік відсутній</b><br><br>Відключень не передбачається (або дані ще не оновлено)."
 
         output = []
 
@@ -653,6 +653,12 @@ async def api_status():
                 if merged: slots = merged
         except: pass
 
+    version = "2.4.7"
+    version_path = os.path.join(os.path.dirname(__file__), "VERSION")
+    if os.path.exists(version_path):
+        with open(version_path, 'r') as f:
+            version = f.read().strip()
+
     return {
         "light": ui_light_state,
         "light_event": latest_event_text,
@@ -665,7 +671,8 @@ async def api_status():
         "group": group_name,
         "show_graphs": show_graphs,
         "show_charts": show_charts,
-        "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
+        "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S"),
+        "version": version
     }
 
 @app.get('/api/push/{key}')
