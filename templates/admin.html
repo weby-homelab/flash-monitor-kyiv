@@ -399,7 +399,15 @@
             #log-add-form { grid-template-columns: 1fr; gap: 10px; padding: 12px; }
             label { font-size: 0.75rem; }
             input, select { padding: 12px; font-size: 0.9rem; min-width: 0; }
-            
+            .bottom-full-width { width: 100% !important; grid-column: 1 / -1 !important; }
+            }
+
+            .bottom-full-width {
+            width: 100%;
+            margin-top: 28px;
+            box-sizing: border-box;
+            }
+
             .sn-actions { flex-direction: column; gap: 10px; }
             .sn-btn { width: 100%; }
 
@@ -637,7 +645,7 @@
             </div> <!-- End of admin-grid -->
 
             <!-- Log Editor -->
-            <div class="admin-section full-width" style="margin-top: 28px;">
+            <div class="admin-section bottom-full-width">
                 <div class="section-header"><i class="fas fa-history"></i> Редактор подій</div>
                 
                 <div id="log-add-form">
@@ -679,7 +687,7 @@
             </div>
 
             <!-- Save Button Row (Moved to bottom and outside grid) -->
-            <div style="display: flex; justify-content: center; margin: 20px 0 20px 0; width: 100%;">
+            <div class="bottom-full-width" style="display: flex; justify-content: center; margin: 20px 0 20px 0;">
                 <button class="btn btn-primary" onclick="saveAllSettings()" style="width: 100%; padding: 18px; font-size: 1.2rem; box-shadow: 0 15px 30px -10px rgba(59, 130, 246, 0.5); border-radius: 20px;">
                     <i class="fas fa-save"></i> ЗБЕРЕГТИ ВСІ НАЛАШТУВАННЯ
                 </button>
