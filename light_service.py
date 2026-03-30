@@ -933,10 +933,16 @@ async def alerts_loop():
                     if new_status != old_status:
                         now_dt = datetime.datetime.now(KYIV_TZ)
                         time_str = now_dt.strftime("%H:%M")
+                        
+                        # Check config for air raid notifications
+                        cfg = get_config()
+                        can_notify = cfg.get("advanced", {}).get("notifications", {}).get("telegram_air_raid_alerts", True)
+                        
                         if new_status == "active":
                             state["alert_start_time"] = now_dt.timestamp()
-                            msg = f"⚠️ <b>{time_str} ПОВІТРЯНА ТРИВОГА! КИЇВ</b>"
-                            threading.Thread(target=send_telegram, args=(msg,)).start()
+                            if can_notify:
+                                msg = f"⚠️ <b>{time_str} ПОВІТРЯНА ТРИВОГА! КИЇВ</b>"
+                                threading.Thread(target=send_telegram, args=(msg,)).start()
                         elif old_status == "active" and new_status != "active":
                             start_ts = state.get("alert_start_time")
                             duration_str = ""
@@ -944,8 +950,10 @@ async def alerts_loop():
                                 duration_sec = int(now_dt.timestamp() - start_ts)
                                 hours, mins = duration_sec // 3600, (duration_sec % 3600) // 60
                                 duration_str = f"\nяка тривала {hours} год {mins} хв" if hours > 0 else f"\nяка тривала {mins} хв"
-                            msg = f"✅ <b>{time_str} ВІДБІЙ ТРИВОГИ</b>{duration_str}"
-                            threading.Thread(target=send_telegram, args=(msg,)).start()
+                            
+                            if can_notify:
+                                msg = f"✅ <b>{time_str} ВІДБІЙ ТРИВОГИ</b>{duration_str}"
+                                threading.Thread(target=send_telegram, args=(msg,)).start()
                         state["alert_status"] = new_status
                         await save_state()
         except Exception as e: print(f"Error in alerts loop: {e}")

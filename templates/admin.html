@@ -586,6 +586,7 @@
                     <div class="form-group"><label>Графіки (днів) <span class="info-icon">i<span class="tooltip">Глибина зберігання згенерованих тижневих графіків на диску.</span></span></label><input type="number" id="adv-ret-sched"></div>
                 </div>
                 <div class="form-group"><label>Час звітів <span class="info-icon">i<span class="tooltip">Години для розсилки статистики у Telegram (через кому). Приклад: 08:00, 21:00</span></span></label><input type="text" id="adv-notif-times" placeholder="08:00, 20:00"></div>
+                <div class="form-group"><label>Тривоги в Telegram <span class="info-icon">i<span class="tooltip">Надсилати сповіщення про початок та відбій повітряної тривоги.</span></span></label><select id="adv-notif-alerts"><option value="true">Увімкнено</option><option value="false">Вимкнено</option></select></div>
                 <div class="form-group"><label>Поріг спокою (год) <span class="info-icon">i<span class="tooltip">Години безперервної наявності світла для переходу в Режим Спокою. Стандарт: 24</span></span></label><input type="number" id="adv-quiet-threshold"></div>
             </div>
 
@@ -633,13 +634,6 @@
                 <div class="form-group"><label>Аварійне відключення <span class="info-icon">i<span class="tooltip">Заголовок для повідомлень про екстрені відключення поза графіком.</span></span></label><input type="text" id="ui-txt-emergency"></div>
             </div>
 
-            <!-- Save Button Row -->
-            <div class="full-width" style="display: flex; justify-content: center; margin: 10px 0 20px 0;">
-                <button class="btn btn-primary" onclick="saveAllSettings()" style="width: 100%; max-width: 600px; padding: 18px; font-size: 1.2rem; box-shadow: 0 15px 30px -10px rgba(59, 130, 246, 0.5);">
-                    <i class="fas fa-save"></i> ЗБЕРЕГТИ ВСІ НАЛАШТУВАННЯ
-                </button>
-            </div>
-
             <!-- Log Editor -->
             <div class="admin-section full-width">
                 <div class="section-header"><i class="fas fa-history"></i> Редактор подій</div>
@@ -680,6 +674,13 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- Save Button Row (Moved to bottom) -->
+            <div class="full-width" style="display: flex; justify-content: center; margin: 10px 0 20px 0;">
+                <button class="btn btn-primary" onclick="saveAllSettings()" style="width: 100%; padding: 18px; font-size: 1.2rem; box-shadow: 0 15px 30px -10px rgba(59, 130, 246, 0.5); border-radius: 20px;">
+                    <i class="fas fa-save"></i> ЗБЕРЕГТИ ВСІ НАЛАШТУВАННЯ
+                </button>
             </div>
         </div>
         
@@ -823,6 +824,7 @@
                     }
                     if (adv.notifications) {
                         setVal('adv-notif-times', (adv.notifications.report_times || []).join(', '));
+                        setVal('adv-notif-alerts', adv.notifications.telegram_air_raid_alerts !== false ? 'true' : 'false');
                     }
                     if (adv.dashboard) {
                         setVal('adv-db-aq', adv.dashboard.show_aq ? 'true' : 'false');
@@ -979,7 +981,8 @@
                     schedule_history_days: getNum('adv-ret-sched', 14)
                 };
                 config.advanced.notifications = {
-                    report_times: getVal('adv-notif-times').split(',').map(s => s.trim()).filter(s => s)
+                    report_times: getVal('adv-notif-times').split(',').map(s => s.trim()).filter(s => s),
+                    telegram_air_raid_alerts: getVal('adv-notif-alerts') === 'true'
                 };
                 config.advanced.dashboard = {
                     show_aq: getVal('adv-db-aq') === 'true',
