@@ -141,17 +141,19 @@ flowchart TD
 
 ---
 
-## 📥 Installation & Setup (Docker)
+## 📥 Installation & Setup
 
-Since this branch (`main`) is designed for **Docker**, deployment takes only a few minutes.
+The project has two main branches:
 
-```bash
-# 1. Download docker-compose.yml
-curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
+1.  **`main` (Docker Edition):** Recommended for a quick start.
+    ```bash
+    # 1. Download docker-compose.yml
+    curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
 
-# 2. Run the system (images are pulled automatically from Docker Hub)
-docker-compose up -d
-```
+    # 2. Run the system (images are pulled automatically from Docker Hub)
+    docker-compose up -d
+    ```
+2.  **`classic` (Bare-Metal Edition):** For running directly on the host system via `systemd`.
 
 📖 **Complete Documentation:**
 *   [Installation Guide (Step-by-Step)](INSTRUCTIONS_INSTALL_ENG.md)

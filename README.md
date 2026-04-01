@@ -141,17 +141,19 @@ flowchart TD
 
 ---
 
-## 📥 Встановлення та розгортання (Docker)
+## 📥 Встановлення та розгортання
 
-Оскільки ця гілка (`main`) призначена для **Docker**, розгортання займає всього декілька хвилин.
+Проєкт має дві основні гілки:
 
-```bash
-# 1. Завантажте docker-compose.yml
-curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
+1.  **`main` (Docker Edition):** Рекомендовано для швидкого старту.
+    ```bash
+    # 1. Завантажте docker-compose.yml
+    curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
 
-# 2. Запустіть систему (образи автоматично стягнуться з Docker Hub)
-docker-compose up -d
-```
+    # 2. Запустіть систему (образи автоматично стягнуться з Docker Hub)
+    docker-compose up -d
+    ```
+2.  **`classic` (Bare-Metal Edition):** Для роботи безпосередньо в системі через `systemd`.
 
 📖 **Повні інструкції:**
 *   [Інструкція зі встановлення (Installation Guide)](INSTRUCTIONS_INSTALL.md)
