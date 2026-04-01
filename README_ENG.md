@@ -143,10 +143,18 @@ graph TD
 
 ---
 
-## 🛠 Tech Stack
-- **Backend:** Python 3.12, FastAPI, Uvicorn.
+## 🛠 Tech Stack (Docker Edition)
+- **Backend:** Python 3.12, **FastAPI**, Uvicorn (Async Stack).
 - **Analytics:** Matplotlib, BeautifulSoup4.
 - **Infra:** Docker & Docker Compose.
+
+### 💡 Why FastAPI and Asynchronous Logic? (Main Branch Evolution)
+The project's architecture is built on a **JSON Data Mesh** (using flat files instead of an SQL database for maximum portability). In Docker environments, simultaneous access to these files by the Web Server and the Background Worker caused severe I/O bottlenecks and Deadlocks.
+To resolve this, the `main` branch was completely rewritten from Flask to **FastAPI**:
+1. We implemented `asyncio.to_thread` — file writing no longer blocks the Event Loop, ensuring instant API responses even under heavy load.
+2. Data is now cached in an **Async TTL Cache** (RAM), minimizing disk I/O operations inside the container.
+3. Strict data validation via **Pydantic Models** was added to prevent JSON corruption during sudden server power losses.
+*(For Bare-Metal deployments, where OS-level locking via Systemd + Gunicorn is preferred, we maintain the synchronous `classic` branch).*
 
 ---
 
