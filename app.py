@@ -131,12 +131,20 @@ def service_worker():
 
 @app.get('/static/{filename:path}')
 def serve_static(filename: str):
-    # Try data dir first (for generated charts), then code dir
-    data_static = os.path.join(DATA_DIR, 'static', filename)
-    code_static = os.path.join('static', filename)
+    # Secure paths
+    data_static_base = os.path.abspath(os.path.join(DATA_DIR, 'static'))
+    code_static_base = os.path.abspath('static')
     
-    file_path = data_static if os.path.exists(data_static) else code_static
-    if not os.path.exists(file_path):
+    data_static = os.path.abspath(os.path.join(data_static_base, filename))
+    code_static = os.path.abspath(os.path.join(code_static_base, filename))
+    
+    file_path = None
+    if data_static.startswith(data_static_base) and os.path.exists(data_static):
+        file_path = data_static
+    elif code_static.startswith(code_static_base) and os.path.exists(code_static):
+        file_path = code_static
+        
+    if not file_path:
         raise HTTPException(status_code=404, detail="Not Found")
     
     headers = {}
