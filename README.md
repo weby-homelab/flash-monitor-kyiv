@@ -89,30 +89,30 @@ flowchart TD
     classDef external fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#c2185b,rx:5,ry:5
 
     subgraph Access ["📡 ACCESS LAYER"]
-        IoT["⚡ <b>IoT SENSORS</b>"]
-        PWA["📱 <b>PWA DASHBOARD</b>"]
-        ADM["💻 <b>ADMIN PANEL</b>"]
+        IoT["⚡ IoT SENSORS"]
+        PWA["📱 PWA DASHBOARD"]
+        ADM["💻 ADMIN PANEL"]
     end
 
     subgraph Network ["☁️ SECURITY MESH"]
-        CF[("🔒 <b>CLOUDFLARE TUNNEL</b>")]
+        CF[("🔒 CLOUDFLARE TUNNEL")]
     end
 
     subgraph Core ["🚀 CORE ENGINE (Docker)"]
         direction TB
-        WEB["🧪 <b>FASTAPI SERVER</b>"]
-        WORKER["⚙️ <b>BACKGROUND WORKER</b>"]
+        WEB["🧪 FASTAPI SERVER"]
+        WORKER["⚙️ BACKGROUND WORKER"]
     end
 
     subgraph Storage ["📦 PERSISTENCE (Docker Volume)"]
-        JSON[("🗄️ <b>JSON DATA MESH</b>")]
+        JSON[("🗄️ JSON DATA MESH")]
     end
 
     subgraph Integration ["🔗 EXTERNAL ECOSYSTEM"]
         direction LR
-        TG(("💬 <b>TELEGRAM API</b>"))
-        DTEK["⚡ <b>YASNO / DTEK / CUSTOM</b>"]
-        SAFE["🛡️ <b>SAFETY API</b>"]
+        TG(("💬 TELEGRAM API"))
+        DTEK["⚡ YASNO / DTEK / CUSTOM"]
+        SAFE["🛡️ SAFETY API"]
     end
 
     IoT -->|Secure Push| CF
