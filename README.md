@@ -81,55 +81,65 @@
 ## 🏗 Архітектура Системи
 
 ```mermaid
-flowchart TD
-    classDef access fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#01579b,rx:10,ry:10
-    classDef network fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#7b1fa2,rx:5,ry:5
-    classDef core fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#2e7d32,rx:5,ry:5
-    classDef storage fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#e65100,rx:10,ry:10
-    classDef external fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#c2185b,rx:5,ry:5
+graph TD
+    %% -- Styles --
+    classDef cloud fill:#2d3436,stroke:#7b1fa2,stroke-width:2px,color:#fff
+    classDef local fill:#2d3436,stroke:#1565c0,stroke-width:2px,color:#fff
+    classDef service fill:#0984e3,stroke:#74b9ff,stroke-width:2px,color:#fff
+    classDef security fill:#d63031,stroke:#ff7675,stroke-width:2px,color:#fff
+    classDef network fill:#00b894,stroke:#81ecec,stroke-width:2px,color:#fff
+    classDef external fill:#f39c12,stroke:#ffeaa7,stroke-width:2px,color:#000
 
-    subgraph Access ["📡 ACCESS LAYER"]
-        IoT["⚡ IoT SENSORS"]
-        PWA["📱 PWA DASHBOARD"]
-        ADM["💻 ADMIN PANEL"]
-    end
-
-    subgraph Network ["☁️ SECURITY MESH"]
-        CF[("🔒 CLOUDFLARE TUNNEL")]
-    end
-
-    subgraph Core ["🚀 CORE ENGINE (Docker)"]
-        direction TB
-        WEB["🧪 FASTAPI SERVER"]
-        WORKER["⚙️ BACKGROUND WORKER"]
-    end
-
-    subgraph Storage ["📦 PERSISTENCE (Docker Volume)"]
-        JSON[("🗄️ JSON DATA MESH")]
-    end
-
-    subgraph Integration ["🔗 EXTERNAL ECOSYSTEM"]
+    %% -- External & Access Layer --
+    subgraph Access ["📱 Access Layer"]
         direction LR
-        TG(("💬 TELEGRAM API"))
-        DTEK["⚡ YASNO / DTEK / CUSTOM"]
-        SAFE["🛡️ SAFETY API"]
+        PWA["🖥️ PWA Web Dashboard"]:::external
+        ADM["💻 Admin Control Panel"]:::external
+        IoT["⚡ Ping Scripts / Sensors"]:::external
     end
 
-    IoT -->|Secure Push| CF
-    PWA <-->|HTTPS| CF
-    ADM <-->|Secure Token| CF
-    CF <-->|Reverse Proxy| WEB
-    WEB <-->|Async State Sync| JSON
-    WORKER <-->|History Persistence| JSON
-    WORKER -->|Auto-Report| TG
-    WORKER -.->|Direct Sync| DTEK
-    WEB -.->|Live Fetch| SAFE
+    %% -- Security Perimeter --
+    subgraph Security ["🛡️ Security Perimeter"]
+        direction TB
+        CF(("☁️ Cloudflare Tunnel WAF")):::security
+    end
 
-    class IoT,PWA,ADM access
-    class CF network
-    class WEB,WORKER core
-    class JSON storage
-    class TG,DTEK,SAFE external
+    %% -- Core Application (Docker) --
+    subgraph Core ["🐳 Core Engine (Docker Edition)"]
+        direction TB
+        WEB["⚡ FastAPI Async Server (Uvicorn)"]:::service
+        WORKER["⚙️ Background Worker (Threads)"]:::service
+        CACHE[("🚀 Async TTL Cache")]:::network
+        JSON[("🗄️ JSON Data Mesh (Volume)")]:::local
+    end
+
+    %% -- External APIs --
+    subgraph API ["🔗 External Ecosystem"]
+        direction TB
+        TG(("💬 Telegram API")):::external
+        YASNO["📊 YASNO/DTEK Schedules"]:::external
+        WEATHER["🌦️ OpenMeteo / SaveEcoBot"]:::external
+    end
+
+    %% -- Relationships --
+    IoT -->|Heartbeat Push 30s| CF
+    PWA <-->|Secure HTTPS| CF
+    ADM <-->|Token Auth| CF
+
+    CF <-->|Reverse Proxy| WEB
+    
+    WEB <-->|Read/Write| CACHE
+    WEB <-->|Persist| JSON
+    
+    WORKER <-->|Persist| JSON
+    WORKER -->|Alerts| TG
+    WORKER -.->|Fetch Data| YASNO
+    WORKER -.->|Fetch Data| WEATHER
+
+    %% Layout adjustments
+    Access --> Security
+    Security --> Core
+    Core --> API
 ```
 
 ---
