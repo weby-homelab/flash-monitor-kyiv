@@ -93,32 +93,32 @@ graph TD
     %% -- External & Access Layer --
     subgraph Access ["📱 Access Layer"]
         direction LR
-        PWA["🖥️ PWA Web Dashboard"]:::external
-        ADM["💻 Admin Control Panel"]:::external
-        IoT["⚡ Ping Scripts / Sensors"]:::external
+        PWA["PWA Web Dashboard"]:::external
+        ADM["Admin Control Panel"]:::external
+        IoT["Ping Scripts / Sensors"]:::external
     end
 
     %% -- Security Perimeter --
     subgraph Security ["🛡️ Security Perimeter"]
         direction TB
-        CF(("☁️ Cloudflare Tunnel WAF")):::security
+        CF(("Cloudflare Tunnel WAF")):::security
     end
 
     %% -- Core Application (Docker) --
     subgraph Core ["🐳 Core Engine (Docker Edition)"]
         direction TB
-        WEB["⚡ FastAPI Async Server (Uvicorn)"]:::service
-        WORKER["⚙️ Background Worker (Threads)"]:::service
-        CACHE[("🚀 Async TTL Cache")]:::network
-        JSON[("🗄️ JSON Data Mesh (Volume)")]:::local
+        WEB["FastAPI Async Server (Uvicorn)"]:::service
+        WORKER["Background Worker (Threads)"]:::service
+        CACHE[("Async TTL Cache")]:::network
+        JSON[("JSON Data Mesh (Volume)")]:::local
     end
 
     %% -- External APIs --
     subgraph API ["🔗 External Ecosystem"]
         direction TB
-        TG(("💬 Telegram API")):::external
-        YASNO["📊 YASNO/DTEK Schedules"]:::external
-        WEATHER["🌦️ OpenMeteo / SaveEcoBot"]:::external
+        TG(("Telegram API")):::external
+        YASNO["YASNO/DTEK Schedules"]:::external
+        WEATHER["OpenMeteo / SaveEcoBot"]:::external
     end
 
     %% -- Relationships --
