@@ -137,9 +137,8 @@ graph TD
     WORKER -.->|Fetch Data| WEATHER
 
     %% Layout adjustments
-    Access --> Security
-    Security --> Core
-    Core --> API
+    CF ~~~ WEB
+    JSON ~~~ TG
 ```
 
 ---
