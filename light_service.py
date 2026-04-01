@@ -936,7 +936,12 @@ async def alerts_loop():
                         
                         # Check config for air raid notifications
                         cfg = get_config()
+<<<<<<< Updated upstream
                         can_notify = cfg.get("advanced", {}).get("notifications", {}).get("telegram_air_raid_alerts", True)
+=======
+                        notif_cfg = cfg.get("advanced", {}).get("notifications", {})
+                        can_notify = notif_cfg.get("telegram_air_raid_alerts", False)
+>>>>>>> Stashed changes
                         
                         if new_status == "active":
                             state["alert_start_time"] = now_dt.timestamp()
