@@ -18,19 +18,19 @@
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
 </p>
 
-# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) - Bare-Metal Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
+# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) - Docker Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 **Flash Monitor Kyiv** is a professional, autonomous monitoring system for critical infrastructure and environmental safety. The project provides real-time power monitoring, air raid alerts tracking, air quality index (AQI), and radiation background levels.
 
-This branch (`classic`) contains the **Bare-Metal Edition** of the project, designed to run directly on the host system (e.g., via `systemd`), without Docker.
+This branch (`main`) contains the **Docker Edition** of the project, designed for fast, portable, and isolated deployment in any environment. If you need a bare-metal installation directly on the host system via `systemd`, use the `classic` branch.
 
-> **Project Status:** Stable v3.0.3 (Total Control & Safety Edition)
-> **Architecture:** Python Flask + Background Workers + JSON Flat-DB + Systemd
+> **Project Status:** Stable v3.2.1 (Total Control, Security & Async Edition)
+> **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
 > **Brand:** Weby Homelab
 
 ---
 
-## 🚀 Core Innovations (v3.0+)
+## 🚀 Core Innovations (v3.2+)
 
 ### 🎛 Admin Control Panel
 A fully autonomous Glassmorphism web interface to manage all aspects of the system without the need to edit configuration files via SSH.
@@ -41,11 +41,11 @@ A fully autonomous Glassmorphism web interface to manage all aspects of the syst
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
 </p>
 
+*   **Asynchronous Performance:** The new async caching mechanism (FastAPI) completely eliminates deadlocks when multiple background workers write data simultaneously.
 *   **Smart Backups:** Create manual and automatic restore points for your configuration. Instant one-click recovery with automatic service restart.
 *   **Flexible Source Management:** Change priority between Yasno, GitHub, or connect your own Custom JSON URL. Includes a manual force-sync button.
-*   **Complete Geo-Adaptation:** Set coordinates (Lat/Lon) for accurate weather, SaveEcoBot station ID, and toggle widget visibility on the main dashboard for any region.
-*   **Template Editor:** Full control over Telegram notification texts, prefixes, and status icons directly in the UI.
-*   **Security:** Instant regeneration of API keys and administrator tokens with secure redirection.
+*   **Complete Geo-Adaptation:** Set coordinates (Lat/Lon) for accurate weather, SaveEcoBot station ID, and toggle widget visibility.
+*   **Security (Zero-Trust):** Fixed LFI (Path Traversal) vulnerabilities by implementing strict path validation. Access keys are safely generated during bootstrap.
 
 ### 🤫 "Quiet Mode" (Information Peace)
 A unique algorithm that minimizes "information noise." The system automatically enters a quiet state if there have been no outages in the past 24 hours, and there are no planned outages in the schedule for the next 24 hours.
@@ -65,9 +65,7 @@ A hybrid schedule processing system. If at least one source indicates an outage 
 *   🔴 **[Power Outage Alert with Schedule Accuracy](https://t.me/svitlobot_Symyrenka22B/1209)**
 *   🟢 **[Power Restoration Alert with Schedule Accuracy](https://t.me/svitlobot_Symyrenka22B/1212)**
 *   ⚠️ **[Instant Alert on DTEK Schedule Change](https://t.me/svitlobot_Symyrenka22B/1222)**
-*   📋 **[DTEK and YASNO Schedules Publication](https://t.me/svitlobot_Symyrenka22B/1219)**
 *   🚨 **[Air Raid Alert Notification in Kyiv](https://t.me/svitlobot_Symyrenka22B/1196)**
-*   ✅ **[Air Raid All-Clear Notification](https://t.me/svitlobot_Symyrenka22B/1197)**
 
 ---
 
@@ -77,7 +75,6 @@ Modern **Glassmorphism** interface, fully mobile-optimized:
 *   **Live Status:** Real-time "Pulse" visualization (Power ON! / Power OFF!).
 *   **Environmental Monitoring:** Temperature, Humidity, PM2.5/PM10 (via OpenMeteo/SaveEcoBot), and Radiation with interactive 24-hour history graphs.
 *   **Schedule Bar:** A compact 24-hour visualization of planned outages.
-*   **Analytics:** Automatic generation of daily and weekly graphical reports sent directly to Telegram and the web dashboard.
 
 ---
 
@@ -103,11 +100,11 @@ flowchart TD
 
     subgraph Core ["🚀 CORE ENGINE (Docker)"]
         direction TB
-        WEB["🧪 <b>FLASK SERVER</b>"]
+        WEB["🧪 <b>FASTAPI SERVER</b>"]
         WORKER["⚙️ <b>BACKGROUND WORKER</b>"]
     end
 
-    subgraph Storage ["📦 PERSISTENCE"]
+    subgraph Storage ["📦 PERSISTENCE (Docker Volume)"]
         JSON[("🗄️ <b>JSON DATA MESH</b>")]
     end
 
@@ -122,7 +119,7 @@ flowchart TD
     PWA <-->|HTTPS| CF
     ADM <-->|Secure Token| CF
     CF <-->|Reverse Proxy| WEB
-    WEB <-->|State Sync| JSON
+    WEB <-->|Async State Sync| JSON
     WORKER <-->|History Persistence| JSON
     WORKER -->|Auto-Report| TG
     WORKER -.->|Direct Sync| DTEK
@@ -138,22 +135,34 @@ flowchart TD
 ---
 
 ## 🛠 Tech Stack
-- **Backend:** Python 3.12, Flask, Gunicorn.
+- **Backend:** Python 3.12, FastAPI, Uvicorn.
 - **Analytics:** Matplotlib, BeautifulSoup4.
-- **Infra:** Docker & Docker Compose, Cloudflare Tunnel.
+- **Infra:** Docker & Docker Compose.
 
 ---
 
-## 📥 Installation & Setup Guides
+## 📥 Installation & Setup (Docker)
 
-The project has two main branches:
-1.  **`main` (Docker Edition):** Recommended for a quick start.
-2.  **`classic` (Bare-Metal Edition):** For running directly on the system via `systemd`.
+Since this branch (`main`) is designed for **Docker**, deployment takes only a few minutes.
+
+```bash
+# 1. Download docker-compose.yml
+curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
+
+# 2. Run the system (images are pulled automatically from Docker Hub)
+docker-compose up -d
+```
 
 📖 **Complete Documentation:**
 *   [Installation Guide (Step-by-Step)](INSTRUCTIONS_INSTALL_ENG.md)
 *   [Detailed Configuration Setup](INSTRUCTIONS_ENG.md)
 *   [Development Rules & Guidelines](DEVELOPMENT_ENG.md)
+
+### Quick Start (Smart Bootstrap):
+The system automatically initializes on the first run:
+1.  Generates a unique `SECRET_KEY` and `ADMIN_TOKEN`.
+2.  Creates the directory structure in `/app/data` (mounted in Docker Volume) with default v3 settings.
+3.  Downloads up-to-date schedules for your power group.
 
 ---
 

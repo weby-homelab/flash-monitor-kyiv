@@ -18,19 +18,19 @@
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
 </p>
 
-# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) - Bare-Metal Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
+# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) - Docker Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 **Flash Monitor Kyiv** — це професійна автономна система моніторингу критичної інфраструктури та екологічної безпеки. Проєкт забезпечує моніторинг електропостачання в реальному часі, відстеження повітряних тривог, якості повітря (AQI) та радіаційного фону.
 
-Ця гілка (`classic`) містить **Bare-Metal Edition** проєкту, призначену для роботи безпосередньо в системі (наприклад, через `systemd`), без використання Docker.
+Ця гілка (`main`) містить **Docker Edition** проєкту, призначену для швидкого, портативного та ізольованого розгортання в будь-якому середовищі. Якщо вам потрібна інсталяція безпосередньо в систему через `systemd`, використовуйте гілку `classic` (Bare-Metal).
 
-> **Статус проєкту:** Stable v3.0.3 (Total Control & Safety Edition)
-> **Архітектура:** Python Flask + Background Workers + JSON Flat-DB + Systemd
+> **Статус проєкту:** Stable v3.2.1 (Total Control, Security & Async Edition)
+> **Архітектура:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
 > **Бренд:** Weby Homelab
 
 ---
 
-## 🚀 Ключові інновації (v3.0+)
+## 🚀 Ключові інновації (v3.2+)
 
 ### 🎛 Панель Керування (Admin Panel)
 Повністю автономний веб-інтерфейс у стилі Glassmorphism для керування всіма аспектами системи без необхідності редагування конфігураційних файлів через SSH.
@@ -41,14 +41,14 @@
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
 </p>
 
+*   **Асинхронна швидкодія:** Новий асинхронний кеш (FastAPI) унеможливлює дедлоки та "зависання" при одночасному записі даних різними фоновими воркерами.
 *   **Інтелектуальні бекапи:** Створення ручних та автоматичних точок відновлення конфігурації. Миттєве відновлення системи в один клік з авто-рестартом служб.
 *   **Гнучке налаштування джерел:** Зміна пріоритету між Yasno, GitHub або підключення власного Custom JSON URL. Кнопка примусової синхронізації графіків.
-*   **Повна Гео-адаптація:** Налаштування координат (Lat/Lon) для точної погоди, ID станції SaveEcoBot та керування відображенням віджетів на головній сторінці під будь-який регіон.
-*   **Редактор Шаблонів:** Повний контроль над текстами сповіщень у Telegram, префіксами та зміна іконок статусів безпосередньо в UI.
-*   **Безпека:** Можливість миттєвої регенерації API-ключів та токенів адміністратора з безпечним перенаправленням.
+*   **Повна Гео-адаптація:** Налаштування координат (Lat/Lon) для точної погоди, ID станції SaveEcoBot та керування відображенням віджетів.
+*   **Безпека (Zero-Trust):** Усунуто LFI (Path Traversal) вразливості, забезпечено строгу перевірку шляхів до файлів. Ключі доступу генеруються безпечно при першому старті.
 
 ### 🤫 Режим «Інформаційний спокій» (Quiet Mode)
-Унікальний алгоритм, що мінімізує "інформаційний шум". Система автоматично переходить у стан спокою, якщо за останні 24 години не було відключень, а в планах на завтра немає обмежень. 
+Унікальний алгоритм, що мінімізує "інформаційний шум". Система автоматично переходить у стан спокою, якщо за останні 24 години не було відключень, а в планах на завтра немає обмежень.
 
 ### 🚨 Safety Net (Мережа безпеки)
 Інтерактивний механізм швидкого реагування: при затримці сигналу (Push) понад 35 секунд адміністратор отримує запит у Telegram з варіантами дій (`🔴 Світло зникло`, `🛠 Технічний збій`, `🤷‍♂️ Не знаю`).
@@ -65,9 +65,7 @@
 *   🔴 **[Сповіщення про відключення світла з точністю до графіка](https://t.me/svitlobot_Symyrenka22B/1209)**
 *   🟢 **[Сповіщення про увімкнення світла з точністю до графіка](https://t.me/svitlobot_Symyrenka22B/1212)**
 *   ⚠️ **[Миттєвий алерт про зміну графіків від ДТЕК](https://t.me/svitlobot_Symyrenka22B/1222)**
-*   📋 **[Публікація графіків від ДТЕК та YASNO](https://t.me/svitlobot_Symyrenka22B/1219)**
 *   🚨 **[Сповіщення про повітряну тривогу в місті](https://t.me/svitlobot_Symyrenka22B/1196)**
-*   ✅ **[Сповіщення про відбій повітряної тривоги](https://t.me/svitlobot_Symyrenka22B/1197)**
 
 ---
 
@@ -77,7 +75,6 @@
 *   **Live Status:** Візуалізація "Пульсу" системи (Світло Є! / Світло зникло!).
 *   **Екологічний моніторинг:** Температура, вологість, PM2.5/PM10 (OpenMeteo/SaveEcoBot) та радіація з інтерактивними графіками за 24 години.
 *   **Графік-бар:** Компактна 24-годинна шкала планових відключень.
-*   **Аналітика:** Автоматична генерація щоденних та щотижневих графічних звітів прямо в Telegram та на сайт.
 
 ---
 
@@ -103,11 +100,11 @@ flowchart TD
 
     subgraph Core ["🚀 CORE ENGINE (Docker)"]
         direction TB
-        WEB["🧪 <b>FLASK SERVER</b>"]
+        WEB["🧪 <b>FASTAPI SERVER</b>"]
         WORKER["⚙️ <b>BACKGROUND WORKER</b>"]
     end
 
-    subgraph Storage ["📦 PERSISTENCE"]
+    subgraph Storage ["📦 PERSISTENCE (Docker Volume)"]
         JSON[("🗄️ <b>JSON DATA MESH</b>")]
     end
 
@@ -122,7 +119,7 @@ flowchart TD
     PWA <-->|HTTPS| CF
     ADM <-->|Secure Token| CF
     CF <-->|Reverse Proxy| WEB
-    WEB <-->|State Sync| JSON
+    WEB <-->|Async State Sync| JSON
     WORKER <-->|History Persistence| JSON
     WORKER -->|Auto-Report| TG
     WORKER -.->|Direct Sync| DTEK
@@ -138,20 +135,23 @@ flowchart TD
 ---
 
 ## 🛠 Технічний стек
-- **Backend:** Python 3.12, Flask, Gunicorn.
+- **Backend:** Python 3.12, FastAPI, Uvicorn.
 - **Analytics:** Matplotlib, BeautifulSoup4.
-- **Infra:** Docker & Docker Compose, Cloudflare Tunnel, Systemd.
+- **Infra:** Docker, Docker Compose.
 
 ---
 
-## 📥 Встановлення та розгортання
+## 📥 Встановлення та розгортання (Docker)
 
-Проєкт має дві основні гілки:
-1.  **`main` (Docker Edition):** Рекомендовано для швидкого старту.
-    ```bash
-    docker-compose up -d
-    ```
-2.  **`classic` (Bare-Metal Edition):** Для роботи безпосередньо в системі через `systemd`.
+Оскільки ця гілка (`main`) призначена для **Docker**, розгортання займає всього декілька хвилин.
+
+```bash
+# 1. Завантажте docker-compose.yml
+curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
+
+# 2. Запустіть систему (образи автоматично стягнуться з Docker Hub)
+docker-compose up -d
+```
 
 📖 **Повні інструкції:**
 *   [Інструкція зі встановлення (Installation Guide)](INSTRUCTIONS_INSTALL.md)
@@ -161,13 +161,12 @@ flowchart TD
 ### Швидкий старт (Smart Bootstrap):
 Система автоматично ініціалізується при першому запуску:
 1.  Генерує унікальні `SECRET_KEY` та `ADMIN_TOKEN`.
-2.  Створює структуру папок у `data/` з дефолтними налаштуваннями v3.
+2.  Створює структуру папок у `/app/data` (змонтовано в Docker Volume) з дефолтними налаштуваннями v3.
 3.  Завантажує актуальні графіки для вашої групи.
 
 ---
 
 ## 🤝 Контакти та розробка
-Розробка ведеться **Weby Homelab**. 
-Всі зміни вносяться згідно з **"Протоколом нульової толерантності до регресій"**.
+Розробка ведеться **Weby Homelab**. Всі зміни вносяться згідно з **"Протоколом нульової толерантності до регресій"**.
 
 © 2026 Weby Homelab.
