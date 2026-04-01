@@ -144,10 +144,17 @@ graph TD
 
 ---
 
-## 🛠 Tech Stack
-- **Backend:** Python 3.12, Flask, Gunicorn.
+## 🛠 Tech Stack (Bare-Metal Edition)
+- **Backend:** Python 3.12, **Flask**, Gunicorn.
 - **Analytics:** Matplotlib, BeautifulSoup4.
-- **Infra:** Docker & Docker Compose, Cloudflare Tunnel.
+- **Infra:** Systemd, Nginx / Cloudflare Tunnel.
+
+### 💡 Why Flask and Sync I/O? (Classic Branch Architecture)
+At the core of the project lies the **JSON Data Mesh** — a lightweight flat-file database. In a traditional Bare-Metal deployment, we have the luxury of relying on robust OS-level file locking mechanisms and process managers like **Systemd**.
+The synchronous **Flask + Gunicorn** stack is perfectly suited for this environment:
+1. If the Background Script holds a lock on a file for writing, other Gunicorn worker processes continue to smoothly serve web clients.
+2. It avoids the severe multi-threading bottlenecks often encountered in resource-constrained Docker containers.
+*(For isolated **Docker** environments, where synchronous file access can lead to hard Deadlocks, we engineered a fully asynchronous version powered by FastAPI — available in the `main` branch).*
 
 ---
 

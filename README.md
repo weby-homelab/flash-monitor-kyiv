@@ -144,10 +144,17 @@ graph TD
 
 ---
 
-## 🛠 Технічний стек
-- **Backend:** Python 3.12, Flask, Gunicorn.
+## 🛠 Технічний стек (Bare-Metal Edition)
+- **Backend:** Python 3.12, **Flask**, Gunicorn.
 - **Analytics:** Matplotlib, BeautifulSoup4.
-- **Infra:** Docker & Docker Compose, Cloudflare Tunnel, Systemd.
+- **Infra:** Systemd, Nginx / Cloudflare Tunnel.
+
+### 💡 Чому Flask та Sync I/O? (Архітектура гілки Classic)
+В основі проєкту лежить **JSON Data Mesh** — легка файлова база даних. У класичному розгортанні "на голому залізі" ми маємо розкіш покладатися на надійні механізми операційної системи (Linux OS-level file locking) та менеджери процесів, такі як **Systemd**.
+Синхронний стек **Flask + Gunicorn** ідеально підходить для цього середовища:
+1. Якщо один воркер (Background Script) утримує блокування файлу для запису, інші процеси Gunicorn продовжують стабільно обслуговувати веб-клієнтів.
+2. Жодних проблем із багатопоточністю, властивих контейнерам Docker з обмеженими ресурсами.
+*(Для розгортання в ізольованому середовищі **Docker**, де I/O-конфлікти можуть призвести до жорстких дедлоків (Deadlocks), ми створили асинхронну версію проєкту на базі FastAPI — вона розміщена в гілці `main`).*
 
 ---
 
