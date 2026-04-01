@@ -9,64 +9,115 @@
 
 <br>
 
-# 🚀 Flash Monitor Kyiv Installation Guide [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
+# 🛠 Flash Monitor Kyiv Installation Guide (Bare-Metal Edition) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
-This project is now fully autonomous. It can either parse schedules itself or synchronize with another server.
+This guide is intended for the installation of the stable Bare-Metal version (branch `classic`) directly on a server running **Ubuntu 24.04 LTS** (or Debian 12) using **Systemd**.
 
-## 1. Server Preparation (Ubuntu/Debian)
-Install Docker and Docker Compose (if not already installed):
-```bash
-curl -fsSL https://get.docker.com | sh
-apt-get install -y docker-compose-plugin
-```
-
-## 2. File Structure Setup
-Create the working directory and download the required files:
-```bash
-mkdir -p flash-monitor
-cd flash-monitor
-curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
-```
-
-### Create `.env` environment file
-```env
-TELEGRAM_BOT_TOKEN=your_bot_token
-TELEGRAM_CHANNEL_ID=your_channel_id
-# SCHEDULE_API_URL:
-# 1. Leave EMPTY for autonomous mode (server will fetch schedules itself)
-# 2. Provide URL (e.g. http://ip:8889) to sync from another server
-SCHEDULE_API_URL=
-```
-
-## 3. System Launch (Smart Bootstrap)
-The system will automatically generate all necessary configuration files on the first launch:
-```bash
-docker compose pull && docker compose up -d
-```
-The dashboard will be available at port `:5050`.
-The Admin Control Panel is available at `/admin`.
-
-## 4. Access and Configuration
-After the first launch, the system will automatically generate unique tokens for access and the API.
-
-1. Find your `admin_token` (for Admin Panel access) and `secret_key` (for push signals):
-   ```bash
-   cat data/power_monitor_state.json | grep token
-   cat data/power_monitor_state.json | grep secret_key
-   ```
-2. Go to the Admin Panel using the link:
-   `https://your-domain/admin?t=YOUR_ADMIN_TOKEN`
-3. All further settings (region, outage groups, delays) are made **directly through the web interface**.
-
-## 5. Power Monitoring Setup (Heartbeat)
-To enable power status and charts, configure your IoT device (ESP8266/ESP32, Mikrotik) or another server (e.g., Uptime Kuma) to send a "pulse".
-
-Configure your device to send a GET request every minute:
-`https://your-domain/api/push/YOUR_SECRET_KEY`
-
-**Additional (Manual Override):**
-Starting with version `v1.16.0`, you can manually trigger a power outage event (without waiting for a timeout) by sending a GET request to:
-`https://your-domain/api/down/YOUR_SECRET_KEY`
+## 📌 Version & Stack
+- **Version:** v3.2.2 (Classic)
+- **Language:** Python 3.12+
+- **Framework:** Flask + Gunicorn (Synchronous Stack)
+- **Database:** JSON Flat-DB (File system)
+- **Process Management:** Systemd
 
 ---
-✦ 2026 Weby Homelab ✦. Made with ❤️ in Kyiv under air raid sirens and blackouts
+
+## 1. Server Preparation
+Ensure your server is up to date and has Python 3.12 installed:
+```bash
+sudo apt-get update && sudo apt-get upgrade -y
+sudo apt-get install -y python3.12 python3.12-venv python3-pip git nano
+```
+
+## 2. Cloning & Installation
+```bash
+# Navigate to the folder where the project will live (e.g., /opt or /root)
+cd /opt
+git clone https://github.com/weby-homelab/flash-monitor-kyiv.git
+cd flash-monitor-kyiv
+
+# IMPORTANT: Switch to the classic branch
+git checkout classic
+
+# Create and activate a virtual environment
+python3.12 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+## 3. Environment Configuration
+Create a `.env` file based on the example:
+```bash
+cp .env.example .env
+nano .env
+```
+Minimum required parameters:
+- `TELEGRAM_BOT_TOKEN` — Get it from @BotFather
+- `TELEGRAM_CHANNEL_ID` — Your channel ID (starts with -100)
+
+## 4. Autostart Configuration (Systemd)
+Create two configuration files for the services. Replace `/opt/flash-monitor-kyiv` with your actual path.
+
+### A) Dashboard Service (Web Interface)
+Create the file `/etc/systemd/system/flash-monitor.service`:
+```ini
+[Unit]
+Description=Flash Monitor Kyiv Dashboard
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/opt/flash-monitor-kyiv
+EnvironmentFile=/opt/flash-monitor-kyiv/.env
+ExecStart=/opt/flash-monitor-kyiv/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker --workers 4 -b 0.0.0.0:5050 app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### B) Background Service (Background Processes)
+Create the file `/etc/systemd/system/flash-background.service`:
+```ini
+[Unit]
+Description=Flash Monitor Kyiv Background Services
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/opt/flash-monitor-kyiv
+EnvironmentFile=/opt/flash-monitor-kyiv/.env
+ExecStart=/opt/flash-monitor-kyiv/venv/bin/python run_background.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## 5. Activation & Verification
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now flash-monitor.service flash-background.service
+
+# Check statuses
+systemctl status flash-monitor.service
+systemctl status flash-background.service
+```
+
+---
+
+## 🔑 Getting Admin Access
+After the first launch, the system automatically generates access tokens.
+1. Find your `admin_token`:
+   ```bash
+   cat data/power_monitor_state.json | grep admin_token
+   ```
+2. Open the admin panel in your browser:
+   `http://YOUR_SERVER_IP:5050/admin?t=YOUR_TOKEN`
+
+---
+✦ 2026 Weby Homelab ✦ — infrastructure that works in any conditions.

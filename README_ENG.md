@@ -158,91 +158,19 @@ The synchronous **Flask + Gunicorn** stack is perfectly suited for this environm
 
 ---
 
-## 📥 Installation & Setup (Bare-Metal)
+## 📥 Installation & Setup
 
-This branch (`classic`) is designed for direct installation on Ubuntu/Debian using **Systemd**. This provides maximum stability and server resource control.
+The project has two main branches:
 
-### 1. Prerequisites
-*   Python 3.12 or newer
-*   Git, Pip, Venv
-*   Sudo privileges on the server
+1.  **`main` (Docker Edition):** Recommended for a quick start.
+    ```bash
+    # Download and run via Docker Compose
+    docker-compose up -d
+    ```
+2.  **`classic` (Bare-Metal Edition):** For stable operation directly on the system via **Systemd**.
 
-### 2. Cloning & Preparation
-```bash
-# Clone the repository
-git clone https://github.com/weby-homelab/flash-monitor-kyiv.git
-cd flash-monitor-kyiv
-
-# Switch to the classic branch
-git checkout classic
-
-# Create a virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-### 3. Environment Setup
-Create a `.env` file in the project root:
-```bash
-cp .env.example .env
-nano .env
-```
-Fill in `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`, and other parameters.
-
-### 4. Systemd Configuration (Autostart)
-You need to create two services for stable operation:
-
-**A) Web Dashboard:**
-`/etc/systemd/system/flash-monitor.service`
-```ini
-[Unit]
-Description=Flash Monitor Kyiv (Dashboard)
-After=network.target
-
-[Service]
-User=root
-WorkingDirectory=/path/to/flash-monitor-kyiv
-EnvironmentFile=/path/to/flash-monitor-kyiv/.env
-ExecStart=/path/to/flash-monitor-kyiv/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker --workers 4 -b 0.0.0.0:5050 app:app
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-**B) Background Worker:**
-`/etc/systemd/system/flash-background.service`
-```ini
-[Unit]
-Description=Flash Monitor Kyiv Background
-After=network.target
-
-[Service]
-User=root
-WorkingDirectory=/path/to/flash-monitor-kyiv
-EnvironmentFile=/path/to/flash-monitor-kyiv/.env
-ExecStart=/path/to/flash-monitor-kyiv/venv/bin/python run_background.py
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 5. Launch & Activation
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now flash-monitor.service flash-background.service
-
-# Check status
-sudo systemctl status flash-monitor.service
-```
-
-📖 **Additional Documentation:**
+📖 **Installation Guides:**
+*   👉 [**Step-by-Step Guide for Bare-Metal (Systemd)**](INSTRUCTIONS_INSTALL_ENG.md)
 *   [Detailed Configuration Setup](INSTRUCTIONS_ENG.md)
 *   [Development Rules & Guidelines](DEVELOPMENT_ENG.md)
 
