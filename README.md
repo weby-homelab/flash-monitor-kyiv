@@ -24,11 +24,18 @@
 
 Ця гілка (`main`) містить **Docker Edition** проєкту, призначену для швидкого, портативного та ізольованого розгортання в будь-якому середовищі. Якщо вам потрібна інсталяція безпосередньо в систему через `systemd`, використовуйте гілку `classic` (Bare-Metal).
 
-> **Статус проєкту:** Stable v3.2.1 (Total Control, Security & Async Edition)
+> **Статус проєкту:** Stable v3.2.3 (Security Patch, Silent Alerts & Stability)
 > **Архітектура:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
 > **Бренд:** Weby Homelab
 
 ---
+
+## 🛡 Оновлення v3.2.3
+*   **Безпека (LFI/SSRF Fix):** Закрито критичні вразливості Path Traversal для статичних файлів та SSRF для `custom_url` (обмеження протоколами HTTP/HTTPS).
+*   **Захист від Timing Attacks:** API доступу (`push_api`, `down_api`, `admin_data`) тепер використовують безпечну перевірку ключів через `secrets.compare_digest()`.
+*   **Виправлення стану гонитви (Race Conditions):** Застосовано безпечні транзакційні `async with state_mgr:` для обробки конкурентних запитів від Telegram Webhook та API.
+*   **Витік пам'яті у SSE:** З'єднання для `/api/status/stream` більше не залишають "зомбі-підключень" у фоновому режимі (Memory Leak).
+*   **Виправлення конфігурації тривог:** Сповіщення про тривоги за замовчуванням тепер вимкнено в JSON, а парсинг булевих значень виправлено.
 
 ## 🚀 Ключові інновації (v3.2+)
 
