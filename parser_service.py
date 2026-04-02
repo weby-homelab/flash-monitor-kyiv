@@ -109,7 +109,7 @@ async def fetch_yasno(client: httpx.AsyncClient, cfg: dict) -> Optional[dict]:
 
 async def fetch_custom(client: httpx.AsyncClient, cfg: dict) -> Optional[dict]:
     custom_url = cfg.get('advanced', {}).get('data_sources', {}).get('custom_url')
-    if not custom_url:
+    if not custom_url or not custom_url.startswith(('http://', 'https://')):
         return None
     try:
         r = await client.get(custom_url, headers={"User-Agent": "Flash-Monitor/2.7"}, timeout=20)
