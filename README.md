@@ -24,11 +24,18 @@
 
 Ця гілка (`classic`) містить **Bare-Metal Edition** проєкту, призначену для роботи безпосередньо в системі (наприклад, через `systemd`), без використання Docker.
 
-> **Статус проєкту:** Stable v3.0.3 (Total Control & Safety Edition)
+> **Статус проєкту:** Stable v3.2.3 (Security Patch, Silent Alerts & Stability)
 > **Архітектура:** Python Flask + Background Workers + JSON Flat-DB + Systemd
 > **Бренд:** Weby Homelab
 
 ---
+
+## 🛡 Оновлення v3.2.3
+*   **Безпека (LFI/SSRF Fix):** Закрито критичні вразливості Path Traversal для статичних файлів та SSRF для `custom_url` (обмеження протоколами HTTP/HTTPS).
+*   **Захист від Timing Attacks:** API доступу (`push_api`, `down_api`, `admin_data`) тепер використовують безпечну перевірку ключів через `secrets.compare_digest()`.
+*   **Виправлення стану гонитви (Race Conditions):** Застосовано безпечні транзакційні контексти для обробки конкурентних запитів від Telegram Webhook та API.
+*   **Витік пам'яті у SSE:** З'єднання для `/api/status/stream` більше не залишають "зомбі-підключень" у фоновому режимі (Memory Leak).
+*   **Виправлення конфігурації тривог:** Сповіщення про тривоги за замовчуванням тепер вимкнено в JSON, а парсинг булевих значень виправлено.
 
 ## 🚀 Ключові інновації (v3.0+)
 

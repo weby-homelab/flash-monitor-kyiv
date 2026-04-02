@@ -24,11 +24,18 @@
 
 This branch (`classic`) contains the **Bare-Metal Edition** of the project, designed to run directly on the host system (e.g., via `systemd`), without Docker.
 
-> **Project Status:** Stable v3.0.3 (Total Control & Safety Edition)
+> **Project Status:** Stable v3.2.3 (Security Patch, Silent Alerts & Stability)
 > **Architecture:** Python Flask + Background Workers + JSON Flat-DB + Systemd
 > **Brand:** Weby Homelab
 
 ---
+
+## 🛡 What's New in v3.2.3
+*   **Security (LFI/SSRF Fix):** Addressed critical Path Traversal vulnerabilities in static file serving and restricted SSRF risks in `custom_url` by forcing HTTP/HTTPS protocols.
+*   **Timing Attack Protection:** API routes (`push_api`, `down_api`, `admin_data`) now securely validate authorization keys using `secrets.compare_digest()`.
+*   **Race Conditions Prevented:** Safely wrapped competitive requests from Telegram Webhooks and APIs in transaction-like contexts to prevent data corruption.
+*   **SSE Memory Leak Fix:** Handled inactive connections logic for `/api/status/stream` to prevent background ghost connections.
+*   **Air Raid Configuration Fix:** The default for air alerts is now muted in JSON, and parsing for false-boolean strings has been fixed.
 
 ## 🚀 Core Innovations (v3.0+)
 
