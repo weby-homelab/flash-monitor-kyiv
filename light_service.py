@@ -174,9 +174,13 @@ def prune_old_data():
     except Exception as e:
         print(f"Error during data pruning: {e}")
 
-def get_advanced_setting(section, key, default):
+def get_advanced_setting(section, key, default=None):
     cfg = get_config()
-    return cfg.get("advanced", {}).get(section, {}).get(key, default)
+    val = cfg.get("advanced", {}).get(section, {}).get(key, default)
+    if isinstance(default, bool) and isinstance(val, str):
+        if val.lower() in ("false", "0", "no"): return False
+        if val.lower() in ("true", "1", "yes"): return True
+    return val
 
 def get_telegram_token():
     cfg = get_config()
@@ -937,6 +941,10 @@ async def alerts_loop():
                         # Check config for air raid notifications
                         cfg = get_config()
                         can_notify = cfg.get("advanced", {}).get("notifications", {}).get("telegram_air_raid_alerts", True)
+                        if str(can_notify).lower() in ("false", "0", "no"):
+                            can_notify = False
+                        else:
+                            can_notify = bool(can_notify)
                         
                         if new_status == "active":
                             state["alert_start_time"] = now_dt.timestamp()
