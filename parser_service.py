@@ -134,6 +134,8 @@ def extract_github(data: dict, cfg: dict) -> dict:
     res = {}
     if not data: return res
     fact = data.get("fact", {}).get("data", {})
+    if isinstance(fact, list):
+        fact = {}
     for grp in cfg['settings'].get('groups', []):
         res[grp] = {}
         for ts in sorted(fact.keys(), key=int)[:3]:
