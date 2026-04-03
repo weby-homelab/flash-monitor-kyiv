@@ -68,34 +68,41 @@ graph TD
     classDef network fill:#00b894,stroke:#81ecec,stroke-width:2px,color:#fff
     classDef external fill:#f39c12,stroke:#ffeaa7,stroke-width:2px,color:#000
 
-    %% -- External & Access Layer --
-    TG[Telegram Channel] --- BOT[Telegram Bot API]
-    WEB[PWA Dashboard] --- API[FastAPI /app.py]
-    
-    subgraph "HTZNR (PROD / Bare-Metal)"
+    subgraph EXT ["🌐 External Layer"]
         direction TB
+        WEB[PWA Dashboard]
+        TG[Telegram Channel] --- BOT[Telegram Bot API]
+    end
+
+    subgraph PROD ["🖥️ HTZNR Server (PROD)"]
+        direction TB
+        
+        API[FastAPI /app.py]
         SVC[flash-monitor.service]
         BG[flash-background.service]
-        
-        API --- SVC
-        BG --- LMN[light_service.py]
-        
-        subgraph "Core Modules"
+        LMN[light_service.py]
+
+        subgraph Core ["🧠 Core Modules"]
+            direction TB
             TC[telegram_client.py]
             ST[storage.py]
         end
         
-        LMN --- TC
-        LMN --- ST
-        API --- ST
-        API --- TC
-        
-        subgraph "Data Layer (JSON Flat-DB)"
+        subgraph Data ["💾 Data Layer (JSON Flat-DB)"]
+            direction TB
             STATE[(power_monitor_state.json)]
             CFG[(config.json)]
             LOGS[(event_log.json)]
             SCHED[(last_schedules.json)]
         end
+        
+        API --- SVC
+        BG --- LMN
+        
+        LMN --- TC
+        LMN --- ST
+        API --- ST
+        API --- TC
         
         ST --- STATE
         ST --- LOGS
@@ -103,16 +110,31 @@ graph TD
         ST --- CFG
     end
 
-    %% -- External Sources --
-    YASNO[Yasno API] -.-> LMN
-    DTEK[GitHub DTEK] -.-> LMN
-    METEO[OpenMeteo] -.-> SVC
-    AQI[SaveEcoBot] -.-> SVC
+    subgraph Logic ["⚙️ Application Logic"]
+        direction TB
+        FN[False Always Wins]
+        SN[Safety Net]
+        QM[Quiet Mode]
+    end
 
-    %% -- Application Logic --
-    LMN --- FN[False Always Wins]
-    LMN --- SN[Safety Net]
-    LMN --- QM[Quiet Mode]
+    subgraph SRC ["📡 External Sources (API)"]
+        direction TB
+        YASNO[Yasno API]
+        DTEK[GitHub DTEK]
+        METEO[OpenMeteo]
+        AQI[SaveEcoBot]
+    end
+
+    %% -- Connections between subgraphs --
+    WEB ---> API
+    TC --- BOT
+    
+    LMN --- Logic
+    
+    YASNO -.-> LMN
+    DTEK -.-> LMN
+    METEO -.-> SVC
+    AQI -.-> SVC
 
     class TG,BOT,YASNO,DTEK,METEO,AQI external
     class SVC,BG service
