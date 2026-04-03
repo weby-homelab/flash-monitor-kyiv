@@ -11,7 +11,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv?style=for-the-badge&color=purple" alt="Latest Release">
-  <img src="https://img.shields.io/badge/Branch-Main_(Docker)-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Branch Main">
+  <img src="https://img.shields.io/badge/Branch-Classic_(Bare--Metal)-FFD700?style=for-the-badge&logo=linux&logoColor=black" alt="Branch Classic">
 </p>
 
 <p align="center">
@@ -22,22 +22,21 @@
 
 **Flash Monitor Kyiv** is a professional, autonomous monitoring system for critical infrastructure and environmental safety. The project provides real-time power monitoring, air raid alerts tracking, air quality index (AQI), and radiation background levels.
 
-This branch (`classic`) contains the **Bare-Metal Edition** of the project, designed to run directly on the host system (e.g., via `systemd`), without Docker.
+This branch (`classic`) contains the **Bare-Metal Edition** of the project, designed to run directly on the host system (e.g., via `systemd`) without using Docker.
 
-> **Project Status:** Stable v3.2.3 (Security Patch, Silent Alerts & Stability)
+> **Project Status:** Stable v3.2.4 (Reliability & Resilience Update)
 > **Architecture:** Python Flask + Background Workers + JSON Flat-DB + Systemd
 > **Brand:** Weby Homelab
 
 ---
 
-## 🛡 What's New in v3.2.3
-*   **Security (LFI/SSRF Fix):** Addressed critical Path Traversal vulnerabilities in static file serving and restricted SSRF risks in `custom_url` by forcing HTTP/HTTPS protocols.
-*   **Timing Attack Protection:** API routes (`push_api`, `down_api`, `admin_data`) now securely validate authorization keys using `secrets.compare_digest()`.
-*   **Race Conditions Prevented:** Safely wrapped competitive requests from Telegram Webhooks and APIs in transaction-like contexts to prevent data corruption.
-*   **SSE Memory Leak Fix:** Handled inactive connections logic for `/api/status/stream` to prevent background ghost connections.
-*   **Air Raid Configuration Fix:** The default for air alerts is now muted in JSON, and parsing for false-boolean strings has been fixed.
+## 🛡 Update v3.2.4
+*   **Auto-Confirmation (Safety Net):** Automatically confirms power outages after 5 minutes if the administrator does not respond to the Safety Net prompt. This prevents the system from being locked in a "pending confirmation" state during Quiet Mode.
+*   **Resilient Updates:** If a Telegram message is manually deleted, the bot now automatically sends a new message instead of failing to edit the non-existent one.
+*   **Quiet Mode Cleanup:** Entering "Information Peace" (Quiet Mode) now automatically triggers a cleanup of active reports from the Telegram channel. Conversely, receiving a new schedule with planned outages instantly wakes the system into Active Mode.
+*   **UI Consistency:** The `Github` data source is now consistently displayed as `ДТЕК` in Telegram reports for better user clarity.
 
-## 🚀 Core Innovations (v3.0+)
+## 🚀 Core Innovations (v3.2+)
 
 ### 🎛 Admin Control Panel
 A fully autonomous Glassmorphism web interface to manage all aspects of the system without the need to edit configuration files via SSH.
@@ -48,43 +47,11 @@ A fully autonomous Glassmorphism web interface to manage all aspects of the syst
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
 </p>
 
+*   **Asynchronous Performance:** The new async caching mechanism (FastAPI) completely eliminates deadlocks when multiple background workers write data simultaneously.
 *   **Smart Backups:** Create manual and automatic restore points for your configuration. Instant one-click recovery with automatic service restart.
 *   **Flexible Source Management:** Change priority between Yasno, GitHub, or connect your own Custom JSON URL. Includes a manual force-sync button.
-*   **Complete Geo-Adaptation:** Set coordinates (Lat/Lon) for accurate weather, SaveEcoBot station ID, and toggle widget visibility on the main dashboard for any region.
-*   **Template Editor:** Full control over Telegram notification texts, prefixes, and status icons directly in the UI.
-*   **Security:** Instant regeneration of API keys and administrator tokens with secure redirection.
-
-### 🤫 "Quiet Mode" (Information Peace)
-A unique algorithm that minimizes "information noise." The system automatically enters a quiet state if there have been no outages in the past 24 hours, and there are no planned outages in the schedule for the next 24 hours.
-
-### 🚨 Safety Net
-An interactive rapid response mechanism: if the heart-beat signal (Push) is delayed for more than 35 seconds, the administrator receives a Telegram prompt with action buttons (`🔴 Power Down`, `🛠 Technical Failure`, `🤷‍♂️ Don't Know`).
-
-### ⚖️ "False Always Wins" Logic
-A hybrid schedule processing system. If at least one source indicates an outage (`False`), the system displays it as the priority state. Old outage records are never overwritten by new "all-clear" plans.
-
----
-
-## 📱 Real Telegram Message Examples
-
-*   📊 **[Daily "Plan vs Fact" Report (Smart Daily Report)](https://t.me/svitlobot_Symyrenka22B/1230)**
-*   📈 **[Weekly Analytics Summary](https://t.me/svitlobot_Symyrenka22B/1192)**
-*   🔴 **[Power Outage Alert with Schedule Accuracy](https://t.me/svitlobot_Symyrenka22B/1209)**
-*   🟢 **[Power Restoration Alert with Schedule Accuracy](https://t.me/svitlobot_Symyrenka22B/1212)**
-*   ⚠️ **[Instant Alert on DTEK Schedule Change](https://t.me/svitlobot_Symyrenka22B/1222)**
-*   📋 **[DTEK and YASNO Schedules Publication](https://t.me/svitlobot_Symyrenka22B/1219)**
-*   🚨 **[Air Raid Alert Notification in Kyiv](https://t.me/svitlobot_Symyrenka22B/1196)**
-*   ✅ **[Air Raid All-Clear Notification](https://t.me/svitlobot_Symyrenka22B/1197)**
-
----
-
-## 📊 Dashboard Features (PWA)
-
-Modern **Glassmorphism** interface, fully mobile-optimized:
-*   **Live Status:** Real-time "Pulse" visualization (Power ON! / Power OFF!).
-*   **Environmental Monitoring:** Temperature, Humidity, PM2.5/PM10 (via OpenMeteo/SaveEcoBot), and Radiation with interactive 24-hour history graphs.
-*   **Schedule Bar:** A compact 24-hour visualization of planned outages.
-*   **Analytics:** Automatic generation of daily and weekly graphical reports sent directly to Telegram and the web dashboard.
+*   **Complete Geo-Adaptation:** Set coordinates (Lat/Lon) for accurate weather, SaveEcoBot station ID, and toggle widget visibility.
+*   **Security (Zero-Trust):** Fixed LFI (Path Traversal) vulnerabilities by implementing strict path validation. Access keys are safely generated during bootstrap.
 
 ---
 
@@ -101,67 +68,47 @@ graph TD
     classDef external fill:#f39c12,stroke:#ffeaa7,stroke-width:2px,color:#000
 
     %% -- External & Access Layer --
-    subgraph Access ["📱 Access Layer"]
-        direction LR
-        PWA["PWA Web Dashboard"]:::external
-        ADM["Admin Control Panel"]:::external
-        IoT["Ping Scripts / Sensors"]:::external
-    end
-
-    %% -- Security Perimeter --
-    subgraph Security ["🛡️ Security Perimeter"]
-        direction TB
-        CF(("Cloudflare Tunnel WAF")):::security
-    end
-
-    %% -- Core Application (Bare-Metal) --
-    subgraph Core ["🚀 Core Engine (Bare-Metal Edition)"]
-        direction TB
-        WEB["Flask Server (Gunicorn)"]:::service
-        WORKER["Background Worker (Systemd)"]:::service
-        JSON[("JSON Data Mesh")]:::local
-    end
-
-    %% -- External APIs --
-    subgraph API ["🔗 External Ecosystem"]
-        direction TB
-        TG(("Telegram API")):::external
-        YASNO["YASNO/DTEK Schedules"]:::external
-        WEATHER["OpenMeteo / SaveEcoBot"]:::external
-    end
-
-    %% -- Relationships --
-    IoT -->|Heartbeat Push 30s| CF
-    PWA <-->|Secure HTTPS| CF
-    ADM <-->|Token Auth| CF
-
-    CF <-->|Reverse Proxy| WEB
+    TG[Telegram Channel] --- BOT[Telegram Bot API]
+    WEB[PWA Dashboard] --- API[FastAPI /app.py]
     
-    WEB <-->|State Sync| JSON
-    
-    WORKER <-->|History Persistence| JSON
-    WORKER -->|Alerts| TG
-    WORKER -.->|Fetch Data| YASNO
-    WORKER -.->|Fetch Data| WEATHER
+    subgraph "HTZNR (PROD / Bare-Metal)"
+        direction TB
+        SVC[flash-monitor.service]
+        BG[flash-background.service]
+        
+        API --- SVC
+        BG --- LMN[light_service.py]
+        
+        subgraph "Data Layer (JSON Flat-DB)"
+            STATE[(power_monitor_state.json)]
+            CFG[(config.json)]
+            LOGS[(event_log.json)]
+            SCHED[(last_schedules.json)]
+        end
+        
+        LMN --- STATE
+        LMN --- LOGS
+        LMN --- SCHED
+        SVC --- CFG
+        SVC --- STATE
+    end
 
-    %% Layout adjustments
-    CF ~~~ WEB
-    JSON ~~~ TG
+    %% -- External Sources --
+    YASNO[Yasno API] -.-> LMN
+    DTEK[GitHub DTEK] -.-> LMN
+    METEO[OpenMeteo] -.-> SVC
+    AQI[SaveEcoBot] -.-> SVC
+
+    %% -- Application Logic --
+    LMN --- FN[False Always Wins]
+    LMN --- SN[Safety Net]
+    LMN --- QM[Quiet Mode]
+
+    class TG,BOT,YASNO,DTEK,METEO,AQI external
+    class SVC,BG service
+    class STATE,CFG,LOGS,SCHED local
+    class FN,SN,QM cloud
 ```
-
----
-
-## 🛠 Tech Stack (Bare-Metal Edition)
-- **Backend:** Python 3.12, **Flask**, Gunicorn.
-- **Analytics:** Matplotlib, BeautifulSoup4.
-- **Infra:** Systemd, Nginx / Cloudflare Tunnel.
-
-### 💡 Why Flask and Sync I/O? (Classic Branch Architecture)
-At the core of the project lies the **JSON Data Mesh** — a lightweight flat-file database. In a traditional Bare-Metal deployment, we have the luxury of relying on robust OS-level file locking mechanisms and process managers like **Systemd**.
-The synchronous **Flask + Gunicorn** stack is perfectly suited for this environment:
-1. If the Background Script holds a lock on a file for writing, other Gunicorn worker processes continue to smoothly serve web clients.
-2. It avoids the severe multi-threading bottlenecks often encountered in resource-constrained Docker containers.
-*(For isolated **Docker** environments, where synchronous file access can lead to hard Deadlocks, we engineered a fully asynchronous version powered by FastAPI — available in the `main` branch).*
 
 ---
 
@@ -171,25 +118,18 @@ The project has two main branches:
 
 1.  **`main` (Docker Edition):** Recommended for a quick start.
     ```bash
-    # Download and run via Docker Compose
+    # 1. Download docker-compose.yml
+    curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
+
+    # 2. Run the system (images are pulled automatically from Docker Hub)
     docker-compose up -d
     ```
-2.  **`classic` (Bare-Metal Edition):** For stable operation directly on the system via **Systemd**.
+2.  **`classic` (Bare-Metal Edition):** For running directly on the host system via `systemd`.
 
-📖 **Installation Guides:**
-*   👉 [**Step-by-Step Guide for Bare-Metal (Systemd)**](INSTRUCTIONS_INSTALL_ENG.md)
+📖 **Complete Documentation:**
+*   [Installation Guide (Step-by-Step)](INSTRUCTIONS_INSTALL_ENG.md)
 *   [Detailed Configuration Setup](INSTRUCTIONS_ENG.md)
 *   [Development Rules & Guidelines](DEVELOPMENT_ENG.md)
 
-### Quick Start (Smart Bootstrap):
-The system automatically initializes on the first run:
-1.  Generates a unique `SECRET_KEY` and `ADMIN_TOKEN`.
-2.  Creates the directory structure in `data/` with default v3 settings.
-3.  Downloads up-to-date schedules for your power group.
-
 ---
-
-## 📜 License
-Distributed under the **MIT** license.
-
-© 2026 Weby Homelab.
+**✦ 2026 Weby Homelab ✦**

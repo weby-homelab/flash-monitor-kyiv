@@ -15,7 +15,7 @@ class Notifications(BaseModel):
     model_config = ConfigDict(extra='ignore')
     report_times: List[str] = ["06:00", "09:00", "20:00"]
     mute_during_night: bool = False
-    telegram_air_raid_alerts: bool = True
+    telegram_air_raid_alerts: bool = False
 
 class SourcesConfig(BaseModel):
     model_config = ConfigDict(extra='ignore')

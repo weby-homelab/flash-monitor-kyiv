@@ -873,6 +873,16 @@ async def update_quiet_status():
             state["quiet_status"] = new_status
             if new_status == "quiet":
                 state["stability_start"] = time.time()
+                # CLEANUP: When entering quiet mode, remove active reports from channel
+                print("Entering Quiet Mode. Cleaning up active reports...")
+                def run_cleanup():
+                    try:
+                        base_dir = os.path.dirname(os.path.abspath(__file__))
+                        python_exec = sys.executable
+                        subprocess.run([python_exec, os.path.join(base_dir, "generate_daily_report.py"), "--cleanup"], cwd=base_dir)
+                        subprocess.run([python_exec, os.path.join(base_dir, "generate_text_report.py"), "--cleanup"], cwd=base_dir)
+                    except: pass
+                threading.Thread(target=run_cleanup).start()
             else:
                 def trigger_report():
                     try:
@@ -924,6 +934,16 @@ async def monitor_loop():
                     threading.Thread(target=send_telegram, args=(msg,)).start()
                 await save_state()
 
+            # Auto-confirmation fallback (5 minutes)
+            if state.get('pending_confirmation') and (current_time - state.get('went_down_at', 0)) > 300:
+                print("Safety Net auto-confirming outage after 5 minutes of no response.")
+                state['pending_confirmation'] = False
+                state['quiet_status'] = 'active' # Wake up from quiet mode
+                down_time_ts = state.get('went_down_at', time.time())
+                msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
+                threading.Thread(target=send_telegram, args=(msg,)).start()
+                await save_state()
+
 async def alerts_loop():
     print("Alerts loop started...")
     while True:
@@ -945,7 +965,7 @@ async def alerts_loop():
                             can_notify = False
                         else:
                             can_notify = bool(can_notify)
-                        
+
                         if new_status == "active":
                             state["alert_start_time"] = now_dt.timestamp()
                             if can_notify:
@@ -1011,10 +1031,20 @@ async def sync_schedules():
                         slots_structure = {s_key: {gn: {d: day_data['slots'] for d, day_data in days.items() if day_data.get('slots') and any(s is False for s in day_data['slots'])} for gn, days in data.get(s_key, {}).items()} for s_key in ['github', 'yasno']}
                         current_hash = hashlib.md5(json.dumps(slots_structure, sort_keys=True).encode()).hexdigest()
                         async with state_mgr:
-                            if current_hash == state.get("last_schedule_hash"): should_alert = False
-                            else: state["last_schedule_hash"] = current_hash; await save_state()
-            except: should_alert = True
-            if should_alert: print("Schedule updated (alert suppressed).")
+                            if current_hash == state.get("last_schedule_hash"): 
+                                should_alert = False
+                            else: 
+                                state["last_schedule_hash"] = current_hash
+                                await save_state()
+                                # Trigger immediate Telegram notification for the new schedule
+                                print("Schedule changed! Triggering immediate Telegram alert...")
+                                if should_alert:
+                                    state["quiet_status"] = "active"
+                                    await save_state()
+                                trigger_text_report_update()
+            except Exception as e: 
+                print(f"Error checking schedule changes: {e}")
+                should_alert = True
 
 def check_quiet_mode_eligibility():
     now = time.time()
