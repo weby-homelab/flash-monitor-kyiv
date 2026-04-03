@@ -24,17 +24,16 @@
 
 This branch (`classic`) contains the **Bare-Metal Edition** of the project, designed to run directly on the host system (e.g., via `systemd`) without using Docker.
 
-> **Project Status:** Stable v3.2.5 (Intelligent Data Priority & UX Update)
-> **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
+> **Project Status:** Stable v3.2.6 (Config Integrity & Validation Update)
+> **Architecture:** Python Flask + Background Workers + JSON Flat-DB + Systemd
 > **Brand:** Weby Homelab
 
 ---
 
-## 🛡 Update v3.2.5
-*   **Intelligent Source Priority:** The system now strictly follows your data source priority. If **DTEK** (GitHub) provides a specific schedule, "emergency" statuses from other sources are ignored, eliminating false emergency alerts.
-*   **Admin Emergency Controls:** Added a dedicated UI block to the admin panel for manual outage confirmation (`pending_confirmation`), allowing you to manage Safety Net requests directly from the web.
-*   **Resilient Chart Generation:** Chart rendering now correctly respects source priority, ensuring your daily and weekly reports always align with your chosen provider.
-*   **Linguistic & UI Polishing:** Fixed Ukrainian grammar in Telegram notifications and updated alert styling on the dashboard.
+## 🛡 Update v3.2.6
+*   **Config Integrity Fix:** Conducted a full audit and expansion of the Pydantic data models. Fixed a bug where certain settings (e.g., "Region (ID)") could disappear after saving in the admin panel.
+*   **Strict Settings Validation:** Implemented rigorous validation for all advanced settings (Quiet Mode, Retention, Monitoring), ensuring the integrity of `config.json`.
+*   **Improved Persistence:** The system now reliably preserves every configuration field, preventing accidental deletion of "unknown" parameters.
 
 
 ## 🚀 Core Innovations (v3.2+)

@@ -24,17 +24,16 @@
 
 Ця гілка (`classic`) містить **Bare-Metal Edition** проєкту, призначену для роботи безпосередньо в системі (наприклад, через `systemd`), без використання Docker.
 
-> **Статус проєкту:** Stable v3.2.5 (Intelligent Data Priority & UX Update)
-> **Архітектура:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
+> **Статус проєкту:** Stable v3.2.6 (Config Integrity & Validation Update)
+> **Архітектура:** Python Flask + Background Workers + JSON Flat-DB + Systemd
 > **Бренд:** Weby Homelab
 
 ---
 
-## 🛡 Оновлення v3.2.5
-*   **Intelligent Source Priority:** Тепер система суворо дотримується пріоритету джерела. Якщо у **ДТЕК** є конкретний графік, статус "emergency" від інших джерел ігнорується. Це усуває хибні алерти про аварії.
-*   **Admin Emergency Controls:** До адмін-панелі додано блок ручного підтвердження відключень (`pending_confirmation`), що дозволяє керувати Safety Net безпосередньо з веб-інтерфейсу.
-*   **Resilient Chart Generation:** Логіка побудови графіків тепер також враховує пріоритетність джерел, що гарантує 100% відповідність картинки вашому вибору.
-*   **Linguistic & UI Polishing:** Виправлено граматику в Telegram-повідомленнях та оновлено візуальні алерти на дашборді.
+## 🛡 Оновлення v3.2.6
+*   **Config Integrity Fix:** Проведено повний аудит та розширення Pydantic моделей даних. Виправлено баг, через який деякі налаштування (наприклад, «Регіон (ID)») могли зникати після збереження в адмінці.
+*   **Strict Settings Validation:** Впроваджено сувору валідацію для всіх розширених налаштувань (Quiet Mode, Retention, Monitoring), що гарантує цілісність `config.json`.
+*   **Improved Persistence:** Система тепер надійно зберігає кожне поле конфігурації, запобігаючи випадковому видаленню "невідомих" параметрів.
 
 
 ## 🚀 Ключові інновації (v3.2+)
