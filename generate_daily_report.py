@@ -80,7 +80,25 @@ def load_schedule_slots(target_date):
             with open(SCHEDULE_FILE, 'r') as f:
                 data = json.load(f)
             
-            # Merge all available sources for the target date (False wins)
+            # Get priority order from config
+            from light_service import get_config
+            cfg = get_config()
+            user_priority = cfg.get("advanced", {}).get("data_sources", {}).get("priority", "yasno")
+            priority_order = ['yasno', 'github']
+            if user_priority in ['yasno', 'github']:
+                priority_order = [user_priority] + [s for s in priority_order if s != user_priority]
+            
+            # Find the best source with actual slots
+            for s_key in priority_order:
+                source = data.get(s_key)
+                if not source: continue
+                group_key = list(source.keys())[0]
+                schedule_data = source.get(group_key, {})
+                
+                if date_str in schedule_data and schedule_data[date_str].get('slots'):
+                     return list(schedule_data[date_str]['slots'])
+            
+            # Fallback to merging ONLY if no priority source has slots
             merged_slots = None
             for s_key in ['github', 'yasno']:
                 source = data.get(s_key)

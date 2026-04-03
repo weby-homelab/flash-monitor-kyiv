@@ -202,6 +202,7 @@ def main():
     is_cleanup = "--cleanup" in sys.argv
     now = datetime.datetime.now(KYIV_TZ)
     current_time = now.time()
+    current_hour = now.hour
     
     if is_cleanup:
         print("Cleanup mode: Removing text schedules from Telegram...")

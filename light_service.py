@@ -465,22 +465,7 @@ def get_best_source_internal(data, date_str):
     elif user_priority == 'custom':
         priority_order = ['custom', 'yasno', 'github']
 
-    best_source = None
-    is_emergency = False
-    
-    # 1. Pass: check for any emergency status in any source
-    for s_name in priority_order:
-        src = data.get(s_name)
-        if not src: continue
-        group_keys = list(src.keys())
-        if not group_keys: continue
-        group_key = group_keys[0]
-        day_data = src[group_key].get(date_str)
-        if day_data and day_data.get('status') == 'emergency':
-            is_emergency = True
-            if not best_source: best_source = src
-
-    # 2. Pass: prioritize sources with actual slots
+    # 1. First Pass: Try to find any source with actual slots (following priority)
     for s_name in priority_order:
         src = data.get(s_name)
         if not src: continue
@@ -489,9 +474,21 @@ def get_best_source_internal(data, date_str):
         group_key = group_keys[0]
         day_data = src[group_key].get(date_str)
         if day_data and day_data.get('slots'):
-            return src, is_emergency
+            # Use this source. is_emergency is True ONLY if THIS source says so.
+            return src, (day_data.get('status') == 'emergency')
+
+    # 2. Second Pass: If no slots found, find any source with emergency status
+    for s_name in priority_order:
+        src = data.get(s_name)
+        if not src: continue
+        group_keys = list(src.keys())
+        if not group_keys: continue
+        group_key = group_keys[0]
+        day_data = src[group_key].get(date_str)
+        if day_data and day_data.get('status') == 'emergency':
+            return src, True
             
-    return best_source, is_emergency
+    return None, False
 
 def get_next_scheduled_event(event_time, look_for_light):
     """
@@ -629,7 +626,7 @@ def format_event_message(is_up, event_time, prev_event_time):
         wait_line = f"{wait_prefix} ~ {wait_dur}"
         interval_line = f"🗓 ({next_info['interval']})"
     else:
-        wait_line = f"{wait_prefix} час невідомий 🤷‍♂️"
+        wait_line = f"{wait_prefix} невідомий час 🤷‍♂️"
 
     msg = f"{header}\n"
     if dev_line: msg += f"{dev_line}\n"
@@ -680,7 +677,7 @@ def get_schedule_context():
         
         def format_idx_to_time(idx):
             if idx >= 96:
-                return "відключення не плануються 🔆" if has_tomorrow else "час невідомий 🤷‍♂️"
+                return "відключення не плануються 🔆" if has_tomorrow else "невідомий час 🤷‍♂️"
             day_offset = idx // 48
             rem_idx = idx % 48
             h = rem_idx // 2
@@ -697,7 +694,7 @@ def get_schedule_context():
         
         if next_start_idx < len(slots):
             if next_start_idx >= 48 and not has_tomorrow:
-                next_range = "час невідомий 🤷‍♂️"
+                next_range = "невідомий час 🤷‍♂️"
             else:
                 next_end_idx = len(slots)
                 for i in range(next_start_idx + 1, len(slots)):
@@ -708,14 +705,14 @@ def get_schedule_context():
                 ne_t = format_idx_to_time(next_end_idx)
                 
                 if next_start_idx >= 96 or (next_start_idx >= 48 and next_end_idx >= 96 and is_light_now):
-                     next_range = "відключення не плануються 🔆" if has_tomorrow else "час невідомий 🤷‍♂️"
+                     next_range = "відключення не плануються 🔆" if has_tomorrow else "невідомий час 🤷‍♂️"
                 else:
                      next_range = f"{ns_t} - {ne_t}"
                      
                 dur_h = (next_end_idx - next_start_idx) * 0.5
                 next_duration = f"{dur_h:g}".replace('.', ',')
         else:
-            next_range = "відключення не плануються 🔆" if has_tomorrow else "час невідомий 🤷‍♂️"
+            next_range = "відключення не плануються 🔆" if has_tomorrow else "невідомий час 🤷‍♂️"
             
         return (is_light_now, t_end, next_range, next_duration, is_emergency)
     except Exception as e:

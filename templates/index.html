@@ -179,6 +179,34 @@
         
         .updated-time { color: var(--text-secondary); font-size: 0.85rem; margin-top: 12px; font-weight: 500; opacity: 0.8; }
         
+        /* Safety Net Buttons */
+        .safety-net-block { 
+            background: rgba(251, 191, 36, 0.1); 
+            border: 1px solid #fbbf24; 
+            border-radius: 16px; 
+            padding: 16px; 
+            margin-bottom: 20px; 
+            text-align: center;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .safety-net-title { font-size: 0.95rem; font-weight: 700; color: #fbbf24; }
+        .safety-btns { display: flex; gap: 8px; justify-content: center; }
+        .safety-btn { 
+            padding: 10px 16px; 
+            border-radius: 12px; 
+            border: none; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            flex: 1;
+        }
+        .btn-confirm { background: #f43f5e; color: white; }
+        .btn-ignore { background: #475569; color: white; }
+        .safety-btn:active { transform: scale(0.95); }
+        
         footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
         footer a { color: inherit; text-decoration: none; font-weight: 700; }
         
@@ -195,6 +223,14 @@
         </header>
         
         <div id="light-card" class="card"><div class="status-row"><div class="status-icon" id="light-icon">⏳</div><div class="status-info"><div class="status-title" id="light-text">Завантаження</div><div class="status-desc" id="light-event">...</div></div></div></div>
+        
+        <div id="safety-net-card" class="safety-net-block">
+            <div class="safety-net-title">⚠️ Світло зникло? Підтвердіть статус:</div>
+            <div class="safety-btns">
+                <button class="safety-btn btn-confirm" onclick="confirmOutage('confirm')">🔴 Вимкнули</button>
+                <button class="safety-btn btn-ignore" onclick="confirmOutage('ignore')">🛠 Збій / Не знаю</button>
+            </div>
+        </div>
         
         <div id="alert-card" class="card"><div class="status-row"><div class="status-icon" id="alert-icon">🛡️</div><div class="status-info"><div class="status-title" id="alert-val">---</div><div class="status-desc" id="alert-status">...</div></div></div></div>
         <div class="card" style="padding: 0; height: 320px; border: none; background: #000;"><iframe id="alert-map" src="https://alerts.in.ua/?minimal=true" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen></iframe></div>

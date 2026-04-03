@@ -24,17 +24,18 @@
 
 This branch (`classic`) contains the **Bare-Metal Edition** of the project, designed to run directly on the host system (e.g., via `systemd`) without using Docker.
 
-> **Project Status:** Stable v3.2.4 (Reliability & Resilience Update)
-> **Architecture:** Python Flask + Background Workers + JSON Flat-DB + Systemd
+> **Project Status:** Stable v3.2.5 (Intelligent Data Priority & UX Update)
+> **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
 > **Brand:** Weby Homelab
 
 ---
 
-## 🛡 Update v3.2.4
-*   **Auto-Confirmation (Safety Net):** Automatically confirms power outages after 5 minutes if the administrator does not respond to the Safety Net prompt. This prevents the system from being locked in a "pending confirmation" state during Quiet Mode.
-*   **Resilient Updates:** If a Telegram message is manually deleted, the bot now automatically sends a new message instead of failing to edit the non-existent one.
-*   **Quiet Mode Cleanup:** Entering "Information Peace" (Quiet Mode) now automatically triggers a cleanup of active reports from the Telegram channel. Conversely, receiving a new schedule with planned outages instantly wakes the system into Active Mode.
-*   **UI Consistency:** The `Github` data source is now consistently displayed as `ДТЕК` in Telegram reports for better user clarity.
+## 🛡 Update v3.2.5
+*   **Intelligent Source Priority:** The system now strictly follows your data source priority. If **DTEK** (GitHub) provides a specific schedule, "emergency" statuses from other sources are ignored, eliminating false emergency alerts.
+*   **Admin Emergency Controls:** Added a dedicated UI block to the admin panel for manual outage confirmation (`pending_confirmation`), allowing you to manage Safety Net requests directly from the web.
+*   **Resilient Chart Generation:** Chart rendering now correctly respects source priority, ensuring your daily and weekly reports always align with your chosen provider.
+*   **Linguistic & UI Polishing:** Fixed Ukrainian grammar in Telegram notifications and updated alert styling on the dashboard.
+
 
 ## 🚀 Core Innovations (v3.2+)
 

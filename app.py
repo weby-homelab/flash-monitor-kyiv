@@ -176,7 +176,7 @@ async def get_power_events_data(limit=5):
     # Default schedule info
     sched_light_now, current_end, next_range, next_duration, is_emergency = get_schedule_context()
     if is_emergency:
-        latest_event_text = "• ‼️‼️ можливі аварійні відключення"
+        latest_event_text = "• можливі аварійні відключення ⚠️"
     else:
         latest_event_text = f"• Наступне планове: {next_range}"
     
@@ -269,7 +269,7 @@ async def get_power_events_data(limit=5):
                             wait_line = f"• Очікуємо о {next_info['interval']}"
                     
                     if is_emergency:
-                        latest_event_text = "• ‼️‼️ можливі аварійні відключення"
+                        latest_event_text = "• можливі аварійні відключення ⚠️"
                     elif dev_line and wait_line:
                         latest_event_text = f"{dev_line}<br>{wait_line}"
                     elif dev_line:
@@ -361,43 +361,50 @@ def get_today_schedule_text():
         today_str = now.strftime("%Y-%m-%d")
         tomorrow_str = (now + timedelta(days=1)).strftime("%Y-%m-%d")
 
-        # --- SMART SOURCE MERGE ---
-        # We collect slots from all sources and merge them: False (outage) always wins over True (light).
+        # --- SMART SOURCE MERGE (Priority-Aware) ---
+        cfg = {}
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f: cfg = json.load(f)
+        user_priority = cfg.get("advanced", {}).get("data_sources", {}).get("priority", "yasno")
+        priority_order = ['yasno', 'github']
+        if user_priority in ['yasno', 'github']:
+            priority_order = [user_priority] + [s for s in priority_order if s != user_priority]
+
         today_slots = None
         tomorrow_slots = None
         emergency_sources = []
-
-        for s_name in ['yasno', 'github']:
+        
+        # 1. First Pass: Try to find any source with actual slots (following priority)
+        found_source = None
+        for s_name in priority_order:
             src = data.get(s_name)
             if not src: continue
-
             grp = list(src.keys())[0]
-            name = "YASNO" if s_name == 'yasno' else "ДТЕК"
-
-            # Today
             day_data = src[grp].get(today_str)
-            if day_data:
+            if day_data and day_data.get('slots'):
+                today_slots = list(day_data['slots'])
+                # Also get tomorrow if available from SAME source
+                tm_data = src[grp].get(tomorrow_str)
+                if tm_data and tm_data.get('slots'):
+                    tomorrow_slots = list(tm_data['slots'])
+                
                 if day_data.get('status') == 'emergency':
+                    name = "YASNO" if s_name == 'yasno' else "ДТЕК"
+                    emergency_sources.append(name)
+                
+                found_source = s_name
+                break
+        
+        # 2. Second Pass: If no slots found, check for emergency in any source
+        if today_slots is None:
+            for s_name in priority_order:
+                src = data.get(s_name)
+                if not src: continue
+                grp = list(src.keys())[0]
+                day_data = src[grp].get(today_str)
+                if day_data and day_data.get('status') == 'emergency':
+                    name = "YASNO" if s_name == 'yasno' else "ДТЕК"
                     if name not in emergency_sources: emergency_sources.append(name)
-
-                s = day_data.get('slots')
-                if s:
-                    if today_slots is None:
-                        today_slots = list(s)
-                    else:
-                        for i in range(min(len(today_slots), len(s))):
-                            if s[i] is False: today_slots[i] = False
-
-            # Tomorrow
-            tm_data = src[grp].get(tomorrow_str)
-            if tm_data:
-                s = tm_data.get('slots')
-                if s:
-                    if tomorrow_slots is None:
-                        tomorrow_slots = list(s)
-                    else:
-                        for i in range(min(len(tomorrow_slots), len(s))):
-                            if s[i] is False: tomorrow_slots[i] = False
 
         if today_slots is None and not emergency_sources: 
             return "🟢 <b>Графік відсутній</b><br><br>Відключень не передбачається (або дані ще не оновлено)."
@@ -679,6 +686,7 @@ async def api_status():
         "group": group_name,
         "show_graphs": show_graphs,
         "show_charts": show_charts,
+        "pending_confirmation": state.get("pending_confirmation", False),
         "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S"),
         "version": version
     }
@@ -723,6 +731,33 @@ async def push_api(key: str, background_tasks: BackgroundTasks, x_secret_key: st
     "msg": "heartbeat_received",
     "timestamp": datetime.now(KYIV_TZ).strftime("%H:%M:%S")
     }
+
+@app.get('/api/confirm-outage/{action}/{key}')
+async def confirm_outage_api(action: str, key: str, background_tasks: BackgroundTasks):
+    actual_key = state.get('secret_key')
+    if not key or not actual_key or not secrets.compare_digest(key, actual_key):
+        return JSONResponse({"status": "error", "msg": "invalid_key"}, status_code=403)
+        
+    async with state_mgr:
+        await load_state()
+        if not state.get('pending_confirmation'):
+            return {"status": "ok", "msg": "no_pending_confirmation"}
+            
+        if action == "confirm":
+            state['quiet_status'] = 'active'
+            state['pending_confirmation'] = False
+            state['safety_net_pending'] = False
+            down_time = state.get('went_down_at', time.time())
+            msg = format_event_message(False, down_time, state.get("came_up_at", 0))
+            background_tasks.add_task(send_telegram, msg)
+            background_tasks.add_task(broadcast_state_update)
+        elif action == "ignore":
+            state['pending_confirmation'] = False
+            background_tasks.add_task(broadcast_state_update)
+            
+        await save_state()
+        
+    return {"status": "ok", "action": action}
 
 @app.get('/api/down/{key}')
 async def down_api(key: str, background_tasks: BackgroundTasks, x_secret_key: str = Header(None, alias="X-Secret-Key")):
@@ -1077,6 +1112,19 @@ async def admin_safety_net_react(request: Request, data: dict = Body(None), back
             
         elif action == 'dontknow':
             state['safety_net_pending'] = False
+            
+        elif action == 'confirm':
+            state['quiet_status'] = 'active'
+            state['pending_confirmation'] = False
+            state['safety_net_pending'] = False
+            down_time = state.get('went_down_at', time.time())
+            msg = format_event_message(False, down_time, state.get("came_up_at", 0))
+            background_tasks.add_task(send_telegram, msg)
+            background_tasks.add_task(broadcast_state_update)
+            
+        elif action == 'ignore':
+            state['pending_confirmation'] = False
+            background_tasks.add_task(broadcast_state_update)
             
         await save_state()
 
