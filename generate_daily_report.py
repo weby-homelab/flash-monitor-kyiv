@@ -407,70 +407,28 @@ def save_report_id(message_id, target_date):
     except:
         pass
 
+from storage import StorageUtils
+from telegram_client import TelegramClient
+
+def get_telegram_client():
+    return TelegramClient(TOKEN, CHAT_ID)
+
 def update_telegram_photo(message_id, photo_path, caption):
-    url = f"https://api.telegram.org/bot{TOKEN}/editMessageMedia"
-    
-    media_json = json.dumps({
-        'type': 'photo',
-        'media': 'attach://chart',
-        'caption': caption,
-        'parse_mode': 'HTML'
-    })
-    
-    with open(photo_path, 'rb') as f:
-        files = {'chart': f}
-        data = {
-            'chat_id': CHAT_ID,
-            'message_id': message_id,
-            'media': media_json
-        }
-        try:
-            r = requests.post(url, files=files, data=data, timeout=20)
-            if r.status_code == 200:
-                print("Report updated successfully.")
-                return True
-            else:
-                print(f"Failed to update report: {r.text}")
-                return False
-        except Exception as e:
-            print(f"Error updating report: {e}")
-            return False
+    client = get_telegram_client()
+    return client.edit_photo(message_id, photo_path, caption) is not None
 
 def delete_telegram_message(message_id):
-    url = f"https://api.telegram.org/bot{TOKEN}/deleteMessage"
-    data = {
-        'chat_id': CHAT_ID,
-        'message_id': message_id
-    }
-    try:
-        r = requests.post(url, data=data, timeout=10)
-        if r.status_code == 200:
-            print(f"Old report message {message_id} deleted successfully.")
-            return True
-        else:
-            print(f"Failed to delete old report message: {r.text}")
-            return False
-    except Exception as e:
-        print(f"Error deleting old report message: {e}")
-        return False
+    client = get_telegram_client()
+    return client.delete_message(message_id)
 
 def send_telegram_photo(photo_path, caption, target_date):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-    with open(photo_path, 'rb') as f:
-        files = {'photo': f}
-        data = {'chat_id': CHAT_ID, 'caption': caption, 'parse_mode': 'HTML', 'disable_notification': True}
-        try:
-            r = requests.post(url, files=files, data=data, timeout=10)
-            if r.status_code == 200:
-                print("Report sent successfully.")
-                res = r.json()
-                if res.get('ok'):
-                    msg_id = res['result']['message_id']
-                    save_report_id(msg_id, target_date)
-            else:
-                print(f"Failed to send report: {r.text}")
-        except Exception as e:
-            print(f"Error sending report: {e}")
+    client = get_telegram_client()
+    msg_id = client.send_photo(photo_path, caption)
+    if msg_id:
+        save_report_id(msg_id, target_date)
+        print("Report sent successfully.")
+    else:
+        print("Failed to send report.")
 
 def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
     if now_time is None:

@@ -1,0 +1,114 @@
+import json
+import requests
+
+class TelegramClient:
+    def __init__(self, token, chat_id):
+        self.token = token
+        self.chat_id = chat_id
+        self.base_url = f"https://api.telegram.org/bot{self.token}"
+
+    def _make_request(self, endpoint, payload, files=None, timeout=30):
+        url = f"{self.base_url}/{endpoint}"
+        try:
+            r = requests.post(url, data=payload, json=payload if not files else None, files=files, timeout=timeout)
+            if r.status_code == 200:
+                res = r.json()
+                return True, res.get("result", {}).get("message_id")
+            
+            err_desc = r.json().get("description", "").lower() if r.headers.get("content-type") == "application/json" else r.text.lower()
+            return False, err_desc
+        except Exception as e:
+            return False, str(e)
+
+    def send_message(self, text, parse_mode="HTML", silent=True, reply_markup=None):
+        payload = {
+            "chat_id": self.chat_id,
+            "text": text,
+            "parse_mode": parse_mode,
+            "disable_notification": silent,
+            "disable_web_page_preview": True
+        }
+        if reply_markup:
+            payload["reply_markup"] = json.dumps(reply_markup) if isinstance(reply_markup, dict) else reply_markup
+            
+        success, res = self._make_request("sendMessage", payload)
+        if not success:
+            print(f"Failed to send message: {res}")
+        return res if success else None
+
+    def edit_message(self, message_id, text, parse_mode="HTML", reply_markup=None):
+        payload = {
+            "chat_id": self.chat_id,
+            "message_id": message_id,
+            "text": text,
+            "parse_mode": parse_mode,
+            "disable_web_page_preview": True
+        }
+        if reply_markup:
+            payload["reply_markup"] = json.dumps(reply_markup) if isinstance(reply_markup, dict) else reply_markup
+            
+        success, res = self._make_request("editMessageText", payload)
+        if success: return message_id
+        
+        if "message to edit not found" in res:
+            print("Message deleted manually. Falling back to send_message.")
+            return self.send_message(text, parse_mode, silent=True, reply_markup=reply_markup)
+            
+        print(f"Failed to edit message: {res}")
+        return None
+
+    def send_photo(self, photo_path, caption="", parse_mode="HTML", silent=True):
+        payload = {
+            "chat_id": self.chat_id,
+            "caption": caption,
+            "parse_mode": parse_mode,
+            "disable_notification": silent
+        }
+        try:
+            with open(photo_path, 'rb') as f:
+                success, res = self._make_request("sendPhoto", payload, files={'photo': f})
+                if not success:
+                    print(f"Failed to send photo: {res}")
+                return res if success else None
+        except Exception as e:
+            print(f"Error opening photo file: {e}")
+            return None
+
+    def edit_photo(self, message_id, photo_path, caption="", parse_mode="HTML"):
+        media_json = json.dumps({
+            'type': 'photo',
+            'media': 'attach://chart',
+            'caption': caption,
+            'parse_mode': parse_mode
+        })
+        payload = {
+            "chat_id": self.chat_id,
+            "message_id": message_id,
+            "media": media_json
+        }
+        try:
+            with open(photo_path, 'rb') as f:
+                success, res = self._make_request("editMessageMedia", payload, files={'chart': f})
+                if success: return message_id
+                
+                if "message to edit not found" in res:
+                    print("Photo message deleted manually. Falling back to send_photo.")
+                    return self.send_photo(photo_path, caption, parse_mode, silent=True)
+                    
+                print(f"Failed to edit photo: {res}")
+                return None
+        except Exception as e:
+            print(f"Error opening photo file for edit: {e}")
+            return None
+            
+    def delete_message(self, message_id):
+        payload = {"chat_id": self.chat_id, "message_id": message_id}
+        success, res = self._make_request("deleteMessage", payload, timeout=10)
+        if not success:
+            print(f"Failed to delete message {message_id}: {res}")
+        return success
+
+    def answer_callback(self, callback_id, text):
+        payload = {"callback_query_id": callback_id, "text": text}
+        success, _ = self._make_request("answerCallbackQuery", payload, timeout=10)
+        return success

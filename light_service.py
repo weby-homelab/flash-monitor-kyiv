@@ -11,6 +11,7 @@ import secrets
 import datetime
 from zoneinfo import ZoneInfo
 import requests
+from telegram_client import TelegramClient
 import subprocess
 from urllib.parse import urlparse, parse_qs
 import sys
@@ -33,17 +34,16 @@ def get_config():
         if not os.path.exists(config_path):
             config_path = "config.json"
             
-        if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
-                data = json.load(f)
-                try:
-                    return AppConfig(**data) .model_dump(exclude_unset=False, by_alias=True)
-                except Exception as e:
-                    print(f"Config validation error: {e}")
-                    return data
+        data = StorageUtils.load_json_sync(config_path, default={})
+        if data:
+            try:
+                return AppConfig(**data).model_dump(exclude_unset=False, by_alias=True)
+            except Exception as e:
+                print(f"Config validation error: {e}")
+                return data
     except:
         pass
-    return AppConfig() .model_dump()
+    return AppConfig().model_dump()
 
 def get_admin_chat_id():
     cfg = get_config()
@@ -68,12 +68,7 @@ def create_backup(label="manual"):
     
     config = get_config()
     # We also include state for safety
-    state_copy = {}
-    state_path = os.path.join(DATA_DIR, "power_monitor_state.json")
-    if os.path.exists(state_path):
-        try:
-            with open(state_path, 'r') as f: state_copy = json.load(f)
-        except: pass
+    state_copy = StorageUtils.load_json_sync(STATE_FILE, default={})
         
     backup_data = {
         "timestamp": time.time(),
@@ -83,8 +78,7 @@ def create_backup(label="manual"):
         "state": state_copy
     }
     
-    with open(backup_path, 'w', encoding='utf-8') as f:
-        json.dump(backup_data, f, ensure_ascii=False, indent=2)
+    StorageUtils.save_json_sync(backup_path, backup_data)
     
     # Cleanup old backups (keep last 10)
     try:
@@ -103,15 +97,13 @@ def list_backups():
     for f in sorted(os.listdir(backup_dir), reverse=True):
         if f.startswith("backup_") and f.endswith(".json"):
             path = os.path.join(backup_dir, f)
-            try:
-                with open(path, 'r') as b:
-                    data = json.load(b)
-                    res.append({
-                        "filename": f,
-                        "date": data.get("date_str"),
-                        "label": data.get("label", "unknown")
-                    })
-            except: pass
+            data = StorageUtils.load_json_sync(path)
+            if data:
+                res.append({
+                    "filename": f,
+                    "date": data.get("date_str"),
+                    "label": data.get("label", "unknown")
+                })
     return res
 
 def restore_backup(filename):
@@ -119,22 +111,20 @@ def restore_backup(filename):
     if not os.path.exists(backup_path): return False, "Backup not found"
     
     try:
-        with open(backup_path, 'r') as f:
-            data = json.load(f)
+        data = StorageUtils.load_json_sync(backup_path)
+        if not data: return False, "Failed to load backup"
             
         # 1. Backup current config as "pre_restore" just in case
         create_backup("pre_restore")
         
         # 2. Restore config
-        config_path = os.path.join(DATA_DIR, "config.json")
-        with open(config_path, 'w', encoding='utf-8') as f:
-            json.dump(data["config"], f, ensure_ascii=False, indent=2)
+        data_dir = os.environ.get("DATA_DIR", ".")
+        config_path = os.path.join(data_dir, "config.json")
+        StorageUtils.save_json_sync(config_path, data["config"])
             
         # 3. Restore state if available
         if "state" in data:
-            state_path = os.path.join(DATA_DIR, "power_monitor_state.json")
-            with open(state_path, 'w', encoding='utf-8') as f:
-                json.dump(data["state"], f, ensure_ascii=False, indent=2)
+            StorageUtils.save_json_sync(STATE_FILE, data["state"])
         
         return True, "Success"
     except Exception as e:
@@ -151,25 +141,21 @@ def prune_old_data():
         now = time.time()
         
         # 1. Prune event_log.json
-        if os.path.exists(EVENT_LOG_FILE):
+        logs = StorageUtils.load_json_sync(EVENT_LOG_FILE, default=None)
+        if logs:
             cutoff = now - (log_days * 86400)
-            with open(EVENT_LOG_FILE, 'r') as f:
-                logs = json.load(f)
             new_logs = [l for l in logs if l.get('timestamp', 0) > cutoff]
             if len(new_logs) < len(logs):
-                with open(EVENT_LOG_FILE, 'w') as f:
-                    json.dump(new_logs, f, indent=2)
+                StorageUtils.save_json_sync(EVENT_LOG_FILE, new_logs)
                 print(f"Pruned {len(logs) - len(new_logs)} old events.")
 
         # 2. Prune schedule_history.json
-        if os.path.exists(HISTORY_FILE):
+        history = StorageUtils.load_json_sync(HISTORY_FILE, default=None)
+        if history:
             cutoff_date = (datetime.datetime.now(KYIV_TZ) - datetime.timedelta(days=sched_days)).strftime("%Y-%m-%d")
-            with open(HISTORY_FILE, 'r') as f:
-                history = json.load(f)
             new_history = {d: v for d, v in history.items() if d >= cutoff_date}
             if len(new_history) < len(history):
-                with open(HISTORY_FILE, 'w') as f:
-                    json.dump(new_history, f, indent=2)
+                StorageUtils.save_json_sync(HISTORY_FILE, new_history)
                 print(f"Pruned {len(history) - len(new_history)} old schedule records.")
     except Exception as e:
         print(f"Error during data pruning: {e}")
@@ -199,57 +185,8 @@ STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
 STATE_LOCK_FILE = os.path.join(DATA_DIR, "power_monitor_state.lock")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 
-
-class SafeStateContextAsync:
-    def __init__(self):
-        self._lock = asyncio.Lock()
-        self._counter = 0
-        self._owner = None
-        self._flock_file = None
-        self.file_lock_path = STATE_LOCK_FILE
-
-    async def __aenter__(self):
-        task = asyncio.current_task()
-        if self._owner == task:
-            self._counter += 1
-            return self
-            
-        await self._lock.acquire()
-        self._owner = task
-        self._counter = 1
-        try:
-            def _acquire():
-                self._flock_file = open(self.file_lock_path, 'a')
-                fcntl.flock(self._flock_file, fcntl.LOCK_EX)
-            await asyncio.to_thread(_acquire)
-        except Exception as e:
-            print(f"Error acquiring file lock: {e}")
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if self._owner != asyncio.current_task():
-            return
-            
-        if self._counter > 1:
-            self._counter -= 1
-            return
-            
-        try:
-            if self._flock_file:
-                def _release():
-                    try:
-                        fcntl.flock(self._flock_file, fcntl.LOCK_UN)
-                        self._flock_file.close()
-                    except:
-                        pass
-                await asyncio.to_thread(_release)
-                self._flock_file = None
-        finally:
-            self._counter = 0
-            self._owner = None
-            self._lock.release()
-
-state_mgr = SafeStateContextAsync()
+from storage import SafeStateContextAsync, StorageUtils
+state_mgr = SafeStateContextAsync(STATE_LOCK_FILE)
 
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
@@ -370,29 +307,14 @@ async def log_event(event_type, timestamp):
         }
         
         async with state_mgr:
-            logs = []
-            if os.path.exists(EVENT_LOG_FILE):
-                try:
-                    async with aiofiles.open(EVENT_LOG_FILE, 'r') as f:
-                        file_content = (await f.read()).strip()
-                        if file_content:
-                            logs = json.loads(file_content)
-                            if not isinstance(logs, list):
-                                logs = []
-                except (json.JSONDecodeError, FileNotFoundError):
-                    pass
-                
+            logs = await StorageUtils.load_json_async(EVENT_LOG_FILE, default=[])
+            if not isinstance(logs, list): logs = []
+            
             logs.append(entry)
             if len(logs) > 1000: 
                 logs = logs[-1000:]
                 
-            temp_file = EVENT_LOG_FILE + '.tmp'
-            async with aiofiles.open(temp_file, 'w') as f:
-                await f.write(json.dumps(logs, indent=2))
-            
-            def _replace():
-                os.replace(temp_file, EVENT_LOG_FILE)
-            await asyncio.to_thread(_replace)
+            await StorageUtils.save_json_async(EVENT_LOG_FILE, logs)
                 
     except Exception as e:
         print(f"Failed to log event: {e}")
@@ -400,15 +322,10 @@ async def log_event(event_type, timestamp):
 async def load_state():
     global state
     async with state_mgr:
-        if os.path.exists(STATE_FILE):
-            try:
-                async with aiofiles.open(STATE_FILE, 'r') as f:
-                    file_content = await f.read()
-                    saved_state = json.loads(file_content)
-                    state.update(saved_state)
-            except Exception as e:
-                print(f"Error loading state: {e}")
-                
+        saved_state = await StorageUtils.load_json_async(STATE_FILE, default={})
+        if saved_state:
+            state.update(saved_state)
+            
         try:
             validated_state = AppState(**state) .model_dump(exclude_unset=False)
             state.update(validated_state)
@@ -427,15 +344,7 @@ async def load_state():
 
 async def save_state():
     async with state_mgr:
-        try:
-            temp_file = STATE_FILE + '.tmp'
-            async with aiofiles.open(temp_file, 'w') as f:
-                await f.write(json.dumps(state))
-            def _replace():
-                os.replace(temp_file, STATE_FILE)
-            await asyncio.to_thread(_replace)
-        except Exception as e:
-            print(f"Error saving state: {e}")
+        await StorageUtils.save_json_async(STATE_FILE, state)
 
 def get_current_time():
     # Returns local time timestamp
@@ -626,7 +535,10 @@ def format_event_message(is_up, event_time, prev_event_time):
         wait_line = f"{wait_prefix} ~ {wait_dur}"
         interval_line = f"🗓 ({next_info['interval']})"
     else:
-        wait_line = f"{wait_prefix} невідомий час 🤷‍♂️"
+        if is_up:
+            wait_line = "❌ Відключення не плануються 🔆"
+        else:
+            wait_line = f"{wait_prefix} невідомий час 🤷‍♂️"
 
     msg = f"{header}\n"
     if dev_line: msg += f"{dev_line}\n"
@@ -894,52 +806,73 @@ async def update_quiet_status():
             await save_state()
             print(f"Quiet mode status updated to: {new_status}")
 
+async def _check_safety_net_trigger(current_time, last_seen):
+    safety_net_timeout = get_safety_net_timeout()
+    if (current_time - last_seen) > safety_net_timeout and \
+       not state.get("safety_net_pending") and state.get("safety_net_triggered_for") != last_seen:
+        if (current_time - last_seen) < 180:
+            state["safety_net_pending"] = True
+            state["safety_net_sent_at"] = current_time
+            state["safety_net_triggered_for"] = last_seen
+            await save_state()
+            threading.Thread(target=send_safety_net_admin, args=(current_time,)).start()
+
+async def _check_safety_net_timeout(current_time):
+    sent_at = state.get("safety_net_sent_at", 0)
+    if state.get("safety_net_pending") and (current_time - sent_at) > 30:
+        state["safety_net_pending"] = False
+        await save_state()
+
+async def _check_outage_detection(current_time, last_seen):
+    if (current_time - last_seen) > 180:
+        state["status"] = "down"
+        state["safety_net_pending"] = False
+        down_time_ts = last_seen + get_push_interval()
+        state["went_down_at"] = down_time_ts
+        await log_event("down", down_time_ts)
+        msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
+        if state.get('quiet_status') == 'quiet':
+            state['pending_confirmation'] = True
+            threading.Thread(target=send_admin_confirmation, args=(down_time_ts,)).start()
+        else:
+            threading.Thread(target=send_telegram, args=(msg,)).start()
+        await save_state()
+
+async def _check_auto_confirmation(current_time):
+    if state.get('pending_confirmation') and (current_time - state.get('went_down_at', 0)) > 300:
+        print("Safety Net timeout: Admin did not respond in 5 mins. Auto-ignoring event (assuming technical glitch) to preserve Quiet Mode.")
+        state['pending_confirmation'] = False
+        # Do NOT change quiet_status to active. Keep it quiet.
+        # Do NOT send alarm to the public channel.
+        
+        # We optionally could notify the admin that it was auto-ignored, 
+        # but let's just quietly resolve the pending state to avoid locking the system.
+        await save_state()
+
 async def monitor_loop():
     print("Monitor loop started...")
     while True:
-        await asyncio.sleep(5)
-        await load_state()
-        async with state_mgr:
-            current_time = get_current_time()
-            last_seen = state["last_seen"]
-            status = state["status"]
-            if state.get("muted_until", 0) > current_time: continue
-            safety_net_timeout = get_safety_net_timeout()
-            if status == "up" and (current_time - last_seen) > safety_net_timeout and \
-               not state.get("safety_net_pending") and state.get("safety_net_triggered_for") != last_seen:
-                if (current_time - last_seen) < 180:
-                    state["safety_net_pending"] = True
-                    state["safety_net_sent_at"] = current_time
-                    state["safety_net_triggered_for"] = last_seen
-                    await save_state()
-                    threading.Thread(target=send_safety_net_admin, args=(current_time,)).start()
-            sent_at = state.get("safety_net_sent_at", 0)
-            if state.get("safety_net_pending") and (current_time - sent_at) > 30:
-                state["safety_net_pending"] = False
-                await save_state()
-            if status == "up" and (current_time - last_seen) > 180:
-                state["status"] = "down"
-                state["safety_net_pending"] = False
-                down_time_ts = last_seen + get_push_interval()
-                state["went_down_at"] = down_time_ts
-                await log_event("down", down_time_ts)
-                msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
-                if state.get('quiet_status') == 'quiet':
-                    state['pending_confirmation'] = True
-                    threading.Thread(target=send_admin_confirmation, args=(down_time_ts,)).start()
-                else:
-                    threading.Thread(target=send_telegram, args=(msg,)).start()
-                await save_state()
+        try:
+            await asyncio.sleep(5)
+            await load_state()
+            async with state_mgr:
+                current_time = get_current_time()
+                last_seen = state["last_seen"]
+                
+                if state.get("muted_until", 0) > current_time: 
+                    continue
+                    
+                if state["status"] == "up":
+                    await _check_safety_net_trigger(current_time, last_seen)
+                    await _check_safety_net_timeout(current_time)
+                    await _check_outage_detection(current_time, last_seen)
 
-            # Auto-confirmation fallback (5 minutes)
-            if state.get('pending_confirmation') and (current_time - state.get('went_down_at', 0)) > 300:
-                print("Safety Net auto-confirming outage after 5 minutes of no response.")
-                state['pending_confirmation'] = False
-                state['quiet_status'] = 'active' # Wake up from quiet mode
-                down_time_ts = state.get('went_down_at', time.time())
-                msg = format_event_message(False, down_time_ts, state.get("came_up_at", 0))
-                threading.Thread(target=send_telegram, args=(msg,)).start()
-                await save_state()
+                await _check_auto_confirmation(current_time)
+                
+        except Exception as e:
+            print(f"Critical error in monitor_loop: {e}")
+            await asyncio.sleep(5)
+
 
 async def alerts_loop():
     print("Alerts loop started...")
@@ -1072,43 +1005,46 @@ async def schedule_loop():
     last_prune_date = None
     
     while True:
-        now = datetime.datetime.now(KYIV_TZ)
-        now_str = now.strftime("%H:%M")
-        today_date = now.strftime("%Y-%m-%d")
-        
-        # 1. Daily maintenance (at 00:01)
-        if now.hour == 0 and now.minute == 1:
-            trigger_daily_report_update(is_final=True)
-            if last_prune_date != today_date:
-                prune_old_data()
-                create_backup("daily_auto")
-                last_prune_date = today_date
-            await asyncio.sleep(65)
-            continue
-
-        # 2. Dynamic report times from config
-        cfg = get_config()
-        report_times = cfg.get("advanced", {}).get("notifications", {}).get("report_times", [])
-        if now_str in report_times:
-            print(f"Triggering scheduled report at {now_str}...")
-            trigger_daily_report_update(is_final=False)
-            await asyncio.sleep(65)
-            continue
-
-        # 3. Regular sync and status updates every 10 mins
-        if now.minute % 10 == 0:
-            await sync_schedules()
-            trigger_daily_report_update(is_final=False)
-            trigger_text_report_update()
-            await update_quiet_status()
+        try:
+            now = datetime.datetime.now(KYIV_TZ)
+            now_str = now.strftime("%H:%M")
+            today_date = now.strftime("%Y-%m-%d")
             
-        # 4. Weekly report (Monday morning)
-        if now.weekday() == 0 and now.hour == 0 and 15 <= now.minute < 25:
-            if weekly_sent_date != today_date:
-                try:
-                    base_dir = os.path.dirname(os.path.abspath(__file__))
-                    subprocess.run([sys.executable, os.path.join(base_dir, "generate_weekly_report.py"), "--date", (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")], check=True, cwd=base_dir)
-                    weekly_sent_date = today_date
-                except: pass
-        
+            # 1. Daily maintenance (at 00:01)
+            if now.hour == 0 and now.minute == 1:
+                trigger_daily_report_update(is_final=True)
+                if last_prune_date != today_date:
+                    prune_old_data()
+                    create_backup("daily_auto")
+                    last_prune_date = today_date
+                await asyncio.sleep(65)
+                continue
+
+            # 2. Dynamic report times from config
+            cfg = get_config()
+            report_times = cfg.get("advanced", {}).get("notifications", {}).get("report_times", [])
+            if now_str in report_times:
+                print(f"Triggering scheduled report at {now_str}...")
+                trigger_daily_report_update(is_final=False)
+                await asyncio.sleep(65)
+                continue
+
+            # 3. Regular sync and status updates every 10 mins
+            if now.minute % 10 == 0:
+                await sync_schedules()
+                trigger_daily_report_update(is_final=False)
+                trigger_text_report_update()
+                await update_quiet_status()
+                
+            # 4. Weekly report (Monday morning)
+            if now.weekday() == 0 and now.hour == 0 and 15 <= now.minute < 25:
+                if weekly_sent_date != today_date:
+                    try:
+                        base_dir = os.path.dirname(os.path.abspath(__file__))
+                        subprocess.run([sys.executable, os.path.join(base_dir, "generate_weekly_report.py"), "--date", (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")], check=True, cwd=base_dir)
+                        weekly_sent_date = today_date
+                    except: pass
+        except Exception as e:
+            print(f"Critical error in schedule_loop: {e}")
+            
         await asyncio.sleep(60)
