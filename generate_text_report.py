@@ -355,54 +355,33 @@ def main():
     last_id = today_state.get(f"{target_slot}_id") if not force_new else None
     last_hash = today_state.get(f"{target_slot}_hash") if not force_new else None
 
+    from telegram_client import TelegramClient
+    client = TelegramClient(TOKEN, CHAT_ID)
+
     if last_id:
         if last_hash != content_hash:
-            url = f"https://api.telegram.org/bot{TOKEN}/editMessageText"
-            payload = {"chat_id": CHAT_ID, "message_id": last_id, "text": full_text, "parse_mode": "HTML", "disable_web_page_preview": True}
-            try:
-                r = requests.post(url, json=payload, timeout=10)
-                if r.status_code == 200:
-                    today_state[f"{target_slot}_hash"] = content_hash
-                    report_state[today_str] = today_state
-                    save_report_state(report_state)
-                else:
-                    print(f"Failed to edit text report (Status {r.status_code}). Sending NEW message...")
-                    send_new_text_report(TOKEN, CHAT_ID, full_text, target_slot, today_str, content_hash, report_state, has_tomorrow_now)
-            except Exception as e:
-                print(f"Error editing text report: {e}. Sending NEW message...")
-                send_new_text_report(TOKEN, CHAT_ID, full_text, target_slot, today_str, content_hash, report_state, has_tomorrow_now)
+            new_id = client.edit_message(last_id, full_text)
+            if new_id:
+                today_state[f"{target_slot}_hash"] = content_hash
+                if new_id != last_id:
+                    today_state[f"{target_slot}_id"] = new_id
+                    if target_slot == "morning":
+                        today_state["morning_had_tomorrow"] = has_tomorrow_now
+                report_state[today_str] = today_state
+                save_report_state(report_state)
+            else:
+                print(f"Failed to edit text report.")
         else:
             print("Text report hash unchanged. Skipping update.")
     else:
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        payload = {"chat_id": CHAT_ID, "text": full_text, "parse_mode": "HTML", "disable_web_page_preview": True}
-        r = requests.post(url, json=payload)
-        if r.status_code == 200:
-            new_id = r.json()['result']['message_id']
+        new_id = client.send_message(full_text, silent=True)
+        if new_id:
             today_state[f"{target_slot}_id"] = new_id
             today_state[f"{target_slot}_hash"] = content_hash
             if target_slot == "morning":
                 today_state["morning_had_tomorrow"] = has_tomorrow_now
             report_state[today_str] = today_state
             save_report_state(report_state)
-
-def send_new_text_report(token, chat_id, text, target_slot, today_str, content_hash, report_state, has_tomorrow_now):
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
-    try:
-        r = requests.post(url, json=payload, timeout=10)
-        if r.status_code == 200:
-            new_id = r.json()['result']['message_id']
-            today_state = report_state.get(today_str, {})
-            today_state[f"{target_slot}_id"] = new_id
-            today_state[f"{target_slot}_hash"] = content_hash
-            if target_slot == "morning":
-                today_state["morning_had_tomorrow"] = has_tomorrow_now
-            report_state[today_str] = today_state
-            save_report_state(report_state)
-            print(f"New text report sent successfully (ID: {new_id}).")
-    except Exception as e:
-        print(f"Error sending new text report fallback: {e}")
 
 if __name__ == "__main__":
     main()

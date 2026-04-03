@@ -24,16 +24,17 @@
 
 This branch (`classic`) contains the **Bare-Metal Edition** of the project, designed to run directly on the host system (e.g., via `systemd`) without using Docker.
 
-> **Project Status:** Stable v3.2.6 (Config Integrity & Validation Update)
+> **Project Status:** Stable v3.3.0 (Core Refactoring & Fail-Safe Architecture)
 > **Architecture:** Python Flask + Background Workers + JSON Flat-DB + Systemd
 > **Brand:** Weby Homelab
 
 ---
 
-## 🛡 Update v3.2.6
-*   **Config Integrity Fix:** Conducted a full audit and expansion of the Pydantic data models. Fixed a bug where certain settings (e.g., "Region (ID)") could disappear after saving in the admin panel.
-*   **Strict Settings Validation:** Implemented rigorous validation for all advanced settings (Quiet Mode, Retention, Monitoring), ensuring the integrity of `config.json`.
-*   **Improved Persistence:** The system now reliably preserves every configuration field, preventing accidental deletion of "unknown" parameters.
+## 🛡 Update v3.3.0
+*   **Data Access Layer (`storage.py`):** Introduced a centralized storage module. All file I/O operations are now atomic and protected by `asyncio.Lock()` and `fcntl.flock`, completely eliminating race conditions and JSON database corruption.
+*   **Notification Service (`telegram_client.py`):** Created a unified Telegram API client with smart resilience, automatically handling timeouts and sending new messages when editing fails.
+*   **Fail-Safe Quiet Mode:** If the connection drops during "Information Peace" and the admin doesn't respond within 5 minutes, the system automatically ignores the glitch, preventing any false night alarms in the public channel.
+*   **Modular State Machine:** The infinite loops have been split into independent asynchronous blocks with global `try...except` handling, ensuring the monitoring service never crashes from external API failures.
 
 
 ## 🚀 Core Innovations (v3.2+)
@@ -79,6 +80,16 @@ graph TD
         API --- SVC
         BG --- LMN[light_service.py]
         
+        subgraph "Core Modules"
+            TC[telegram_client.py]
+            ST[storage.py]
+        end
+        
+        LMN --- TC
+        LMN --- ST
+        API --- ST
+        API --- TC
+        
         subgraph "Data Layer (JSON Flat-DB)"
             STATE[(power_monitor_state.json)]
             CFG[(config.json)]
@@ -86,11 +97,10 @@ graph TD
             SCHED[(last_schedules.json)]
         end
         
-        LMN --- STATE
-        LMN --- LOGS
-        LMN --- SCHED
-        SVC --- CFG
-        SVC --- STATE
+        ST --- STATE
+        ST --- LOGS
+        ST --- SCHED
+        ST --- CFG
     end
 
     %% -- External Sources --
