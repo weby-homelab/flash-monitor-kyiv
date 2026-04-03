@@ -573,7 +573,17 @@ if __name__ == "__main__":
             print(f"Error saving stats json: {e}")
                
     is_final = "--final" in sys.argv
+    is_cleanup = "--cleanup" in sys.argv
     quiet_status = get_quiet_status()
+
+    if is_cleanup:
+        print("Cleanup mode: Removing daily report from Telegram...")
+        last_id = get_last_report_id(target_date)
+        if last_id:
+            delete_telegram_message(last_id)
+            # Remove from state
+            save_report_id(None, target_date)
+        sys.exit(0)
 
     if quiet_status == "quiet" and "--no-send" not in sys.argv:
         if is_final:
@@ -607,7 +617,8 @@ if __name__ == "__main__":
             print(f"Updating existing report (ID: {last_id})...")
             sent = update_telegram_photo(last_id, filename, caption)
             if not sent:
-                print("Update failed, but NOT sending a new message to avoid spam.")
+                print("Update failed (likely message deleted). Sending a NEW message instead...")
+                send_telegram_photo(filename, caption, target_date)
         else:
             if is_final:
                 print(f"Finalizing report for {target_date} as a NEW message...")

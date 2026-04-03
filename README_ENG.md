@@ -24,18 +24,17 @@
 
 This branch (`main`) contains the **Docker Edition** of the project, designed for fast, portable, and isolated deployment in any environment. If you need a bare-metal installation directly on the host system via `systemd`, use the `classic` branch.
 
-> **Project Status:** Stable v3.2.3 (Security Patch, Silent Alerts & Stability)
+> **Project Status:** Stable v3.2.4 (Reliability & Resilience Update)
 > **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
 > **Brand:** Weby Homelab
 
 ---
 
-## 🛡 What's New in v3.2.3
-*   **Security (LFI/SSRF Fix):** Addressed critical Path Traversal vulnerabilities in static file serving and restricted SSRF risks in `custom_url` by forcing HTTP/HTTPS protocols.
-*   **Timing Attack Protection:** API routes (`push_api`, `down_api`, `admin_data`) now securely validate authorization keys using `secrets.compare_digest()`.
-*   **Race Conditions Prevented:** Safely wrapped competitive requests from Telegram Webhooks and APIs in transaction-like async contexts using `async with state_mgr:`.
-*   **SSE Memory Leak Fix:** Handled inactive connections logic for `/api/status/stream` to prevent background ghost connections.
-*   **Air Raid Configuration Fix:** The default for air alerts is now muted in JSON, and parsing for false-boolean strings has been fixed.
+## 🛡 Update v3.2.4
+*   **Auto-Confirmation (Safety Net):** Automatically confirms power outages after 5 minutes if the administrator does not respond to the Safety Net prompt. This prevents the system from being locked in a "pending confirmation" state during Quiet Mode.
+*   **Resilient Updates:** If a Telegram message is manually deleted, the bot now automatically sends a new message instead of failing to edit the non-existent one.
+*   **Quiet Mode Cleanup:** Entering "Information Peace" (Quiet Mode) now automatically triggers a cleanup of active reports from the Telegram channel. Conversely, receiving a new schedule with planned outages instantly wakes the system into Active Mode.
+*   **UI Consistency:** The `Github` data source is now consistently displayed as `ДТЕК` in Telegram reports for better user clarity.
 
 ## 🚀 Core Innovations (v3.2+)
 

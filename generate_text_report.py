@@ -199,10 +199,26 @@ def generate_holiday_report(today_str, tomorrow_str, data, group, icons):
 
 def main():
     force_new = "--force-new" in sys.argv
+    is_cleanup = "--cleanup" in sys.argv
     now = datetime.datetime.now(KYIV_TZ)
     current_time = now.time()
-    current_hour = now.hour
     
+    if is_cleanup:
+        print("Cleanup mode: Removing text schedules from Telegram...")
+        # Check all possible slots for today
+        report_state = get_report_state()
+        today_str = now.strftime("%Y-%m-%d")
+        today_state = report_state.get(today_str, {})
+        for slot in ["morning", "evening"]:
+            msg_id = today_state.get(f"{slot}_id")
+            if msg_id:
+                delete_telegram_message(msg_id)
+                today_state.pop(f"{slot}_id", None)
+                today_state.pop(f"{slot}_hash", None)
+        report_state[today_str] = today_state
+        save_report_state(report_state)
+        return
+
     if not (datetime.time(0, 10) <= current_time <= datetime.time(23, 45)):
         return
 
@@ -267,8 +283,10 @@ def main():
         
         for s_key in ['github', 'yasno']:
             s_data = data.get(s_key, {}).get(group, {})
-            
+            source_display_name = "ДТЕК" if s_key == 'github' else "YASNO"
+
             combined_slots = []
+
             s_today = s_data.get(today_str, {}).get('slots')
             s_tomorrow_local = s_data.get(tomorrow_str, {}).get('slots')
             
@@ -291,9 +309,8 @@ def main():
             if combined_slots and any(x is not None for x in combined_slots):
                 clean_slots = [val if val is not None else (True if i < 48 else False) for i, val in enumerate(combined_slots)]
                 intervals = get_all_intervals(clean_slots)
-                # Ensure source name is fetched from config
-                source_cfg = cfg.get('sources', {}).get(s_key, {})
-                source_name = source_cfg.get('name', s_key.capitalize())
+                # Hardcode GitHub as ДТЕК for Telegram display
+                source_name = "ДТЕК" if s_key == 'github' else "YASNO"
                 source_blocks.append((source_name, generate_day_block(is_today, intervals, cfg)))
         
         if not is_today and not has_real_tomorrow_data:
@@ -341,11 +358,20 @@ def main():
         if last_hash != content_hash:
             url = f"https://api.telegram.org/bot{TOKEN}/editMessageText"
             payload = {"chat_id": CHAT_ID, "message_id": last_id, "text": full_text, "parse_mode": "HTML", "disable_web_page_preview": True}
-            r = requests.post(url, json=payload)
-            if r.status_code == 200:
-                today_state[f"{target_slot}_hash"] = content_hash
-                report_state[today_str] = today_state
-                save_report_state(report_state)
+            try:
+                r = requests.post(url, json=payload, timeout=10)
+                if r.status_code == 200:
+                    today_state[f"{target_slot}_hash"] = content_hash
+                    report_state[today_str] = today_state
+                    save_report_state(report_state)
+                else:
+                    print(f"Failed to edit text report (Status {r.status_code}). Sending NEW message...")
+                    send_new_text_report(TOKEN, CHAT_ID, full_text, target_slot, today_str, content_hash, report_state, has_tomorrow_now)
+            except Exception as e:
+                print(f"Error editing text report: {e}. Sending NEW message...")
+                send_new_text_report(TOKEN, CHAT_ID, full_text, target_slot, today_str, content_hash, report_state, has_tomorrow_now)
+        else:
+            print("Text report hash unchanged. Skipping update.")
     else:
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
         payload = {"chat_id": CHAT_ID, "text": full_text, "parse_mode": "HTML", "disable_web_page_preview": True}
@@ -358,6 +384,24 @@ def main():
                 today_state["morning_had_tomorrow"] = has_tomorrow_now
             report_state[today_str] = today_state
             save_report_state(report_state)
+
+def send_new_text_report(token, chat_id, text, target_slot, today_str, content_hash, report_state, has_tomorrow_now):
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
+    try:
+        r = requests.post(url, json=payload, timeout=10)
+        if r.status_code == 200:
+            new_id = r.json()['result']['message_id']
+            today_state = report_state.get(today_str, {})
+            today_state[f"{target_slot}_id"] = new_id
+            today_state[f"{target_slot}_hash"] = content_hash
+            if target_slot == "morning":
+                today_state["morning_had_tomorrow"] = has_tomorrow_now
+            report_state[today_str] = today_state
+            save_report_state(report_state)
+            print(f"New text report sent successfully (ID: {new_id}).")
+    except Exception as e:
+        print(f"Error sending new text report fallback: {e}")
 
 if __name__ == "__main__":
     main()
