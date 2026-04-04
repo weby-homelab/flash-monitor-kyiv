@@ -90,85 +90,53 @@
 ```mermaid
 graph TD
     %% -- Styles --
-    classDef cloud fill:#2d3436,stroke:#7b1fa2,stroke-width:2px,color:#fff
-    classDef local fill:#2d3436,stroke:#1565c0,stroke-width:2px,color:#fff
-    classDef service fill:#0984e3,stroke:#74b9ff,stroke-width:2px,color:#fff
-    classDef security fill:#d63031,stroke:#ff7675,stroke-width:2px,color:#fff
-    classDef network fill:#00b894,stroke:#81ecec,stroke-width:2px,color:#fff
     classDef external fill:#f39c12,stroke:#ffeaa7,stroke-width:2px,color:#000
+    classDef layer fill:#2d3436,stroke:#74b9ff,stroke-width:2px,color:#fff
+    classDef data fill:#0984e3,stroke:#81ecec,stroke-width:2px,color:#fff
+    classDef logic fill:#2d3436,stroke:#7b1fa2,stroke-width:2px,color:#fff
 
-    subgraph EXT ["🌐 Звнішній шар (Access Layer)"]
+    subgraph Users ["🌐 Користувачі та Інтерфейси"]
         direction TB
         WEB[PWA Dashboard]
-        TG[Telegram Channel] --- BOT[Telegram Bot API]
+        TG[Telegram Channel]
     end
 
-    subgraph PROD ["🖥️ Сервер HTZNR (PROD)"]
+    subgraph App ["🖥️ Серверний рівень (FastAPI + Background)"]
         direction TB
+        API[FastAPI Server / app.py]
+        LMN[Background Monitor / light_service.py]
         
-        API[FastAPI /app.py]
-        SVC[flash-monitor.service]
-        BG[flash-background.service]
-        LMN[light_service.py]
-
-        subgraph Core ["🧠 Core Modules"]
-            direction TB
-            TC[telegram_client.py]
-            ST[storage.py]
-        end
-        
-        subgraph Data ["💾 Data Layer (JSON Flat-DB)"]
-            direction TB
-            STATE[(power_monitor_state.json)]
-            CFG[(config.json)]
-            LOGS[(event_log.json)]
-            SCHED[(last_schedules.json)]
-        end
-        
-        API --- SVC
-        BG --- LMN
-        
-        LMN --- TC
-        LMN --- ST
-        API --- ST
-        API --- TC
-        
-        ST --- STATE
-        ST --- LOGS
-        ST --- SCHED
-        ST --- CFG
+        API <--> LMN
     end
 
-    subgraph Logic ["⚙️ Бізнес-логіка"]
-        direction TB
-        FN[False Always Wins]
-        SN[Safety Net]
-        QM[Quiet Mode]
+    subgraph Data ["💾 Рівень даних (JSON Flat-DB)"]
+        direction LR
+        STATE[(State)]
+        LOGS[(Logs)]
+        SCHED[(Schedule)]
     end
 
-    subgraph SRC ["📡 Зовнішні джерела (API)"]
-        direction TB
+    subgraph External ["📡 Зовнішні джерела (API)"]
+        direction LR
         YASNO[Yasno API]
         DTEK[GitHub ДТЕК]
-        METEO[OpenMeteo]
-        AQI[SaveEcoBot]
+        METEO[OpenMeteo / SaveEcoBot]
     end
 
-    %% -- Connections between subgraphs --
-    WEB ---> API
-    TC --- BOT
-    
-    LMN --- Logic
+    %% Connections
+    WEB --->|HTTP/WSS| API
+    LMN --->|Updates| TG
     
     YASNO -.-> LMN
     DTEK -.-> LMN
-    METEO -.-> SVC
-    AQI -.-> SVC
+    METEO -.-> API
+    
+    API <--> Data
+    LMN <--> Data
 
-    class TG,BOT,YASNO,DTEK,METEO,AQI external
-    class SVC,BG service
-    class STATE,CFG,LOGS,SCHED local
-    class FN,SN,QM cloud
+    class TG,YASNO,DTEK,METEO external
+    class API,LMN layer
+    class STATE,LOGS,SCHED data
 ```
 
 ---
