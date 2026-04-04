@@ -11,7 +11,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv?style=for-the-badge&color=purple" alt="Latest Release">
-  <img src="https://img.shields.io/badge/Branch-Main_(Docker)-0984e3?style=for-the-badge&logo=docker&logoColor=white" alt="Branch Main">
+  <img src="https://img.shields.io/badge/Branch-Classic_(Bare-Metal)-0984e3?style=for-the-badge&logo=docker&logoColor=white" alt="Branch Main">
 </p>
 
 <p align="center">
@@ -103,7 +103,7 @@ graph TD
         TG[Telegram Channel] --- BOT[Telegram Bot API]
     end
 
-    subgraph PROD ["🖥️ Сервер HTZNR (PROD)"]
+    subgraph PROD ["🖥️ Сервер Docker Container"]
         direction TB
         
         API[FastAPI /app.py]
