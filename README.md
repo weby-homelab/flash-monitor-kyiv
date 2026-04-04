@@ -93,20 +93,31 @@ graph TD
     classDef external fill:#f39c12,stroke:#ffeaa7,stroke-width:2px,color:#000
     classDef layer fill:#2d3436,stroke:#74b9ff,stroke-width:2px,color:#fff
     classDef data fill:#0984e3,stroke:#81ecec,stroke-width:2px,color:#fff
-    classDef logic fill:#2d3436,stroke:#7b1fa2,stroke-width:2px,color:#fff
 
     subgraph Users ["🌐 Користувачі та Інтерфейси"]
         direction TB
         WEB[PWA Dashboard]
+        ADMIN[Admin Panel]
         TG[Telegram Channel]
+    end
+
+    subgraph External ["📡 Зовнішні сервіси (API)"]
+        direction LR
+        YASNO[Yasno API]
+        DTEK[GitHub ДТЕК]
+        METEO[OpenMeteo / SaveEcoBot]
+        PUSH[Web Push API / VAPID]
+        BOT[Telegram Bot API]
     end
 
     subgraph App ["🖥️ Серверний рівень (FastAPI + Background)"]
         direction TB
         API[FastAPI Server / app.py]
         LMN[Background Monitor / light_service.py]
+        REP[Генератори Звітів / Matplotlib]
         
         API <--> LMN
+        LMN ---> REP
     end
 
     subgraph Data ["💾 Рівень даних (JSON Flat-DB)"]
@@ -114,18 +125,19 @@ graph TD
         STATE[(State)]
         LOGS[(Logs)]
         SCHED[(Schedule)]
-    end
-
-    subgraph External ["📡 Зовнішні джерела (API)"]
-        direction LR
-        YASNO[Yasno API]
-        DTEK[GitHub ДТЕК]
-        METEO[OpenMeteo / SaveEcoBot]
+        CFG[(Config)]
     end
 
     %% Connections
-    WEB --->|HTTP/WSS| API
-    LMN --->|Updates| TG
+    WEB --->|REST / SSE| API
+    ADMIN --->|JWT Auth| API
+    
+    API --->|Web Push| PUSH
+    PUSH --->|Notifications| WEB
+    
+    LMN --->|Updates| BOT
+    REP --->|Charts| BOT
+    BOT --->|Messages| TG
     
     YASNO -.-> LMN
     DTEK -.-> LMN
@@ -133,10 +145,11 @@ graph TD
     
     API <--> Data
     LMN <--> Data
+    REP -.-> Data
 
-    class TG,YASNO,DTEK,METEO external
-    class API,LMN layer
-    class STATE,LOGS,SCHED data
+    class TG,YASNO,DTEK,METEO,PUSH,BOT external
+    class API,LMN,REP layer
+    class STATE,LOGS,SCHED,CFG data
 ```
 
 ---

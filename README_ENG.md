@@ -68,15 +68,27 @@ graph TD
     subgraph Users ["🌐 Users & Interfaces"]
         direction TB
         WEB[PWA Dashboard]
+        ADMIN[Admin Panel]
         TG[Telegram Channel]
+    end
+
+    subgraph External ["📡 External Services (API)"]
+        direction LR
+        YASNO[Yasno API]
+        DTEK[GitHub DTEK]
+        METEO[OpenMeteo / SaveEcoBot]
+        PUSH[Web Push API / VAPID]
+        BOT[Telegram Bot API]
     end
 
     subgraph App ["🖥️ Server Layer (FastAPI + Background)"]
         direction TB
         API[FastAPI Server / app.py]
         LMN[Background Monitor / light_service.py]
+        REP[Report Generators / Matplotlib]
         
         API <--> LMN
+        LMN ---> REP
     end
 
     subgraph Data ["💾 Data Layer (JSON Flat-DB)"]
@@ -84,18 +96,19 @@ graph TD
         STATE[(State)]
         LOGS[(Logs)]
         SCHED[(Schedule)]
-    end
-
-    subgraph External ["📡 External Sources (API)"]
-        direction LR
-        YASNO[Yasno API]
-        DTEK[GitHub DTEK]
-        METEO[OpenMeteo / SaveEcoBot]
+        CFG[(Config)]
     end
 
     %% Connections
-    WEB --->|HTTP/WSS| API
-    LMN --->|Updates| TG
+    WEB --->|REST / SSE| API
+    ADMIN --->|JWT Auth| API
+    
+    API --->|Web Push| PUSH
+    PUSH --->|Notifications| WEB
+    
+    LMN --->|Updates| BOT
+    REP --->|Charts| BOT
+    BOT --->|Messages| TG
     
     YASNO -.-> LMN
     DTEK -.-> LMN
@@ -103,10 +116,11 @@ graph TD
     
     API <--> Data
     LMN <--> Data
+    REP -.-> Data
 
-    class TG,YASNO,DTEK,METEO external
-    class API,LMN layer
-    class STATE,LOGS,SCHED data
+    class TG,YASNO,DTEK,METEO,PUSH,BOT external
+    class API,LMN,REP layer
+    class STATE,LOGS,SCHED,CFG data
 ```
 
 ---
