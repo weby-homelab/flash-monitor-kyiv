@@ -315,9 +315,13 @@ async def log_event(event_type, timestamp):
                 logs = logs[-1000:]
                 
             await StorageUtils.save_json_async(EVENT_LOG_FILE, logs)
-                
+            
     except Exception as e:
         print(f"Failed to log event: {e}")
+
+    # Immediately trigger report updates to reflect live status
+    trigger_daily_report_update()
+    trigger_weekly_report_update()
 
 async def load_state():
     global state
@@ -1056,14 +1060,14 @@ async def schedule_loop():
 
             # 3. Regular sync and status updates every 10 mins
             if now.minute % 10 == 0:
-                # sync_schedules now triggers trigger_daily_report_update() internally IF changes found
+                # sync_schedules checks for plan changes
                 await sync_schedules()
-                
-                # We still update text reports and quiet status every 10 mins (low overhead)
-                # but NOT the graphical report (that's handled by sync_schedules on change)
+
+                # Always update reports to advance the "now" actual line
+                trigger_daily_report_update()
+                trigger_weekly_report_update()
                 trigger_text_report_update()
-                await update_quiet_status()
-                
+                await update_quiet_status()                
             # 4. Weekly report (Monday morning)
             if now.weekday() == 0 and now.hour == 0 and 15 <= now.minute < 25:
                 if weekly_sent_date != today_date:
