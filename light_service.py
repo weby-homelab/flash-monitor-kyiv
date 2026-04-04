@@ -918,17 +918,38 @@ async def alerts_loop():
         await asyncio.sleep(60)
 
 async def sync_schedules():
+    """
+    Syncs schedules from API or local parsing.
+    Returns True if the schedule data has actually changed.
+    """
     sync_success = False
+    has_changed = False
+    
+    # Helper to get file hash
+    def get_file_hash(filepath):
+        if not os.path.exists(filepath): return None
+        with open(filepath, "rb") as f: return hashlib.md5(f.read()).hexdigest()
+
     if SCHEDULE_API_URL:
         try:
             print(f"Syncing schedules from {SCHEDULE_API_URL}...")
             urls = {SCHEDULE_FILE: f"{SCHEDULE_API_URL}/last_schedules.json", HISTORY_FILE: f"{SCHEDULE_API_URL}/schedule_history.json"}
+            
+            old_hashes = {f: get_file_hash(f) for f in urls.keys()}
+            
             for local_file, url in urls.items():
                 r = requests.get(url, timeout=10)
                 if r.status_code == 200:
                     with open(local_file, "wb") as f: f.write(r.content)
+            
+            new_hashes = {f: get_file_hash(f) for f in urls.keys()}
+            if old_hashes[SCHEDULE_FILE] != new_hashes[SCHEDULE_FILE]:
+                has_changed = True
+                print("API Sync: Schedule changed.")
+            
             sync_success = True
-        except Exception as e: print(f"Failed to sync schedules: {e}")
+        except Exception as e: print(f"Failed to sync schedules via API: {e}")
+        
     if not sync_success:
         print("Starting local schedule parsing...")
         start_time = time.time()
@@ -938,43 +959,47 @@ async def sync_schedules():
         try:
             from app import PARSING_DURATION
             PARSING_DURATION.observe(time.time() - start_time)
-        except ImportError:
-            pass
+        except ImportError: pass
             
         has_changed = result[1] if isinstance(result, tuple) and len(result) == 2 else False
         if has_changed:
-            trigger_daily_report_update()
-            trigger_weekly_report_update()
-            should_alert = False
-            try:
-                if os.path.exists(SCHEDULE_FILE):
-                    with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
-                    for s_key in ['github', 'yasno']:
-                        sources = data.get(s_key, {})
-                        for group_name, days in sources.items():
-                            for d, day_data in days.items():
-                                if day_data.get('slots') and any(s is False for s in day_data['slots']):
-                                    should_alert = True; break
-                            if should_alert: break
+            print("Local Parsing: Schedule changed.")
+
+    if has_changed:
+        # Trigger updates since data changed
+        trigger_daily_report_update()
+        trigger_weekly_report_update()
+        
+        # Check for specific outage slots to trigger immediate text alerts if needed
+        try:
+            if os.path.exists(SCHEDULE_FILE):
+                with open(SCHEDULE_FILE, 'r') as f: data = json.load(f)
+                should_alert = False
+                for s_key in ['github', 'yasno']:
+                    sources = data.get(s_key, {})
+                    for group_name, days in sources.items():
+                        for d, day_data in days.items():
+                            if day_data.get('slots') and any(s is False for s in day_data['slots']):
+                                should_alert = True; break
                         if should_alert: break
-                    if should_alert:
-                        slots_structure = {s_key: {gn: {d: day_data['slots'] for d, day_data in days.items() if day_data.get('slots') and any(s is False for s in day_data['slots'])} for gn, days in data.get(s_key, {}).items()} for s_key in ['github', 'yasno']}
-                        current_hash = hashlib.md5(json.dumps(slots_structure, sort_keys=True).encode()).hexdigest()
-                        async with state_mgr:
-                            if current_hash == state.get("last_schedule_hash"): 
-                                should_alert = False
-                            else: 
-                                state["last_schedule_hash"] = current_hash
-                                await save_state()
-                                # Trigger immediate Telegram notification for the new schedule
-                                print("Schedule changed! Triggering immediate Telegram alert...")
-                                if should_alert:
-                                    state["quiet_status"] = "active"
-                                    await save_state()
-                                trigger_text_report_update()
-            except Exception as e: 
-                print(f"Error checking schedule changes: {e}")
-                should_alert = True
+                    if should_alert: break
+                
+                if should_alert:
+                    # Double check hash to avoid duplicate text alerts
+                    slots_structure = {s_key: {gn: {d: day_data['slots'] for d, day_data in days.items() if day_data.get('slots') and any(s is False for s in day_data['slots'])} for gn, days in data.get(s_key, {}).items()} for s_key in ['github', 'yasno']}
+                    current_hash = hashlib.md5(json.dumps(slots_structure, sort_keys=True).encode()).hexdigest()
+                    
+                    async with state_mgr:
+                        if current_hash != state.get("last_schedule_hash"):
+                            state["last_schedule_hash"] = current_hash
+                            state["quiet_status"] = "active" # Disable quiet mode if schedule appears
+                            await save_state()
+                            print("Triggering text report alert due to schedule change...")
+                            trigger_text_report_update()
+        except Exception as e:
+            print(f"Error in schedule change alert logic: {e}")
+            
+    return has_changed
 
 def check_quiet_mode_eligibility():
     now = time.time()
@@ -1031,8 +1056,11 @@ async def schedule_loop():
 
             # 3. Regular sync and status updates every 10 mins
             if now.minute % 10 == 0:
+                # sync_schedules now triggers trigger_daily_report_update() internally IF changes found
                 await sync_schedules()
-                trigger_daily_report_update(is_final=False)
+                
+                # We still update text reports and quiet status every 10 mins (low overhead)
+                # but NOT the graphical report (that's handled by sync_schedules on change)
                 trigger_text_report_update()
                 await update_quiet_status()
                 
