@@ -580,7 +580,12 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"Failed to handle quiet summary: {e}")
         else:
-            print("Quiet mode active: Skipping Telegram update (not final).")
+            last_id = get_last_report_id(target_date)
+            if last_id:
+                print(f"Quiet mode active, but updating existing report (ID: {last_id}) to keep it live...")
+                update_telegram_photo(last_id, filename, caption)
+            else:
+                print("Quiet mode active: Skipping Telegram update (not final).")
         
         if os.path.exists(filename): os.remove(filename)
         if os.path.exists(filename_light): os.remove(filename_light)
