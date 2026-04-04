@@ -59,68 +59,76 @@ A fully autonomous Glassmorphism web interface to manage all aspects of the syst
 ## 🏗 System Architecture
 
 ```mermaid
-graph TD
-    %% -- Styles --
-    classDef external fill:#f39c12,stroke:#ffeaa7,stroke-width:2px,color:#000
-    classDef layer fill:#2d3436,stroke:#74b9ff,stroke-width:2px,color:#fff
-    classDef data fill:#0984e3,stroke:#81ecec,stroke-width:2px,color:#fff
+flowchart TB
+    %% Colors & Styles
+    classDef frontend fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff,rx:5px,ry:5px
+    classDef backend fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff,rx:5px,ry:5px
+    classDef database fill:#1e293b,stroke:#f59e0b,stroke-width:2px,color:#fff,rx:5px,ry:5px
+    classDef external fill:#334155,stroke:#8b5cf6,stroke-width:2px,color:#fff,rx:5px,ry:5px
 
-    subgraph Users ["🌐 Users & Interfaces"]
-        direction TB
-        WEB[PWA Dashboard]
-        ADMIN[Admin Panel]
-        TG[Telegram Channel]
-    end
-
-    subgraph External ["📡 External Services (API)"]
+    %% Interfaces
+    subgraph UI ["🌐 Interfaces & Users"]
         direction LR
-        YASNO[Yasno API]
-        DTEK[GitHub DTEK]
-        METEO[OpenMeteo / SaveEcoBot]
-        PUSH[Web Push API / VAPID]
-        BOT[Telegram Bot API]
+        Admin["🔐 Admin Panel"]
+        PWA["📱 PWA Dashboard"]
+        Channel["📢 Telegram Channel"]
     end
 
-    subgraph App ["🖥️ Server Layer (FastAPI + Background)"]
+    %% Middlewares / APIs
+    subgraph Gateways ["📡 Notification Gateways"]
+        direction LR
+        WebPush["🔔 Web Push API"]
+        TgBot["🤖 Telegram Bot API"]
+    end
+
+    %% Backend
+    subgraph Backend ["⚙️ Core Backend (Python)"]
         direction TB
-        API[FastAPI Server / app.py]
-        LMN[Background Monitor / light_service.py]
-        REP[Report Generators / Matplotlib]
+        API["⚡ FastAPI Server"]
+        Monitor["🔍 Background Monitor"]
+        Reports["📈 Report Generators"]
         
-        API <--> LMN
-        LMN ---> REP
+        API <-->|Sync| Monitor
+        Monitor -->|Trigger| Reports
     end
 
-    subgraph Data ["💾 Data Layer (JSON Flat-DB)"]
+    %% Data Sources
+    subgraph Sources ["📥 External Data Sources"]
         direction LR
-        STATE[(State)]
-        LOGS[(Logs)]
-        SCHED[(Schedule)]
-        CFG[(Config)]
+        Grid["⚡ Yasno / DTEK"]
+        Meteo["🌤 OpenMeteo / SaveEcoBot"]
     end
 
-    %% Connections
-    WEB --->|REST / SSE| API
-    ADMIN --->|JWT Auth| API
-    
-    API --->|Web Push| PUSH
-    PUSH --->|Notifications| WEB
-    
-    LMN --->|Updates| BOT
-    REP --->|Charts| BOT
-    BOT --->|Messages| TG
-    
-    YASNO -.-> LMN
-    DTEK -.-> LMN
-    METEO -.-> API
-    
-    API <--> Data
-    LMN <--> Data
-    REP -.-> Data
+    %% Storage
+    subgraph DB ["💾 Storage (JSON Flat-DB)"]
+        direction LR
+        Config[("Config")]
+        State[("State")]
+        Logs[("Event Logs")]
+        Schedule[("Schedules")]
+    end
 
-    class TG,YASNO,DTEK,METEO,PUSH,BOT external
-    class API,LMN,REP layer
-    class STATE,LOGS,SCHED,CFG data
+    %% Relations
+    PWA <==>|REST / SSE| API
+    Admin <==>|JWT Auth| API
+    
+    API -->|Push| WebPush
+    WebPush -.->|Notification| PWA
+    
+    Monitor -->|Text Alerts| TgBot
+    Reports -->|Visual Charts| TgBot
+    TgBot -->|Post| Channel
+    
+    Sources -->|Scrape| Monitor
+    Sources -->|Fetch| API
+    
+    Backend <==>|Read / Write| DB
+
+    %% Styling apply
+    class PWA,Admin,Channel frontend
+    class API,Monitor,Reports backend
+    class Config,State,Logs,Schedule database
+    class WebPush,TgBot,Grid,Meteo external
 ```
 
 ---

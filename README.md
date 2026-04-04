@@ -88,68 +88,76 @@
 ## 🏗 Архітектура Системи
 
 ```mermaid
-graph TD
-    %% -- Styles --
-    classDef external fill:#f39c12,stroke:#ffeaa7,stroke-width:2px,color:#000
-    classDef layer fill:#2d3436,stroke:#74b9ff,stroke-width:2px,color:#fff
-    classDef data fill:#0984e3,stroke:#81ecec,stroke-width:2px,color:#fff
+flowchart TB
+    %% Colors & Styles
+    classDef frontend fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff,rx:5px,ry:5px
+    classDef backend fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff,rx:5px,ry:5px
+    classDef database fill:#1e293b,stroke:#f59e0b,stroke-width:2px,color:#fff,rx:5px,ry:5px
+    classDef external fill:#334155,stroke:#8b5cf6,stroke-width:2px,color:#fff,rx:5px,ry:5px
 
-    subgraph Users ["🌐 Користувачі та Інтерфейси"]
-        direction TB
-        WEB[PWA Dashboard]
-        ADMIN[Admin Panel]
-        TG[Telegram Channel]
-    end
-
-    subgraph External ["📡 Зовнішні сервіси (API)"]
+    %% Interfaces
+    subgraph UI ["🌐 Інтерфейси та Користувачі"]
         direction LR
-        YASNO[Yasno API]
-        DTEK[GitHub ДТЕК]
-        METEO[OpenMeteo / SaveEcoBot]
-        PUSH[Web Push API / VAPID]
-        BOT[Telegram Bot API]
+        Admin["🔐 Admin Panel"]
+        PWA["📱 PWA Dashboard"]
+        Channel["📢 Telegram Канал"]
     end
 
-    subgraph App ["🖥️ Серверний рівень (FastAPI + Background)"]
+    %% Middlewares / APIs
+    subgraph Gateways ["📡 Шлюзи Сповіщень"]
+        direction LR
+        WebPush["🔔 Web Push API"]
+        TgBot["🤖 Telegram Bot API"]
+    end
+
+    %% Backend
+    subgraph Backend ["⚙️ Серверне Ядро (Python)"]
         direction TB
-        API[FastAPI Server / app.py]
-        LMN[Background Monitor / light_service.py]
-        REP[Генератори Звітів / Matplotlib]
+        API["⚡ FastAPI Server"]
+        Monitor["🔍 Background Monitor"]
+        Reports["📈 Генератор Звітів"]
         
-        API <--> LMN
-        LMN ---> REP
+        API <-->|Sync| Monitor
+        Monitor -->|Trigger| Reports
     end
 
-    subgraph Data ["💾 Рівень даних (JSON Flat-DB)"]
+    %% Data Sources
+    subgraph Sources ["📥 Зовнішні Джерела Даних"]
         direction LR
-        STATE[(State)]
-        LOGS[(Logs)]
-        SCHED[(Schedule)]
-        CFG[(Config)]
+        Grid["⚡ Yasno / DTEK"]
+        Meteo["🌤 OpenMeteo / SaveEcoBot"]
     end
 
-    %% Connections
-    WEB --->|REST / SSE| API
-    ADMIN --->|JWT Auth| API
-    
-    API --->|Web Push| PUSH
-    PUSH --->|Notifications| WEB
-    
-    LMN --->|Updates| BOT
-    REP --->|Charts| BOT
-    BOT --->|Messages| TG
-    
-    YASNO -.-> LMN
-    DTEK -.-> LMN
-    METEO -.-> API
-    
-    API <--> Data
-    LMN <--> Data
-    REP -.-> Data
+    %% Storage
+    subgraph DB ["💾 Сховище Даних (JSON Flat-DB)"]
+        direction LR
+        Config[("Config")]
+        State[("State")]
+        Logs[("Event Logs")]
+        Schedule[("Schedules")]
+    end
 
-    class TG,YASNO,DTEK,METEO,PUSH,BOT external
-    class API,LMN,REP layer
-    class STATE,LOGS,SCHED,CFG data
+    %% Relations
+    PWA <==>|REST / SSE| API
+    Admin <==>|JWT Auth| API
+    
+    API -->|Push| WebPush
+    WebPush -.->|Сповіщення| PWA
+    
+    Monitor -->|Текстові Алети| TgBot
+    Reports -->|Графічні Звіти| TgBot
+    TgBot -->|Пост| Channel
+    
+    Sources -->|Парсинг| Monitor
+    Sources -->|Запити| API
+    
+    Backend <==>|Читання / Запис| DB
+
+    %% Styling apply
+    class PWA,Admin,Channel frontend
+    class API,Monitor,Reports backend
+    class Config,State,Logs,Schedule database
+    class WebPush,TgBot,Grid,Meteo external
 ```
 
 ---
