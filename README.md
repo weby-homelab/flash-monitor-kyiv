@@ -90,74 +90,81 @@
 ```mermaid
 flowchart TB
     %% Colors & Styles
-    classDef frontend fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff,rx:5px,ry:5px
-    classDef backend fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff,rx:5px,ry:5px
-    classDef database fill:#1e293b,stroke:#f59e0b,stroke-width:2px,color:#fff,rx:5px,ry:5px
-    classDef external fill:#334155,stroke:#8b5cf6,stroke-width:2px,color:#fff,rx:5px,ry:5px
+    classDef client fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff,rx:8px,ry:8px
+    classDef cloudflare fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff,rx:8px,ry:8px
+    classDef server fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff,rx:8px,ry:8px
+    classDef module fill:#334155,stroke:#475569,stroke-width:1px,color:#e2e8f0,rx:5px,ry:5px
+    classDef db fill:#1e293b,stroke:#ef4444,stroke-width:2px,color:#fff,rx:8px,ry:8px
+    classDef ext_api fill:#334155,stroke:#64748b,stroke-width:2px,color:#fff,rx:8px,ry:8px
+    classDef logic fill:#0f172a,stroke:#eab308,stroke-width:1px,color:#fde68a,rx:5px,ry:5px,stroke-dasharray: 5 5
 
-    %% Interfaces
-    subgraph UI ["🌐 Інтерфейси та Користувачі"]
+    subgraph TopLayer ["🌐 Інтерфейси доступу"]
         direction LR
-        Admin["🔐 Admin Panel"]
-        PWA["📱 PWA Dashboard"]
-        Channel["📢 Telegram Канал"]
+        PWA["📱 PWA Dashboard"]:::client
+        Admin["🔐 Admin Panel"]:::client
+        Subscribers["📢 Telegram Channel"]:::client
     end
 
-    %% Middlewares / APIs
-    subgraph Gateways ["📡 Шлюзи Сповіщень"]
-        direction LR
-        WebPush["🔔 Web Push API"]
-        TgBot["🤖 Telegram Bot API"]
-    end
+    CF["🌩️ Cloudflare Tunnel (Zero Trust)"]:::cloudflare
 
-    %% Backend
-    subgraph Backend ["⚙️ Серверне Ядро (Python)"]
+    PWA <-->|HTTPS / WSS| CF
+    Admin <-->|HTTPS / JWT| CF
+
+    subgraph CoreLayer ["🖥️ Серверне Ядро (Docker / systemd)"]
         direction TB
-        API["⚡ FastAPI Server"]
-        Monitor["🔍 Background Monitor"]
-        Reports["📈 Генератор Звітів"]
-        
-        API <-->|Sync| Monitor
-        Monitor -->|Trigger| Reports
+
+        subgraph Services ["⚙️ Системні Служби"]
+            direction LR
+            API["⚡ flash-monitor.service<br/>(FastAPI / app.py)"]:::server
+            Worker["🔍 flash-background.service<br/>(light_service.py)"]:::server
+        end
+
+        subgraph Modules ["🛠 Внутрішні Модулі та Логіка"]
+            direction LR
+            Storage["storage.py<br/>(I/O Manager)"]:::module
+            Reports["generate_*_report.py<br/>(Matplotlib)"]:::module
+            TgClient["telegram_client.py<br/>(Bot Wrapper)"]:::module
+            Rules["🧠 Алгоритми:<br/>• False Always Wins<br/>• Safety Net (30s)<br/>• Quiet Mode"]:::logic
+        end
+
+        API <-->|State Sync| Worker
+        Worker -.-> Rules
+        Worker --> Reports
+        Worker --> TgClient
+        Reports --> TgClient
+        API --> Storage
+        Worker --> Storage
     end
 
-    %% Data Sources
-    subgraph Sources ["📥 Зовнішні Джерела Даних"]
+    CF <-->|Reverse Proxy (Port 5050)| API
+
+    subgraph DataLayer ["💾 Сховище Даних (JSON Flat-DB)"]
         direction LR
-        Grid["⚡ Yasno / DTEK"]
-        Meteo["🌤 OpenMeteo / SaveEcoBot"]
+        Config[("config.json")]:::db
+        State[("power_monitor_state.json")]:::db
+        Logs[("event_log.json")]:::db
+        Sched[("last_schedules.json")]:::db
     end
 
-    %% Storage
-    subgraph DB ["💾 Сховище Даних (JSON Flat-DB)"]
+    Storage <-->|Читання / Запис| DataLayer
+
+    subgraph ExternalLayer ["📡 Зовнішні API та Шлюзи"]
         direction LR
-        Config[("Config")]
-        State[("State")]
-        Logs[("Event Logs")]
-        Schedule[("Schedules")]
+        PushAPI["🔔 Web Push API"]:::ext_api
+        TgAPI["🤖 Telegram Bot API"]:::ext_api
+        Energy["⚡ Yasno / DTEK API"]:::ext_api
+        Meteo["🌤 OpenMeteo / SaveEcoBot"]:::ext_api
     end
 
-    %% Relations
-    PWA <==>|REST / SSE| API
-    Admin <==>|JWT Auth| API
+    API -->|Тригер пушів| PushAPI
+    PushAPI -.->|Сповіщення| PWA
     
-    API -->|Push| WebPush
-    WebPush -.->|Сповіщення| PWA
+    TgClient -->|Відправка| TgAPI
+    TgAPI -->|Пости & Графіки| Subscribers
     
-    Monitor -->|Текстові Алети| TgBot
-    Reports -->|Графічні Звіти| TgBot
-    TgBot -->|Пост| Channel
-    
-    Sources -->|Парсинг| Monitor
-    Sources -->|Запити| API
-    
-    Backend <==>|Читання / Запис| DB
-
-    %% Styling apply
-    class PWA,Admin,Channel frontend
-    class API,Monitor,Reports backend
-    class Config,State,Logs,Schedule database
-    class WebPush,TgBot,Grid,Meteo external
+    Energy -->|Парсинг розкладів| Worker
+    Meteo -->|Запит погоди| API
+    Meteo -->|AQI моніторинг| Worker
 ```
 
 ---
