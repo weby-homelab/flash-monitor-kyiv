@@ -561,6 +561,10 @@ if __name__ == "__main__":
             save_report_id(None, target_date)
         sys.exit(0)
 
+    is_all_on_day = False
+    if slots and len(slots) >= 48:
+        is_all_on_day = all(s is True for s in slots) and (t_down == 0)
+
     if quiet_status == "quiet" and "--no-send" not in sys.argv:
         if is_final:
             print("Quiet mode active. Sending special text summary instead of graphical report...")
@@ -590,6 +594,17 @@ if __name__ == "__main__":
         if os.path.exists(filename): os.remove(filename)
         if os.path.exists(filename_light): os.remove(filename_light)
         sys.exit(0)
+
+    if is_all_on_day and quiet_status != "quiet" and "--no-send" not in sys.argv:
+        last_id = get_last_report_id(target_date)
+        if not last_id:
+            print("Active mode but all-light day: Skipping new graphic report to avoid spam in Telegram.")
+            if os.path.exists(filename): os.remove(filename)
+            if os.path.exists(filename_light): os.remove(filename_light)
+            sys.exit(0)
+        else:
+            # If last_id exists, we update it normally (don't delete it). We just let it fall through to the normal logic!
+            pass
                
     if "--no-send" not in sys.argv:
         # Check if we can update an existing message
