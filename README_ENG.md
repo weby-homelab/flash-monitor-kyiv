@@ -24,13 +24,15 @@
 
 This branch (`main`) contains the **Docker Edition** of the project, designed for quick deployment via Docker Compose.
 
-> **Project Status:** Stable v3.3.0 (Core Refactoring & Fail-Safe Architecture)
+> **Project Status:** Stable v3.3.3 (Smart Anti-Spam & Core Refactoring)
 > **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
 > **Brand:** Weby Homelab
 
 ---
 
-## 🛡 Update v3.3.0
+## 🛡 Update v3.3.3 (Smart Anti-Spam)
+*   **Smart Anti-Spam:** Eliminated redundant daily graphical reports ("Monitoring" and "Report") in "Active Mode" on days when power is fully available for 24 hours, preventing unnecessary spam after a "100% light streak" text greeting is sent. The graph is immediately published to the channel if any real power outage occurs.
+*   **Live Update in Quiet Mode:** Resolved an issue where the daily graphic report got "stuck" when Quiet Mode engaged. The system will now actively update the existing graphical report message in Telegram with the current "Fact" line and time.
 *   **Data Access Layer (`storage.py`):** Introduced a centralized storage module. All file I/O operations are now atomic and protected by `asyncio.Lock()` and `fcntl.flock`, completely eliminating race conditions and JSON database corruption.
 *   **Notification Service (`telegram_client.py`):** Created a unified Telegram API client with smart resilience, automatically handling timeouts and sending new messages when editing fails.
 *   **Fail-Safe Quiet Mode:** If the connection drops during "Information Peace" and the admin doesn't respond within 5 minutes, the system automatically ignores the glitch, preventing any false night alarms in the public channel.
