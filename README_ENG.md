@@ -11,21 +11,21 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv?style=for-the-badge&color=purple" alt="Latest Release">
-  <img src="https://img.shields.io/badge/Branch-Main_(Docker)-0984e3?style=for-the-badge&logo=docker&logoColor=white" alt="Branch Main">
+  <img src="https://img.shields.io/badge/Branch-classic_(Bare--metal)-0984e3?style=for-the-badge&logo=linux&logoColor=white" alt="Branch Classic">
 </p>
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
 </p>
 
-# POWER⚡️ SAFETY (FLASH MONITOR KYIV) - Docker Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
+# POWER⚡️ SAFETY (FLASH MONITOR KYIV) - Bare-metal Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 **Flash Monitor Kyiv** is a professional autonomous monitoring system for critical infrastructure and environmental safety. The project provides real-time electricity monitoring, air raid alerts tracking, air quality (AQI), and radiation background levels.
 
-This branch (`main`) contains the **Docker Edition** of the project, designed for quick deployment via Docker Compose.
+This branch (`classic`) contains the **Bare-metal Edition** of the project, designed for running as a systemd service.
 
 > **Project Status:** Stable v3.3.5 (Sync Optimization)
-> **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
+> **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Bare Metal / systemd
 > **Brand:** Weby Homelab
 
   ---
