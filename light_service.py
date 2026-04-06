@@ -823,7 +823,7 @@ async def _check_safety_net_trigger(current_time, last_seen):
 
 async def _check_safety_net_timeout(current_time):
     sent_at = state.get("safety_net_sent_at", 0)
-    if state.get("safety_net_pending") and (current_time - sent_at) > 30:
+    if state.get("safety_net_pending") and (current_time - sent_at) > 180:
         state["safety_net_pending"] = False
         await save_state()
 

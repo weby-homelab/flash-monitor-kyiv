@@ -775,14 +775,12 @@ async def down_api(key: str, background_tasks: BackgroundTasks, x_secret_key: st
         if previous_status == "up" or previous_status == "unknown":
             state["status"] = "down"
             state["went_down_at"] = current_time
+            state["quiet_status"] = "active"
             await log_event("down", current_time)
             
-            # Quiet Mode check
-            if state.get("quiet_status") == "quiet":
-                logger.info("Quiet mode active: Skipping 'Light Down' Telegram message from API.")
-            else:
-                msg = format_event_message(False, current_time, state.get("came_up_at", 0))
-                background_tasks.add_task(send_telegram, msg)
+            logger.info("Manual down API called: forcing quiet mode off and sending 'Light Down' message.")
+            msg = format_event_message(False, current_time, state.get("came_up_at", 0))
+            background_tasks.add_task(send_telegram, msg)
             background_tasks.add_task(broadcast_state_update)
             
         await save_state()
