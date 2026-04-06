@@ -431,20 +431,12 @@ def get_today_schedule_text():
         file_mtime = os.path.getmtime(schedule_file)
         dt_mtime = datetime.fromtimestamp(file_mtime, KYIV_TZ)
 
-        # Collect list of sources that actually provided SLOTS for today
+        # Only display the source that was actually used for the schedule
         active_sources = []
-
-        gh = data.get('github', {})
-        if gh:
-            g_gh = list(gh.keys())[0]
-            if gh[g_gh].get(today_str, {}).get('slots'):
-                active_sources.append("ДТЕК")
-
-        ys = data.get('yasno', {})
-        if ys:
-            g_ys = list(ys.keys())[0]
-            if ys[g_ys].get(today_str, {}).get('slots'):
-                active_sources.append("YASNO")
+        if found_source:
+            if found_source == 'yasno': active_sources.append("YASNO")
+            elif found_source == 'github': active_sources.append("ДТЕК")
+            elif found_source == 'custom': active_sources.append("Свій URL")
 
         sources_str = f" [{', '.join(active_sources)}]" if active_sources else ""
 
