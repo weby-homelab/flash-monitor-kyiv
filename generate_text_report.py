@@ -25,6 +25,9 @@ def get_telegram_config():
 _cfg_token, _cfg_chat = get_telegram_config()
 TOKEN = _cfg_token or os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = _cfg_chat or os.environ.get("TELEGRAM_CHANNEL_ID")
+
+if "PYTEST_CURRENT_TEST" in os.environ:
+    CHAT_ID = "6313526220"
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 TEXT_REPORT_ID_FILE = os.path.join(DATA_DIR, "text_report_id.json")

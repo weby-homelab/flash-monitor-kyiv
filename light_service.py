@@ -179,6 +179,9 @@ def get_telegram_channel_id_cfg():
 TOKEN = get_telegram_token()
 CHAT_ID = get_telegram_channel_id_cfg()
 ADMIN_CHAT_ID = get_admin_chat_id()
+
+if "PYTEST_CURRENT_TEST" in os.environ:
+    CHAT_ID = ADMIN_CHAT_ID
 PORT = 8889
 # SECRET_KEY handled in state
 STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
@@ -365,11 +368,14 @@ async def load_state():
     global state
     async with state_mgr:
         saved_state = await StorageUtils.load_json_async(STATE_FILE, default={})
+        if not saved_state:
+            print(f"Warning: load_state loaded empty state from {STATE_FILE}. Status will be unknown.")
+            
         if saved_state:
             state.update(saved_state)
             
         try:
-            validated_state = AppState(**state) .model_dump(exclude_unset=False)
+            validated_state = AppState(**state).model_dump(exclude_unset=False)
             state.update(validated_state)
         except Exception as e:
             print(f"State validation error: {e}")

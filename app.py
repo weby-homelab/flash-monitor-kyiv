@@ -700,10 +700,11 @@ async def push_api(key: str, background_tasks: BackgroundTasks, x_secret_key: st
         state["safety_net_sent_at"] = 0     # Reset on heartbeat
         state["safety_net_triggered_for"] = 0 # Reset on heartbeat
         
-        if (previous_status == "down" or previous_status == "unknown") and state.get("status") == "unknown": # Skip if already up
+        # If we are already UP, we do nothing to the status
+        if previous_status == "up":
             pass
-        
-        if previous_status == "down" or previous_status == "unknown":
+        elif previous_status == "down":
+            logger.info("push_api_status_change", prev=previous_status, new="up")
             state["status"] = "up"
             state["came_up_at"] = current_time
             await log_event("up", current_time)
@@ -714,6 +715,13 @@ async def push_api(key: str, background_tasks: BackgroundTasks, x_secret_key: st
             else:
                 msg = format_event_message(True, current_time, state.get("went_down_at", 0))
                 background_tasks.add_task(send_telegram, msg)
+            background_tasks.add_task(broadcast_state_update)
+        elif previous_status == "unknown":
+            logger.info("push_api_status_change", prev=previous_status, new="up", msg="Cold start, no telegram alert")
+            state["status"] = "up"
+            state["came_up_at"] = current_time
+            # Only log event internally, don't spam telegram on system restart
+            await log_event("up", current_time)
             background_tasks.add_task(broadcast_state_update)
             
         await save_state()
