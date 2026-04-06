@@ -11,24 +11,29 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv?style=for-the-badge&color=purple" alt="Latest Release">
-  <img src="https://img.shields.io/badge/Branch-Main_(Docker)-0984e3?style=for-the-badge&logo=docker&logoColor=white" alt="Branch Main">
+  <img src="https://img.shields.io/badge/Branch-classic_(Bare--metal)-e67e22?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Branch Classic">
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/classic/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
 </p>
 
-# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) - Docker Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
+# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) - Bare-metal Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
 **Flash Monitor Kyiv** — це професійна автономна система моніторингу критичної інфраструктури та екологічної безпеки. Проєкт забезпевує моніторинг електропостачання в реальному часі, відстеження повітряних тривог, якості повітря (AQI) та радіаційного фону.
 
-Ця гілка (`main`) містить **Docker Edition** проєкту, призначену для швидкого розгортання через Docker Compose.
+Ця гілка (`classic`) містить **Bare-metal Edition** проєкту, призначену для розгортання безпосередньо в ОС (Ubuntu/Debian) через `systemd`.
 
-> **Статус проєкту:** Stable v3.3.3 (Smart Anti-Spam & Core Refactoring)
-> **Архітектура:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
+> **Статус проєкту:** Stable v3.3.4 (Hotfixes & UI Improvements)
+> **Архітектура:** Python FastAPI + Background Workers + JSON Flat-DB + Systemd
 > **Бренд:** Weby Homelab
 
 ---
+
+## 🛡 Оновлення v3.3.4 (Hotfixes)
+*   **Manual Override Bypass:** Виправлено поведінку ручних команд примусового вимкнення світла. Тепер ручний сигнал через API завжди перериває "Тихий режим" та публікує тривогу, ігноруючи автоматичні фільтри спокою.
+*   **Safety Net UI Persistence:** Збільшено таймаут відображення кнопок реагування в адмін-панелі до 180 секунд (раніше кнопки зникали за 30 секунд, не даючи адміністратору часу на ручне підтвердження).
+*   **Smart Source Logic:** Виправлено візуальну помилку на дашборді, де при пріоритеті Yasno міг відображатися ярлик `[ДТЕК]`. Тепер у підвалі графіка завжди відображається саме те джерело, дані якого були використані для побудови графіка.
 
 ## 🛡 Оновлення v3.3.3 (Smart Anti-Spam)
 *   **Розумний Анти-Спам (Smart Anti-Spam):** Усунено зайве дублювання графічних щоденних звітів ("Моніторинг" та "Звіт") в "Активному Режимі" у дні, коли світло є стабільно всі 24 години і вже було опубліковане текстове привітання «Світла смуга триває». При виникненні бодай найменшого реального відключення графік відразу ж публікується в канал.

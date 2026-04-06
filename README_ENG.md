@@ -11,26 +11,31 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv?style=for-the-badge&color=purple" alt="Latest Release">
-  <img src="https://img.shields.io/badge/Branch-Main_(Docker)-0984e3?style=for-the-badge&logo=docker&logoColor=white" alt="Branch Main">
-</p>
+  <img src="https://img.shields.io/badge/Branch-classic_(Bare--metal)-e67e22?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Branch Classic">
+  </p>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
-</p>
+  <p align="center">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/classic/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
+  </p>
 
-# СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) - Docker Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
+  # POWER⚡️ SAFETY (FLASH MONITOR KYIV) - Bare-metal Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
-**Flash Monitor Kyiv** is a professional, autonomous monitoring system for critical infrastructure and environmental safety. The project provides real-time power monitoring, air raid alerts tracking, air quality index (AQI), and radiation background levels.
+  **Flash Monitor Kyiv** is a professional autonomous monitoring system for critical infrastructure and environmental safety. The project provides real-time electricity monitoring, air raid alerts tracking, air quality (AQI), and radiation background levels.
 
-This branch (`main`) contains the **Docker Edition** of the project, designed for quick deployment via Docker Compose.
+  This branch (`classic`) contains the **Bare-metal Edition** of the project, intended for deployment directly on the OS (Ubuntu/Debian) via `systemd`.
 
-> **Project Status:** Stable v3.3.3 (Smart Anti-Spam & Core Refactoring)
-> **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
-> **Brand:** Weby Homelab
+  > **Project Status:** Stable v3.3.4 (Hotfixes & UI Improvements)
+  > **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Systemd
+  > **Brand:** Weby Homelab
 
----
+  ---
 
-## 🛡 Update v3.3.3 (Smart Anti-Spam)
+  ## 🛡 Update v3.3.4 (Hotfixes)
+  *   **Manual Override Bypass:** Fixed the behavior of manual power-off commands. Manual signals via API now always interrupt "Quiet Mode" and publish an alarm, bypassing automatic filters.
+  *   **Safety Net UI Persistence:** Increased the response buttons timeout in the admin panel to 180 seconds (previously buttons disappeared after 30 seconds, not allowing enough time for admin confirmation).
+  *   **Smart Source Logic:** Fixed a visual bug on the dashboard where the `[DTEK]` label was shown even when Yasno was prioritized. Now the chart footer correctly displays the actual data source used.
+
+  ## 🛡 Update v3.3.3 (Smart Anti-Spam)
 *   **Smart Anti-Spam:** Eliminated redundant daily graphical reports ("Monitoring" and "Report") in "Active Mode" on days when power is fully available for 24 hours, preventing unnecessary spam after a "100% light streak" text greeting is sent. The graph is immediately published to the channel if any real power outage occurs.
 *   **Live Update in Quiet Mode:** Resolved an issue where the daily graphic report got "stuck" when Quiet Mode engaged. The system will now actively update the existing graphical report message in Telegram with the current "Fact" line and time.
 *   **Data Access Layer (`storage.py`):** Introduced a centralized storage module. All file I/O operations are now atomic and protected by `asyncio.Lock()` and `fcntl.flock`, completely eliminating race conditions and JSON database corruption.
