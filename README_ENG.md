@@ -24,13 +24,19 @@
 
 This branch (`classic`) contains the **Bare-metal Edition** of the project, designed for running as a systemd service.
 
-> **Project Status:** Stable v3.3.5 (Sync Optimization)
+> **Project Status:** Stable v3.3.6 (Stable & Test-Covered)
 > **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Bare Metal / systemd
 > **Brand:** Weby Homelab
 
-  ---
+---
 
-  ## 🛡 Update v3.3.5 (Sync Optimization & Stability)
+## 🛡 Update v3.3.6 (Stable & Test-Covered)
+*   **QA & Test Coverage:** Significantly expanded the test base (from 9 to 37). The project now has a robust safety net covering FastAPI endpoints, asynchronous data storage, and the Telegram Client.
+*   **Anti-spam & Stability:** Fixed a "cold start" bug that caused false "Light Up" messages to be sent upon server restart.
+*   **Telegram API Optimization:** Added intelligent handling of the `message is not modified` error. The system no longer creates duplicate reports if the chart content hasn't changed.
+*   **Test Redirect:** During `pytest` runs, all notifications are automatically redirected to the admin's private chat, keeping the main channel clean.
+
+## 🛡 Update v3.3.5 (Sync Optimization & Stability)
   *   **Report Deduplication:** Eliminated a race condition in the `schedule_loop` and `sync_schedules` background cycles that caused the generation of redundant and duplicate graphical reports in Telegram when update schedules collided.
   *   **Lock Mechanism (Lock & Cooldown):** Added a 15-second file locking system (`.lock`) for daily and weekly report generation processes. Now parallel Gunicorn workers no longer overload the system and Telegram API.
   *   **Resource Optimization:** The "Daily" and "Weekly" reports are now completely separated in the code, eliminating the chain reaction of subprocess launches.
