@@ -102,8 +102,8 @@ flowchart TB
 
     subgraph TopLayer ["🌐 Інтерфейси доступу"]
         direction LR
-        PWA["📱 PWA Dashboard"]:::client
         Admin["🔐 Admin Panel"]:::client
+        PWA["📱 PWA Dashboard"]:::client
         Subscribers["📢 Telegram Channel"]:::client
     end
 
@@ -120,6 +120,16 @@ flowchart TB
             API["⚡ flash-monitor.service<br/>(FastAPI / app.py)"]:::server
             Worker["🔍 flash-background.service<br/>(light_service.py)"]:::server
         end
+
+    subgraph DataLayer ["💾 Сховище Даних (JSON Flat-DB)"]
+        direction LR
+        Config[("config.json")]:::db
+        State[("power_monitor_state.json")]:::db
+        Logs[("event_log.json")]:::db
+        Sched[("last_schedules.json")]:::db
+    end
+
+    Storage <-->|Читання / Запис| DataLayer
 
         subgraph Modules ["🛠 Внутрішні Модулі та Логіка"]
             direction LR
@@ -140,16 +150,6 @@ flowchart TB
 
     CF <-->|Reverse Proxy - Port 5050| API
 
-    subgraph DataLayer ["💾 Сховище Даних (JSON Flat-DB)"]
-        direction LR
-        Config[("config.json")]:::db
-        State[("power_monitor_state.json")]:::db
-        Logs[("event_log.json")]:::db
-        Sched[("last_schedules.json")]:::db
-    end
-
-    Storage <-->|Читання / Запис| DataLayer
-
     subgraph ExternalLayer ["📡 Зовнішні API та Шлюзи"]
         direction LR
         PushAPI["🔔 Web Push API"]:::ext_api
@@ -167,6 +167,7 @@ flowchart TB
     Energy -->|Парсинг розкладів| Worker
     Meteo -->|Запит погоди| API
     Meteo -->|AQI моніторинг| Worker
+
 ```
 
 ---

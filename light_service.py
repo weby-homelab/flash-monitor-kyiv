@@ -823,7 +823,7 @@ async def _check_safety_net_trigger(current_time, last_seen):
 
 async def _check_safety_net_timeout(current_time):
     sent_at = state.get("safety_net_sent_at", 0)
-    if state.get("safety_net_pending") and (current_time - sent_at) > 30:
+    if state.get("safety_net_pending") and (current_time - sent_at) > 180:
         state["safety_net_pending"] = False
         await save_state()
 
@@ -844,13 +844,14 @@ async def _check_outage_detection(current_time, last_seen):
 
 async def _check_auto_confirmation(current_time):
     if state.get('pending_confirmation') and (current_time - state.get('went_down_at', 0)) > 300:
-        print("Safety Net timeout: Admin did not respond in 5 mins. Auto-ignoring event (assuming technical glitch) to preserve Quiet Mode.")
+        print("Safety Net timeout: Admin did not respond in 5 mins. Assuming real outage. Sending public alarm.")
         state['pending_confirmation'] = False
-        # Do NOT change quiet_status to active. Keep it quiet.
-        # Do NOT send alarm to the public channel.
+        state['quiet_status'] = 'active'
         
-        # We optionally could notify the admin that it was auto-ignored, 
-        # but let's just quietly resolve the pending state to avoid locking the system.
+        down_time = state.get('went_down_at', 0)
+        msg = format_event_message(False, down_time, state.get("came_up_at", 0))
+        threading.Thread(target=send_telegram, args=(msg,)).start()
+        
         await save_state()
 
 async def monitor_loop():
