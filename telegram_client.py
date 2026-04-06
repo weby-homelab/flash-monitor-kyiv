@@ -13,7 +13,10 @@ class TelegramClient:
             r = requests.post(url, data=payload, json=payload if not files else None, files=files, timeout=timeout)
             if r.status_code == 200:
                 res = r.json()
-                return True, res.get("result", {}).get("message_id")
+                result_data = res.get("result", {})
+                if isinstance(result_data, dict):
+                    return True, result_data.get("message_id")
+                return True, result_data
             
             err_desc = r.json().get("description", "").lower() if r.headers.get("content-type") == "application/json" else r.text.lower()
             return False, err_desc
@@ -53,6 +56,10 @@ class TelegramClient:
         if "message to edit not found" in res:
             print("Message deleted manually. Falling back to send_message.")
             return self.send_message(text, parse_mode, silent=True, reply_markup=reply_markup)
+            
+        if "message is not modified" in res:
+            print("Message content identical. No update needed.")
+            return message_id
             
         print(f"Failed to edit message: {res}")
         return None
@@ -94,6 +101,10 @@ class TelegramClient:
                 if "message to edit not found" in res:
                     print("Photo message deleted manually. Falling back to send_photo.")
                     return self.send_photo(photo_path, caption, parse_mode, silent=True)
+                
+                if "message is not modified" in res:
+                    print("Photo content identical. No update needed.")
+                    return message_id
                     
                 print(f"Failed to edit photo: {res}")
                 return None

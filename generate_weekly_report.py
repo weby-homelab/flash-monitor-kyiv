@@ -30,6 +30,9 @@ def get_telegram_config():
 _cfg_token, _cfg_chat = get_telegram_config()
 TOKEN = _cfg_token or os.environ.get("TELEGRAM_BOT_TOKEN")
 CHAT_ID = _cfg_chat or os.environ.get("TELEGRAM_CHANNEL_ID")
+
+if "PYTEST_CURRENT_TEST" in os.environ:
+    CHAT_ID = "6313526220"
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 
