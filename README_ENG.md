@@ -24,11 +24,16 @@
 
 This branch (`main`) contains the **Docker Edition** of the project, designed for quick deployment via Docker Compose.
 
-> **Project Status:** Stable v3.3.4 (Hotfixes & UI Improvements)
+> **Project Status:** Stable v3.3.5 (Sync Optimization)
 > **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
 > **Brand:** Weby Homelab
 
   ---
+
+  ## 🛡 Update v3.3.5 (Sync Optimization & Stability)
+  *   **Report Deduplication:** Eliminated a race condition in the `schedule_loop` and `sync_schedules` background cycles that caused the generation of redundant and duplicate graphical reports in Telegram when update schedules collided.
+  *   **Lock Mechanism (Lock & Cooldown):** Added a 15-second file locking system (`.lock`) for daily and weekly report generation processes. Now parallel Gunicorn workers no longer overload the system and Telegram API.
+  *   **Resource Optimization:** The "Daily" and "Weekly" reports are now completely separated in the code, eliminating the chain reaction of subprocess launches.
 
   ## 🛡 Update v3.3.4 (Hotfixes)
   *   **Manual Override Bypass:** Fixed the behavior of manual power-off commands. Manual signals via API now always interrupt "Quiet Mode" and publish an alarm, bypassing automatic filters.

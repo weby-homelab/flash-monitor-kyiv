@@ -234,9 +234,25 @@ def trigger_daily_report_update(is_final=False):
     """
     Triggers the generation and update of the daily report chart.
     Runs asynchronously to not block the main thread.
+    Uses a lock file to prevent concurrent executions and excessive triggering.
     """
     def run_script():
+        lock_file = os.path.join(DATA_DIR, "daily_report.lock")
         try:
+            # 1. Check for cooldown/lock
+            now = time.time()
+            if os.path.exists(lock_file):
+                try:
+                    mtime = os.path.getmtime(lock_file)
+                    if (now - mtime) < 15: # 15 seconds cooldown
+                        print("Daily report update skipped (cooldown/already running).")
+                        return
+                except: pass
+            
+            # 2. Acquire lock (update mtime)
+            with open(lock_file, 'w') as f:
+                f.write(str(os.getpid()))
+            
             print(f"Triggering daily report update (is_final={is_final})...")
             # Use absolute paths
             base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -250,11 +266,11 @@ def trigger_daily_report_update(is_final=False):
             
             subprocess.run(args, check=True, cwd=base_dir)
             
-            # Also trigger weekly report update
-            trigger_weekly_report_update()
-            
         except Exception as e:
             print(f"Failed to trigger daily report: {e}")
+        finally:
+            # Note: We don't necessarily delete the lock file to keep it as a cooldown marker
+            pass
 
     threading.Thread(target=run_script).start()
 
@@ -263,7 +279,18 @@ def trigger_text_report_update():
     Triggers the generation and update of the text schedule report in Telegram.
     """
     def run_script():
+        lock_file = os.path.join(DATA_DIR, "text_report.lock")
         try:
+            now = time.time()
+            if os.path.exists(lock_file):
+                try:
+                    if (now - os.path.getmtime(lock_file)) < 15:
+                        print("Text report update skipped (cooldown).")
+                        return
+                except: pass
+            
+            with open(lock_file, 'w') as f: f.write(str(os.getpid()))
+            
             print("Triggering text report update...")
             base_dir = os.path.dirname(os.path.abspath(__file__))
             python_exec = sys.executable
@@ -279,7 +306,18 @@ def trigger_weekly_report_update():
     Triggers the generation of the weekly report chart for the web.
     """
     def run_script():
+        lock_file = os.path.join(DATA_DIR, "weekly_report.lock")
         try:
+            now = time.time()
+            if os.path.exists(lock_file):
+                try:
+                    if (now - os.path.getmtime(lock_file)) < 15:
+                        print("Weekly report update skipped (cooldown).")
+                        return
+                except: pass
+            
+            with open(lock_file, 'w') as f: f.write(str(os.getpid()))
+            
             print("Triggering weekly report update...")
             base_dir = os.path.dirname(os.path.abspath(__file__))
             python_exec = sys.executable
