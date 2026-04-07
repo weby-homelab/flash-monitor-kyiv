@@ -660,8 +660,8 @@ async def api_status():
                 if merged: slots = merged
         except: pass
 
-    version = "2.4.7"
-    version_path = os.path.join(os.path.dirname(__file__), "VERSION")
+    version = "v3.3.8"
+    version_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
     if os.path.exists(version_path):
         with open(version_path, 'r') as f:
             version = f.read().strip()
@@ -964,8 +964,8 @@ async def admin_data(request: Request):
             logs = json.load(f)
             
     # Get version
-    version = "2.4.7"
-    version_path = os.path.join(os.path.dirname(__file__), "VERSION")
+    version = "v3.3.8"
+    version_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
     if os.path.exists(version_path):
         with open(version_path, 'r') as f:
             version = f.read().strip()
