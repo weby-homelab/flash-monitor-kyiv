@@ -670,10 +670,10 @@
 
         updateBellUI();
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { updateMapTheme(); refreshCharts(); });
-        updateMapTheme(); 
-        setInterval(update, 30000); 
+        updateMapTheme();
+        setInterval(update, 30000);
+        setInterval(refreshCharts, 60000); // Оновлення графіків кожну хвилину
         update();
-
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js').then(reg => console.log('SW ok'));
