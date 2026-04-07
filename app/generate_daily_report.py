@@ -84,7 +84,7 @@ def load_schedule_slots(target_date):
                 data = json.load(f)
             
             # Get priority order from config
-            from light_service import get_config
+            from app.light_service import get_config
             cfg = get_config()
             user_priority = cfg.get("advanced", {}).get("data_sources", {}).get("priority", "yasno")
             priority_order = ['yasno', 'github']
