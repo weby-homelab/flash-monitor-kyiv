@@ -25,8 +25,8 @@ As of April 2026, the following rules are strictly enforced:
 **Please do not open public issues for security vulnerabilities.**
 
 If you discover a security leak (exposed tokens, LFI, etc.), please report it directly:
-- **Email:** rekvizitor.ua@gmail.com
-- **Telegram:** @rekvizitor_ua
+- **Email:** [REDACTED_EMAIL]
+- **Telegram:** [REDACTED_TG]
 
 We will respond within 24 hours and provide a patch as soon as possible.
 
