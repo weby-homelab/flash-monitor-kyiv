@@ -24,7 +24,7 @@
 
 This branch (`main`) contains the **Docker Edition** of the project, designed for quick and isolated deployments via Docker Compose.
 
-> **Project Status:** Stable v3.3.7 (Stable & Test-Covered)
+> **Project Status:** Stable v3.3.8 (Stable & Test-Covered)
 > **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Docker / Docker Compose
 > **Brand:** Weby Homelab
 
