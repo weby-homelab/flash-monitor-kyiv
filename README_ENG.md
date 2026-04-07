@@ -30,30 +30,8 @@ This branch (`classic`) contains the **Bare-metal Edition** of the project, desi
 
 ---
 
-## 🛡 Update v3.3.6 (Stable & Test-Covered)
-*   **QA & Test Coverage:** Significantly expanded the test base (from 9 to 37). The project now has a robust safety net covering FastAPI endpoints, asynchronous data storage, and the Telegram Client.
-*   **Anti-spam & Stability:** Fixed a "cold start" bug that caused false "Light Up" messages to be sent upon server restart.
-*   **Telegram API Optimization:** Added intelligent handling of the `message is not modified` error. The system no longer creates duplicate reports if the chart content hasn't changed.
-*   **Test Redirect:** During `pytest` runs, all notifications are automatically redirected to the admin's private chat, keeping the main channel clean.
-
-## 🛡 Update v3.3.5 (Sync Optimization & Stability)
-  *   **Report Deduplication:** Eliminated a race condition in the `schedule_loop` and `sync_schedules` background cycles that caused the generation of redundant and duplicate graphical reports in Telegram when update schedules collided.
-  *   **Lock Mechanism (Lock & Cooldown):** Added a 15-second file locking system (`.lock`) for daily and weekly report generation processes. Now parallel Gunicorn workers no longer overload the system and Telegram API.
-  *   **Resource Optimization:** The "Daily" and "Weekly" reports are now completely separated in the code, eliminating the chain reaction of subprocess launches.
-
-  ## 🛡 Update v3.3.4 (Hotfixes)
-  *   **Manual Override Bypass:** Fixed the behavior of manual power-off commands. Manual signals via API now always interrupt "Quiet Mode" and publish an alarm, bypassing automatic filters.
-  *   **Safety Net UI Persistence:** Increased the response buttons timeout in the admin panel to 180 seconds (previously buttons disappeared after 30 seconds, not allowing enough time for admin confirmation).
-  *   **Smart Source Logic:** Fixed a visual bug on the dashboard where the `[DTEK]` label was shown even when Yasno was prioritized. Now the chart footer correctly displays the actual data source used.
-
-  ## 🛡 Update v3.3.3 (Smart Anti-Spam)
-*   **Smart Anti-Spam:** Eliminated redundant daily graphical reports ("Monitoring" and "Report") in "Active Mode" on days when power is fully available for 24 hours, preventing unnecessary spam after a "100% light streak" text greeting is sent. The graph is immediately published to the channel if any real power outage occurs.
-*   **Live Update in Quiet Mode:** Resolved an issue where the daily graphic report got "stuck" when Quiet Mode engaged. The system will now actively update the existing graphical report message in Telegram with the current "Fact" line and time.
-*   **Data Access Layer (`storage.py`):** Introduced a centralized storage module. All file I/O operations are now atomic and protected by `asyncio.Lock()` and `fcntl.flock`, completely eliminating race conditions and JSON database corruption.
-*   **Notification Service (`telegram_client.py`):** Created a unified Telegram API client with smart resilience, automatically handling timeouts and sending new messages when editing fails.
-*   **Fail-Safe Quiet Mode:** If the connection drops during "Information Peace" and the admin doesn't respond within 5 minutes, the system automatically ignores the glitch, preventing any false night alarms in the public channel.
-*   **Modular State Machine:** The infinite loops have been split into independent asynchronous blocks with global `try...except` handling, ensuring the monitoring service never crashes from external API failures.
-
+## Project History
+For a complete history of updates, changes, and bug fixes, please refer to the [CHANGELOG.md](CHANGELOG.md).
 
 ## 🚀 Core Innovations (v3.2+)
 
@@ -176,6 +154,3 @@ The project has two main branches:
 *   [Installation Guide (Step-by-Step)](INSTRUCTIONS_INSTALL_ENG.md)
 *   [Detailed Configuration Setup](INSTRUCTIONS_ENG.md)
 *   [Development Rules & Guidelines](DEVELOPMENT_ENG.md)
-
----
-**✦ 2026 Weby Homelab ✦**
