@@ -164,6 +164,9 @@ def extract_yasno(data: dict, cfg: dict) -> dict:
             status = d.get("status", "")
             if status == "EmergencyShutdowns":
                 res[grp][d_str] = {"slots": None, "status": "emergency"}
+            elif status == "NoOutages":
+                # If Yasno says NoOutages, it means full light (48 slots of True)
+                res[grp][d_str] = {"slots": [True] * 48, "status": "normal"}
             elif not d.get("slots"):
                 res[grp][d_str] = {"slots": None, "status": "pending"}
             else:
