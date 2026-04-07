@@ -22,190 +22,22 @@
 
 **Flash Monitor Kyiv** — це професійна автономна система моніторингу критичної інфраструктури та екологічної безпеки. Проєкт забезпевує моніторинг електропостачання в реальному часі, відстеження повітряних тривог, якості повітря (AQI) та радіаційного фону.
 
-Ця гілка (`classic`) містить **Bare-metal Edition** проєкту, призначену для швидкого розгортання як systemd-сервіс.
-
 > **Статус проєкту:** Stable v3.3.6 (Stable & Test-Covered)
-> **Архітектура:** Python FastAPI + Background Workers + JSON Flat-DB + Bare Metal / systemd
+> **Архітектура:** Python FastAPI + Background Workers + JSON Flat-DB
 > **Бренд:** Weby Homelab
 
----
+## 📜 Основні характеристики
+- **Admin Panel:** Веб-інтерфейс у стилі Glassmorphism.
+- **Quiet Mode:** Інтелектуальне придушення сповіщень.
+- **Safety Net:** Захист від втрати зв'язку.
+- **Analytics:** Автоматичні графічні звіти (Matplotlib).
+- **Security:** Zero-Trust політика, повний аудит.
 
-## 🛡 Оновлення v3.3.6 (Stable & Test-Covered)
-*   **QA & Test Coverage (UA):** Суттєво розширено базу тестів (з 9 до 37). Тепер проєкт має надійну сітку безпеки, що покриває FastAPI ендпоїнти, асинхронне сховище даних та Telegram Client.
-*   **Анти-спам та Стабільність:** Виправлено баг «холодного старту», через який при перезавантаженні сервера надсилалися хибні повідомлення «Світло з'явилося».
-*   **Оптимізація Telegram API:** Додано інтелектуальну обробку помилки `message is not modified`. Тепер система не створює дублікати звітів, якщо контент графіка не змінився.
-*   **Redirect Тестів:** Під час прогону `pytest` усі сповіщення автоматично перенаправляються в приватний чат адміністратора, не засмічуючи основний канал.
+## 📥 Встановлення
+Див. [INSTRUCTIONS_INSTALL.md](INSTRUCTIONS_INSTALL.md).
 
-## 🛡 Оновлення v3.3.5 (Sync Optimization & Stability)
-*   **Дедуплікація Звітів (Report Deduplication):** Усунуто стан гонитви (race condition) у фонових циклах `schedule_loop` та `sync_schedules`, який призводив до генерації зайвих і дублюючих графічних звітів у Telegram при збігу розкладу оновлення.
-*   **Механізм Блокування (Lock & Cooldown):** Додано систему 15-секундного блокування файлів (`.lock`) для процесів генерації щоденних та тижневих звітів. Тепер паралельні Gunicorn-воркери не перевантажують систему та Telegram API.
-*   **Оптимізація Ресурсів:** Звіти "Денний" та "Тижневий" повністю розведені в коді, що усунуло ланцюгову реакцію запусків підпроцесів.
-
-## 🛡 Оновлення v3.3.4 (Hotfixes)
-*   **Manual Override Bypass:** Виправлено поведінку ручних команд примусового вимкнення світла. Тепер ручний сигнал через API завжди перериває "Тихий режим" та публікує тривогу, ігноруючи автоматичні фільтри спокою.
-*   **Safety Net UI Persistence:** Збільшено таймаут відображення кнопок реагування в адмін-панелі до 180 секунд (раніше кнопки зникали за 30 секунд, не даючи адміністратору часу на ручне підтвердження).
-*   **Smart Source Logic:** Виправлено візуальну помилку на дашборді, де при пріоритеті Yasno міг відображатися ярлик `[ДТЕК]`. Тепер у підвалі графіка завжди відображається саме те джерело, дані якого були використані для побудови графіка.
-
-## 🛡 Оновлення v3.3.3 (Smart Anti-Spam)
-*   **Розумний Анти-Спам (Smart Anti-Spam):** Усунено зайве дублювання графічних щоденних звітів ("Моніторинг" та "Звіт") в "Активному Режимі" у дні, коли світло є стабільно всі 24 години і вже було опубліковане текстове привітання «Світла смуга триває». При виникненні бодай найменшого реального відключення графік відразу ж публікується в канал.
-*   **Живе оновлення в Тихому Режимі:** Якщо активується Тихий Режим, щоденний звіт тепер продовжить оновлювати «лінію факту» на вже існуючому повідомленні, а не зависне.
-*   **Data Access Layer (`storage.py`):** Впроваджено централізований модуль роботи з файловою системою. Усі операції читання/запису тепер атомарні та захищені `asyncio.Lock()` і `fcntl.flock`, що повністю усуває стан гонитви (Race Conditions) та пошкодження JSON-баз.
-*   **Notification Service (`telegram_client.py`):** Створено єдиний клієнт для взаємодії з Telegram API з розумною резильєнтністю (автоматичні повторні спроби та відправка нового повідомлення при неможливості редагування старого через таймаути).
-*   **Fail-Safe Quiet Mode:** Якщо під час "Інформаційного спокою" зникає зв'язок і адміністратор не відповідає протягом 5 хвилин, система автоматично "ігнорує" збій, щоб унеможливити хибні тривоги в каналі вночі.
-*   **Modular State Machine:** Нескінченні цикли розщеплено на незалежні асинхронні blocks з глобальним перехопленням виключень `try...except`, завдяки чому моніторинг ніколи не зупиняється через зовнішні збої.
-
-
-## 🚀 Ключові інновації (v3.2+)
-
-### 🎛 Панель Керування (Admin Panel)
-Повністю автономний веб-інтерфейс у стилі Glassmorphism для керування всіма аспектами системи без необхідності редагування конфігураційних файлів через SSH.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
-</p>
-
-*   **Асинхронна швидкодія:** Новий асинхронний кеш (FastAPI) унеможливлює дедлоки та "зависання" при одночасному записі даних різними фоновими воркерами.
-*   **Інтелектуальні бекапи:** Створення ручних та автоматичних точок відновлення конфігурації. Миттєве відновлення системи в один клік з авто-рестартом служб.
-*   **Гнучке налаштування джерел:** Зміна пріоритету між Yasno, GitHub або підключення власного Custom JSON URL. Кнопка примусової синхронізації графіків.
-*   **Повна Гео-адаптація:** Налаштування координат (Lat/Lon) для точної погоди, ID станції SaveEcoBot та керування відображенням віджетів.
-*   **Безпека (Zero-Trust):** Усунуто LFI (Path Traversal) вразливості, забезпечено строгу перевірку шляхів до файлів. Ключі доступу генеруються безпечно при першому старті.
-
-### 🤫 Режим «Інформаційний спокій» (Quiet Mode)
-Унікальний алгоритм, що мінімізує "інформаційний шум". Система автоматично переходить у стан спокою, якщо за останні 24 години не було відключень, а в планах на завтра немає обмежень.
-
-### 🚨 Safety Net (Мережа безпеки)
-Інтерактивний механізм швидкого реагування: при затримці сигналу (Push) понад 35 секунд адміністратор отримує запит у Telegram з варіантами дій (`🔴 Світло зникло`, `🛠 Технічний збій`, `🤷‍♂️ Не знаю`).
-
-### ⚖️ Логіка «False Always Wins»
-Гібридна система обробки графіків. Якщо хоча б одне джерело вказує на відключення, система відображає його як пріоритетне. Старі записи про відключення ніколи не затираються "чистими" планами.
-
----
-
-## 📱 Приклади реальних сповіщень у Telegram
-
-*   📊 **[Щоденний графік "План vs Факт" (Smart Daily Report)](https://t.me/svitlobot_Symyrenka22B/1230)**
-*   📈 **[Тижнева аналітика відключень](https://t.me/svitlobot_Symyrenka22B/1192)**
-*   🔴 **[Сповіщення про відключення світла з точністю до графіка](https://t.me/svitlobot_Symyrenka22B/1209)**
-*   🟢 **[Сповіщення про увімкнення світла з точністю до графіка](https://t.me/svitlobot_Symyrenka22B/1212)**
-*   ⚠️ **[Миттєвий алерт про зміну графіків від ДТЕК](https://t.me/svitlobot_Symyrenka22B/1222)**
-*   🚨 **[Сповіщення про повітряну тривогу в місті](https://t.me/svitlobot_Symyrenka22B/1196)**
-
----
-
-## 📊 Можливості дашборду (PWA)
-
-Сучасний інтерфейс у стилі **Glassmorphism**, оптимізований для мобільних пристроїв:
-*   **Live Status:** Візуалізація "Пульсу" системи (Світло Є! / Світло зникло!).
-*   **Екологічний моніторинг:** Температура, вологість, PM2.5/PM10 (OpenMeteo/SaveEcoBot) та радіація з інтерактивними графіками за 24 години.
-*   **Графік-бар:** Компактна 24-годинна шкала планових відключень.
-
----
-
-## 🏗 Архітектура Системи
-
-```mermaid
-flowchart TB
-    %% Colors & Styles
-    classDef client fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff,rx:8px,ry:8px
-    classDef cloudflare fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff,rx:8px,ry:8px
-    classDef server fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff,rx:8px,ry:8px
-    classDef module fill:#334155,stroke:#475569,stroke-width:1px,color:#e2e8f0,rx:5px,ry:5px
-    classDef db fill:#1e293b,stroke:#ef4444,stroke-width:2px,color:#fff,rx:8px,ry:8px
-    classDef ext_api fill:#334155,stroke:#64748b,stroke-width:2px,color:#fff,rx:8px,ry:8px
-    classDef logic fill:#0f172a,stroke:#eab308,stroke-width:1px,color:#fde68a,rx:5px,ry:5px,stroke-dasharray: 5 5
-
-    subgraph TopLayer ["🌐 Інтерфейси доступу"]
-        direction LR
-        Admin["🔐 Admin Panel"]:::client
-        PWA["📱 PWA Dashboard"]:::client
-        Subscribers["📢 Telegram Channel"]:::client
-    end
-
-    CF["🌩️ Cloudflare Tunnel (Zero Trust)"]:::cloudflare
-
-    PWA <-->|HTTPS / WSS| CF
-    Admin <-->|HTTPS / JWT| CF
-
-    subgraph CoreLayer ["🖥️ Серверне Ядро (Docker / systemd)"]
-        direction TB
-
-        subgraph Services ["⚙️ Системні Служби"]
-            direction LR
-            API["⚡ flash-monitor.service<br/>(FastAPI / app.py)"]:::server
-            Worker["🔍 flash-background.service<br/>(light_service.py)"]:::server
-        end
-
-    subgraph DataLayer ["💾 Сховище Даних (JSON Flat-DB)"]
-        direction LR
-        Config[("config.json")]:::db
-        State[("power_monitor_state.json")]:::db
-        Logs[("event_log.json")]:::db
-        Sched[("last_schedules.json")]:::db
-    end
-
-    Storage <-->|Читання / Запис| DataLayer
-
-        subgraph Modules ["🛠 Внутрішні Модулі та Логіка"]
-            direction LR
-            Storage["storage.py<br/>(I/O Manager)"]:::module
-            Reports["generate_*_report.py<br/>(Matplotlib)"]:::module
-            TgClient["telegram_client.py<br/>(Bot Wrapper)"]:::module
-            Rules["🧠 Алгоритми:<br/>• False Always Wins<br/>• Safety Net (30s)<br/>• Quiet Mode"]:::logic
-        end
-
-        API <-->|State Sync| Worker
-        Worker -.-> Rules
-        Worker --> Reports
-        Worker --> TgClient
-        Reports --> TgClient
-        API --> Storage
-        Worker --> Storage
-    end
-
-    CF <-->|Reverse Proxy - Port 5050| API
-
-    subgraph ExternalLayer ["📡 Зовнішні API та Шлюзи"]
-        direction LR
-        PushAPI["🔔 Web Push API"]:::ext_api
-        TgAPI["🤖 Telegram Bot API"]:::ext_api
-        Energy["⚡ Yasno / DTEK API"]:::ext_api
-        Meteo["🌤 OpenMeteo / SaveEcoBot"]:::ext_api
-    end
-
-    API -->|Тригер пушів| PushAPI
-    PushAPI -.->|Сповіщення| PWA
-    
-    TgClient -->|Відправка| TgAPI
-    TgAPI -->|Пости & Графіки| Subscribers
-    
-    Energy -->|Парсинг розкладів| Worker
-    Meteo -->|Запит погоди| API
-    Meteo -->|AQI моніторинг| Worker
-
-```
-
----
-
-## 📥 Встановлення та розгортання
-
-Проєкт має дві основні гілки:
-
-1.  **`main` (Docker Edition):** Рекомендовано для швидкого старту.
-    ```bash
-    # 1. Завантажте docker-compose.yml
-    curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
-
-    # 2. Запустіть систему (образи автоматично стягнуться з Docker Hub)
-    docker-compose up -d
-    ```
-2.  **`classic` (Bare-Metal Edition):** Для роботи безпосередньо в системі через `systemd`.
-
-📖 **Повні інструкції:**
-*   [Інструкція зі встановлення (Installation Guide)](INSTRUCTIONS_INSTALL.md)
-*   [Детальне налаштування та конфігурація](INSTRUCTIONS.md)
-*   [Правила розробки (Development Rules)](DEVELOPMENT.md)
+## 📝 Історія змін
+Повна історія змін доступна у [CHANGELOG.md](CHANGELOG.md).
 
 ---
 **✦ 2026 Weby Homelab ✦**
