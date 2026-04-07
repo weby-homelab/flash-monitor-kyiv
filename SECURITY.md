@@ -25,7 +25,7 @@ As of April 2026, the following rules are strictly enforced:
 **Please do not open public issues for security vulnerabilities.**
 
 If you discover a security leak (exposed tokens, LFI, etc.), please report it directly:
-- **Email:** [REDACTED_EMAIL]
+- **Email:** contact@srvrs.top
 - **Telegram:** [REDACTED_TG]
 
 We will respond within 24 hours and provide a patch as soon as possible.
@@ -35,4 +35,4 @@ We will respond within 24 hours and provide a patch as soon as possible.
 Цей проект дотримується принципу **нульової довіри**. 
 - Всі секрети мають зберігатися виключно в `.env` файлах.
 - Будь-який витік даних у публічну історію Git призводить до негайної ануляції токенів та переписування історії репозиторію.
-- Якщо ви знайшли вразливість — будь ласка, напишіть на пошту або в Telegram, не створюючи публічний Issue.
+- Якщо ви знайшли вразливість — будь ласка, напишіть через офіційні контакти, не створюючи публічний Issue.
