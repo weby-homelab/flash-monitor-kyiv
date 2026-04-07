@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from unittest.mock import patch, mock_open
 import os
 
-from light_service import check_quiet_mode_eligibility
+from app.light_service import check_quiet_mode_eligibility
 
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
 

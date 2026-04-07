@@ -5,18 +5,18 @@ import os
 from unittest.mock import patch
 
 # Mock some dependencies before importing app
-with patch('bootstrap.perform_cold_start_if_needed'):
-    import app
+with patch('scripts.bootstrap.perform_cold_start_if_needed'):
+    import app.main
 
-client = TestClient(app.app)
+client = TestClient(app.main.app)
 
 def test_health_check():
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
-@patch('app.state')
-@patch('app.secrets.compare_digest', return_value=True)
+@patch('app.main.state')
+@patch('app.main.secrets.compare_digest', return_value=True)
 def test_push_api_valid_key(mock_compare, mock_state):
     mock_state.get.side_effect = lambda k, d=None: "valid_key" if k == "secret_key" else d
     
@@ -25,8 +25,8 @@ def test_push_api_valid_key(mock_compare, mock_state):
     assert response.json()["status"] == "ok"
     assert response.json()["msg"] == "heartbeat_received"
 
-@patch('app.state')
-@patch('app.secrets.compare_digest', return_value=False)
+@patch('app.main.state')
+@patch('app.main.secrets.compare_digest', return_value=False)
 def test_push_api_invalid_key(mock_compare, mock_state):
     mock_state.get.side_effect = lambda k, d=None: "actual_key" if k == "secret_key" else d
     
@@ -35,13 +35,13 @@ def test_push_api_invalid_key(mock_compare, mock_state):
     assert response.json()["status"] == "error"
     assert response.json()["msg"] == "invalid_key"
 
-@patch('app.api_status')
+@patch('app.main.api_status')
 def test_api_status_endpoint(mock_api_status):
     mock_api_status.return_value = {"status": "up", "last_seen": 12345}
     response = client.get("/api/status")
     assert response.status_code == 200
 
-@patch('app.get_power_events_data')
+@patch('app.main.get_power_events_data')
 def test_root_endpoint(mock_events):
     mock_events.return_value = [{"event": "up", "timestamp": 12345}]
     response = client.get("/")

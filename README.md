@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docs/assets/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
 </p>
 
 # СВІТЛО⚡️ БЕЗПЕКА (FLASH MONITOR KYIV) - Docker Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
@@ -116,10 +116,10 @@ flowchart TB
 ```
 
 ## 📥 Встановлення
-Див. [INSTRUCTIONS_INSTALL.md](INSTRUCTIONS_INSTALL.md).
+Див. [INSTRUCTIONS_INSTALL.md](docs/INSTRUCTIONS_INSTALL.md).
 
 ## 📝 Історія змін
-Повна історія змін доступна у [CHANGELOG.md](CHANGELOG.md).
+Повна історія змін доступна у [CHANGELOG.md](docs/CHANGELOG.md).
 
 ---
 **✦ 2026 Weby Homelab ✦**

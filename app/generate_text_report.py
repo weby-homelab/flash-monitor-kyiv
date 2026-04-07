@@ -42,7 +42,7 @@ def get_timezone():
     except: pass
     return ZoneInfo("Europe/Kyiv")
 
-from generate_daily_report import KYIV_TZ, DAYS_UA, get_quiet_status
+from app.generate_daily_report import KYIV_TZ, DAYS_UA, get_quiet_status
 
 def load_config():
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:

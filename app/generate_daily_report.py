@@ -410,8 +410,8 @@ def save_report_id(message_id, target_date):
     except:
         pass
 
-from storage import StorageUtils
-from telegram_client import TelegramClient
+from app.storage import StorageUtils
+from app.telegram_client import TelegramClient
 
 def get_telegram_client():
     return TelegramClient(TOKEN, CHAT_ID)
