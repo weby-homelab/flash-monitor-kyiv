@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import necessary functions from the daily report script to reuse logic
-from generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ, load_schedule_slots, get_quiet_status
+from app.generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ, load_schedule_slots, get_quiet_status
 
 # --- Configuration ---
 DATA_DIR = os.environ.get("DATA_DIR", "data")

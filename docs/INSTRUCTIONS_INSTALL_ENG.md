@@ -72,7 +72,7 @@ After=network.target
 User=root
 WorkingDirectory=/opt/flash-monitor-kyiv
 EnvironmentFile=/opt/flash-monitor-kyiv/.env
-ExecStart=/opt/flash-monitor-kyiv/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker --workers 4 -b 0.0.0.0:5050 app:app
+ExecStart=/opt/flash-monitor-kyiv/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker --workers 4 -b 0.0.0.0:5050 app.main:app
 Restart=always
 
 [Install]
@@ -90,7 +90,7 @@ After=network.target
 User=root
 WorkingDirectory=/opt/flash-monitor-kyiv
 EnvironmentFile=/opt/flash-monitor-kyiv/.env
-ExecStart=/opt/flash-monitor-kyiv/venv/bin/python run_background.py
+ExecStart=/opt/flash-monitor-kyiv/venv/bin/python -m app.run_background
 Restart=always
 RestartSec=10
 

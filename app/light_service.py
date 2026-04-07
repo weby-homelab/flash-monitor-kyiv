@@ -5,13 +5,13 @@ import time
 import json
 import asyncio
 import aiofiles
-from models import AppConfig, AppState
+from app.models import AppConfig, AppState
 import os
 import secrets
 import datetime
 from zoneinfo import ZoneInfo
 import requests
-from telegram_client import TelegramClient
+from app.telegram_client import TelegramClient
 import subprocess
 from urllib.parse import urlparse, parse_qs
 import sys
@@ -20,7 +20,7 @@ import fcntl
 import hashlib
 from dotenv import load_dotenv
 
-from parser_service import update_local_schedules
+from app.parser_service import update_local_schedules
 
 # Load environment variables
 load_dotenv()
@@ -188,7 +188,7 @@ STATE_FILE = os.path.join(DATA_DIR, "power_monitor_state.json")
 STATE_LOCK_FILE = os.path.join(DATA_DIR, "power_monitor_state.lock")
 SCHEDULE_FILE = os.path.join(DATA_DIR, "last_schedules.json")
 
-from storage import SafeStateContextAsync, StorageUtils
+from app.storage import SafeStateContextAsync, StorageUtils
 state_mgr = SafeStateContextAsync(STATE_LOCK_FILE)
 
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
@@ -260,14 +260,14 @@ def trigger_daily_report_update(is_final=False):
             # Use absolute paths
             base_dir = os.path.dirname(os.path.abspath(__file__))
             python_exec = sys.executable
-            script_path = os.path.join(base_dir, "generate_daily_report.py")
+            script_path = "-m"; script_name = "app.generate_daily_report"
             
             # Run with --final if requested
             args = [python_exec, script_path]
             if is_final:
                 args.append("--final")
             
-            subprocess.run(args, check=True, cwd=base_dir)
+            args[1] = "-m"; args.insert(2, "app.generate_daily_report"); subprocess.run(args, check=True, cwd=os.path.dirname(base_dir))
             
         except Exception as e:
             print(f"Failed to trigger daily report: {e}")
@@ -297,8 +297,8 @@ def trigger_text_report_update():
             print("Triggering text report update...")
             base_dir = os.path.dirname(os.path.abspath(__file__))
             python_exec = sys.executable
-            script_path = os.path.join(base_dir, "generate_text_report.py")
-            subprocess.run([python_exec, script_path], check=True, cwd=base_dir)
+            
+            subprocess.run([python_exec, "-m", "app.generate_text_report"], check=True, cwd=os.path.dirname(base_dir))
         except Exception as e:
             print(f"Failed to trigger text report: {e}")
 
@@ -324,13 +324,13 @@ def trigger_weekly_report_update():
             print("Triggering weekly report update...")
             base_dir = os.path.dirname(os.path.abspath(__file__))
             python_exec = sys.executable
-            script_path = os.path.join(base_dir, "generate_weekly_report.py")
+            
             output_path = os.path.join(DATA_DIR, "static", "weekly.png")
             
             # Ensure the directory exists
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             
-            subprocess.run([python_exec, script_path, "--output", output_path], check=True, cwd=base_dir)
+            subprocess.run([python_exec, "-m", "app.generate_weekly_report", "--output", output_path], check=True, cwd=os.path.dirname(base_dir))
         except Exception as e:
             print(f"Failed to trigger weekly report: {e}")
 
@@ -836,8 +836,8 @@ async def update_quiet_status():
                     try:
                         base_dir = os.path.dirname(os.path.abspath(__file__))
                         python_exec = sys.executable
-                        subprocess.run([python_exec, os.path.join(base_dir, "generate_daily_report.py"), "--cleanup"], cwd=base_dir)
-                        subprocess.run([python_exec, os.path.join(base_dir, "generate_text_report.py"), "--cleanup"], cwd=base_dir)
+                        subprocess.run([python_exec, "-m", "app.generate_daily_report", "--cleanup"], cwd=os.path.dirname(base_dir))
+                        subprocess.run([python_exec, "-m", "app.generate_text_report", "--cleanup"], cwd=os.path.dirname(base_dir))
                     except: pass
                 threading.Thread(target=run_cleanup).start()
             else:
@@ -845,9 +845,9 @@ async def update_quiet_status():
                     try:
                         base_dir = os.path.dirname(os.path.abspath(__file__))
                         python_exec = sys.executable
-                        script_path = os.path.join(base_dir, "generate_text_report.py")
+                        
                         time.sleep(2)
-                        subprocess.run([python_exec, script_path, "--force-new"], check=True, cwd=base_dir)
+                        subprocess.run([python_exec, "-m", "app.generate_text_report", "--force-new"], check=True, cwd=os.path.dirname(base_dir))
                     except Exception as e:
                         print(f"Failed to trigger text report: {e}")
                 threading.Thread(target=trigger_report).start()
@@ -1118,7 +1118,7 @@ async def schedule_loop():
                 if weekly_sent_date != today_date:
                     try:
                         base_dir = os.path.dirname(os.path.abspath(__file__))
-                        subprocess.run([sys.executable, os.path.join(base_dir, "generate_weekly_report.py"), "--date", (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")], check=True, cwd=base_dir)
+                        subprocess.run([sys.executable, "-m", "app.generate_weekly_report", "--date", (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")], check=True, cwd=os.path.dirname(base_dir))
                         weekly_sent_date = today_date
                     except: pass
         except Exception as e:

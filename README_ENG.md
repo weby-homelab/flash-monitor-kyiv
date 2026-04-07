@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docs/assets/dashboard_preview.jpg" alt="Dashboard Preview" width="100%">
 </p>
 
 # POWER⚡️ SAFETY (FLASH MONITOR KYIV) - Bare-metal Edition [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
@@ -31,7 +31,7 @@ This branch (`classic`) contains the **Bare-metal Edition** of the project, desi
 ---
 
 ## Project History
-For a complete history of updates, changes, and bug fixes, please refer to the [CHANGELOG.md](CHANGELOG.md).
+For a complete history of updates, changes, and bug fixes, please refer to the [CHANGELOG.md](docs/CHANGELOG.md).
 
 ## 🚀 Core Innovations (v3.2+)
 
@@ -151,6 +151,6 @@ The project has two main branches:
 2.  **`classic` (Bare-Metal Edition):** For running directly on the host system via `systemd`.
 
 📖 **Complete Documentation:**
-*   [Installation Guide (Step-by-Step)](INSTRUCTIONS_INSTALL_ENG.md)
-*   [Detailed Configuration Setup](INSTRUCTIONS_ENG.md)
-*   [Development Rules & Guidelines](DEVELOPMENT_ENG.md)
+*   [Installation Guide (Step-by-Step)](docs/INSTRUCTIONS_INSTALL_ENG.md)
+*   [Detailed Configuration Setup](docs/INSTRUCTIONS_ENG.md)
+*   [Development Rules & Guidelines](docs/DEVELOPMENT_ENG.md)

@@ -4,7 +4,7 @@ import asyncio
 import bootstrap
 bootstrap.perform_cold_start_if_needed()
 
-from light_service import monitor_loop, schedule_loop, alerts_loop, load_state
+from app.light_service import monitor_loop, schedule_loop, alerts_loop, load_state
 
 async def main():
     print("Starting Flash Monitor Background Services (Async)...")

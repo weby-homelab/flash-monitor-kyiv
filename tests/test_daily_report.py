@@ -1,7 +1,7 @@
 import pytest
 import datetime
 from zoneinfo import ZoneInfo
-from generate_daily_report import build_report_caption
+from app.generate_daily_report import build_report_caption
 
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
 

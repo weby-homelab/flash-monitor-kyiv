@@ -1,6 +1,6 @@
 import pytest
 import responses
-from telegram_client import TelegramClient
+from app.telegram_client import TelegramClient
 
 @pytest.fixture
 def client():

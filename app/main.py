@@ -24,10 +24,10 @@ from prometheus_client import make_asgi_app, Gauge, Histogram
 from sse_starlette.sse import EventSourceResponse
 
 # Запуск ініціалізації для нових користувачів
-import bootstrap
+from scripts import bootstrap
 bootstrap.perform_cold_start_if_needed()
 
-from light_service import (
+from app.light_service import (
     load_state, save_state, state, state_mgr,
     monitor_loop, schedule_loop, get_current_time, format_duration,
     log_event, get_schedule_context, send_telegram,

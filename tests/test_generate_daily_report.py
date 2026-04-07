@@ -5,7 +5,7 @@ import os
 import json
 from unittest.mock import patch, mock_open
 
-from generate_daily_report import (
+from app.generate_daily_report import (
     load_events,
     load_schedule_slots,
     get_intervals_for_date,
@@ -43,7 +43,7 @@ def test_load_schedule_slots_no_files(mock_exists):
 
 @patch("os.path.exists")
 @patch("builtins.open", new_callable=mock_open)
-@patch("light_service.get_config")
+@patch("app.light_service.get_config")
 def test_load_schedule_slots_with_schedule(mock_get_config, mock_file, mock_exists):
     mock_exists.return_value = True
     mock_get_config.return_value = {"advanced": {"data_sources": {"priority": "yasno"}}}
@@ -72,7 +72,7 @@ def test_get_intervals_for_date():
         def now(cls, tz=None):
             return datetime.datetime(2026, 4, 6, 14, 0, tzinfo=KYIV_TZ)
             
-    with patch("generate_daily_report.datetime.datetime", MockDatetime):
+    with patch("app.generate_daily_report.datetime.datetime", MockDatetime):
         intervals = get_intervals_for_date(date, events)
         assert len(intervals) == 3
         assert intervals[0][2] == "unknown" # 00:00 to 10:00
