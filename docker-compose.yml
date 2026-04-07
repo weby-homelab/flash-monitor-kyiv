@@ -24,3 +24,5 @@ services:
       - ./data:/app/data
     env_file:
       - .env
+    healthcheck:
+      disable: true
