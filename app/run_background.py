@@ -1,7 +1,7 @@
 import asyncio
 
 # Запуск ініціалізації для нових користувачів
-import bootstrap
+from scripts import bootstrap
 bootstrap.perform_cold_start_if_needed()
 
 from app.light_service import monitor_loop, schedule_loop, alerts_loop, load_state
