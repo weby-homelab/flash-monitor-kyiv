@@ -22,10 +22,9 @@
 
 **Flash Monitor Kyiv** — це професійна автономна система моніторингу критичної інфраструктури та екологічної безпеки. Проєкт забезпевує моніторинг електропостачання в реальному часі, відстеження повітряних тривог, якості повітря (AQI) та радіаційного фону.
 
-> **Статус проєкту:** Stable v3.3.6 (Stable & Test-Covered)
 Ця гілка (`classic`) містить **Bare-metal версію** проєкту, яка розроблена для роботи як systemd служба.
 
-> **Статус проєкту:** Stable v3.3.7 (Stable & Test-Covered)
+> **Статус проєкту:** Stable v3.3.8 (Stable & Test-Covered)
 > **Архітектура:** Python FastAPI + Background Workers + JSON Flat-DB + Bare Metal / systemd
 > **Бренд:** Weby Homelab
 
