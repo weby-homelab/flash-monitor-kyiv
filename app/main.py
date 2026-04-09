@@ -37,7 +37,8 @@ from app.light_service import (
     get_air_raid_alert, get_push_interval, get_advanced_setting,
     update_quiet_status, sync_schedules,
     create_backup, list_backups, restore_backup,
-    TOKEN, CHAT_ID, ADMIN_CHAT_ID,
+    get_telegram_token, get_telegram_channel_id_cfg,
+    ADMIN_CHAT_ID,
     KYIV_TZ, STATE_LOCK_FILE, DATA_DIR, EVENT_LOG_FILE
 )
 
@@ -836,14 +837,14 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
                 state['pending_confirmation'] = False
                 await save_state()
 
-            TelegramClient(TOKEN, chat_id).answer_callback(cb['id'], "🟢 Ігноровано")
+            TelegramClient(get_telegram_token(), chat_id).answer_callback(cb['id'], "🟢 Ігноровано")
 
-            TelegramClient(TOKEN, chat_id).edit_message(msg_id, "🟢 Збій / Роботи (Ігноровано)")
+            TelegramClient(get_telegram_token(), chat_id).edit_message(msg_id, "🟢 Збій / Роботи (Ігноровано)")
 
         elif cb_data.startswith('sn_tech_'):
             # Show mute options
             timestamp = cb_data.split('_')[-1]
-            TelegramClient(TOKEN, chat_id).edit_message(msg_id, "🛠 На скільки часу вимкнути моніторинг?", reply_markup={
+            TelegramClient(get_telegram_token(), chat_id).edit_message(msg_id, "🛠 На скільки часу вимкнути моніторинг?", reply_markup={
                     "inline_keyboard": [
                         [
                             {"text": "5 хв", "callback_data": f"mute_5_{timestamp}"},
@@ -869,12 +870,12 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
                 state['safety_net_pending'] = False
                 await save_state()
 
-            requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={
+            requests.post(f"https://api.telegram.org/bot{get_telegram_token()}/answerCallbackQuery", json={
                 "callback_query_id": cb['id'],
                 "text": f"🛠 Моніторинг вимкнено на {minutes} хв"
             })
 
-            requests.post(f"https://api.telegram.org/bot{TOKEN}/editMessageText", json={
+            requests.post(f"https://api.telegram.org/bot{get_telegram_token()}/editMessageText", json={
                 "chat_id": chat_id,
                 "message_id": msg_id,
                 "text": f"🛠 Технічний збій. Моніторинг призупинено до {datetime.fromtimestamp(state['muted_until'], KYIV_TZ).strftime('%H:%M')}"
@@ -886,9 +887,9 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
                 state['safety_net_pending'] = False
                 await save_state()
 
-            TelegramClient(TOKEN, chat_id).answer_callback(cb['id'], "🤷‍♂️ Чекаємо 3 хв")
+            TelegramClient(get_telegram_token(), chat_id).answer_callback(cb['id'], "🤷‍♂️ Чекаємо 3 хв")
 
-            TelegramClient(TOKEN, chat_id).edit_message(msg_id, "🤷‍♂️ Невідомо. Чекаємо стандартний таймаут 3 хвилини.")
+            TelegramClient(get_telegram_token(), chat_id).edit_message(msg_id, "🤷‍♂️ Невідомо. Чекаємо стандартний таймаут 3 хвилини.")
 
         elif cb_data.startswith('sn_down_'):
             # Confirm DOWN instantly
@@ -910,15 +911,15 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
                 background_tasks.add_task(broadcast_state_update)
                 await save_state()
 
-            TelegramClient(TOKEN, chat_id).answer_callback(cb['id'], "🔴 Підтверджено зникнення")
+            TelegramClient(get_telegram_token(), chat_id).answer_callback(cb['id'], "🔴 Підтверджено зникнення")
 
-            TelegramClient(TOKEN, chat_id).edit_message(msg_id, "🔴 Світло зникло (Підтверджено адміном)")
+            TelegramClient(get_telegram_token(), chat_id).edit_message(msg_id, "🔴 Світло зникло (Підтверджено адміном)")
 
         elif cb_data.startswith('sn_back_'):
             timestamp = cb_data.split('_')[-1]
             # Restore safety net buttons
             msg = "🚨 <b>SAFETY NET: ВТРАТА ПУША!</b>\n\nВже 35 сек немає зв'язку. Що сталося?"
-            TelegramClient(TOKEN, chat_id).edit_message(msg_id, msg, reply_markup={
+            TelegramClient(get_telegram_token(), chat_id).edit_message(msg_id, msg, reply_markup={
                     "inline_keyboard": [
                         [
                             {"text": "🔴 Світло зникло?", "callback_data": f"sn_down_{timestamp}"},
@@ -930,7 +931,7 @@ async def tg_webhook(data: dict = Body(None), background_tasks: BackgroundTasks 
                     ]
                 })
             
-            TelegramClient(TOKEN, chat_id).answer_callback(cb['id'], "Назад")
+            TelegramClient(get_telegram_token(), chat_id).answer_callback(cb['id'], "Назад")
             
     return PlainTextResponse("OK")
 
@@ -976,8 +977,8 @@ async def admin_data(request: Request):
         "logs": logs[-20:][::-1], # Last 20, newest first
         "version": version,
         "env": {
-            "telegram_bot_token": TOKEN,
-            "telegram_channel_id": CHAT_ID
+            "telegram_bot_token": get_telegram_token(),
+            "telegram_channel_id": get_telegram_channel_id_cfg()
         }
     }
 

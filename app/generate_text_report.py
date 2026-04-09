@@ -358,7 +358,7 @@ def main():
     last_id = today_state.get(f"{target_slot}_id") if not force_new else None
     last_hash = today_state.get(f"{target_slot}_hash") if not force_new else None
 
-    from telegram_client import TelegramClient
+    from app.telegram_client import TelegramClient
     client = TelegramClient(TOKEN, CHAT_ID)
 
     if last_id:

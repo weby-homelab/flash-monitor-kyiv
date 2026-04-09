@@ -261,7 +261,7 @@ def generate_weekly_chart(end_date, daily_data, theme='dark'):
         plt.subplots_adjust(bottom=0.15)
         
         suffix = "_light" if theme == 'light' else ""
-        filename = f"weekly_report_{end_date.strftime('%Y-%m-%d')}{suffix}.png"
+        filename = os.path.join(DATA_DIR, f"weekly_report_{end_date.strftime('%Y-%m-%d')}{suffix}.png")
         plt.savefig(filename, dpi=100, facecolor=fig.get_facecolor())
         plt.close()
     
