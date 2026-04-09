@@ -33,86 +33,85 @@
 - **Analytics:** Автоматичні графічні звіти (Matplotlib).
 - **Security:** Zero-Trust політика, повний аудит.
 
-## 🏗 System Architecture
+## 🏗️ Архітектура системи
 
 ```mermaid
-flowchart TB
- %% Colors & Styles
- classDef client fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff,rx:8px,ry:8px
- classDef cloudflare fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff,rx:8px,ry:8px
- classDef server fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff,rx:8px,ry:8px
- classDef module fill:#334155,stroke:#475569,stroke-width:1px,color:#e2e8f0,rx:5px,ry:5px
- classDef db fill:#1e293b,stroke:#ef4444,stroke-width:2px,color:#fff,rx:8px,ry:8px
- classDef ext_api fill:#334155,stroke:#64748b,stroke-width:2px,color:#fff,rx:8px,ry:8px
- classDef logic fill:#0f172a,stroke:#eab308,stroke-width:1px,color:#fde68a,rx:5px,ry:5px,stroke-dasharray: 5 5
+flowchart LR
+    %% ================================================
+    %% НОВА КОНЦЕПЦІЯ 2026 для README.md
+    %% "End-to-End Pipeline" — динамічний потік даних
+    %% Замість шарів — горизонтальний pipeline з чітким напрямком руху
+    %% Ідеально виглядає в GitHub (темна/світла тема), чистий, сучасний, легко читається
+    %% ================================================
 
- subgraph TopLayer [" Access Interfaces"]
- direction LR
- PWA[" PWA Dashboard"]:::client
- Admin[" Admin Panel"]:::client
- Subscribers[" Telegram Channel"]:::client
- end
+    classDef external fill:#0f766e,stroke:#14b8a6,stroke-width:3px,color:#fff,rx:16px,ry:16px
+    classDef core fill:#1e293b,stroke:#22d3ee,stroke-width:3.5px,color:#fff,rx:14px,ry:14px
+    classDef gateway fill:#7c3aed,stroke:#a78bfa,stroke-width:3px,color:#fff,rx:16px,ry:16px
+    classDef client fill:#1e293b,stroke:#60a5fa,stroke-width:3px,color:#fff,rx:16px,ry:16px
+    classDef db fill:#1e293b,stroke:#ec4899,stroke-width:3px,color:#fff,rx:12px,ry:12px
 
- CF[" Cloudflare Tunnel (Zero Trust)"]:::cloudflare
+    %% ====================== ЛІВА ЧАСТИНА: ДЖЕРЕЛА ДАНИХ ======================
+    subgraph External ["🔌 Джерела даних"]
+        direction TB
+        Energy["⚡ Yasno / DTEK API<br>Розклади відключень"]:::external
+        Meteo["🌤️ OpenMeteo + SaveEcoBot<br>Погода та AQI"]:::external
+    end
 
- PWA <-->|HTTPS / WSS| CF
- Admin <-->|HTTPS / JWT| CF
+    %% ====================== ЦЕНТР: CORE PIPELINE ======================
+    subgraph Core ["⚙️ Flash Monitor Core<br>light_service.py + FastAPI"]
+        direction TB
 
- subgraph CoreLayer [" Core Server (Docker / systemd)"]
- direction TB
+        Worker["🔄 Worker<br>flash-background.service"]:::core
 
- subgraph Services [" System Services"]
- direction LR
- API[" flash-monitor.service (FastAPI / app.py)"]:::server
- Worker[" flash-background.service (light_service.py)"]:::server
- end
+        subgraph Processing ["Обробка та логіка"]
+            direction LR
+            Rules["🛡️ Rules Engine<br>False Always Wins • 30s Safety Net<br>Quiet Mode"]:::core
+            Reports["📊 Reports Generator<br>Matplotlib charts"]:::core
+            Storage["💾 Storage<br>JSON Flat-DB<br>config • state • logs • schedules"]:::db
+        end
 
- subgraph Modules [" Internal Modules & Logic"]
- direction LR
- Storage["storage.py (I/O Manager)"]:::module
- Reports["generate_*_report.py (Matplotlib)"]:::module
- TgClient["telegram_client.py (Bot Wrapper)"]:::module
- Rules[" Algorithms: False Always Wins Safety Net (30s) Quiet Mode"]:::logic
- end
+        API["🔌 FastAPI<br>flash-monitor.service<br>app.py"]:::core
+        TgClient["🤖 Telegram Client"]:::core
+    end
 
- API <-->|State Sync| Worker
- Worker -.-> Rules
- Worker --> Reports
- Worker --> TgClient
- Reports --> TgClient
- API --> Storage
- Worker --> Storage
- end
+    %% ====================== ШЛЮЗ ======================
+    subgraph Gateway ["🔐 Cloudflare Tunnel<br>Zero Trust + Reverse Proxy"]
+        CF["☁️ Cloudflare Tunnel<br>порт 5050"]:::gateway
+    end
 
- CF <-->|Reverse Proxy Port 5050| API
+    %% ====================== ПРАВА ЧАСТИНА: КЛІЄНТИ ======================
+    subgraph Clients ["👥 Інтерфейси користувачів"]
+        direction TB
+        PWA["📱 PWA Dashboard"]:::client
+        Admin["🛠️ Admin Panel"]:::client
+        Telegram["📨 Telegram Channel<br>+ Push Notifications"]:::client
+    end
 
- subgraph DataLayer [" Data Storage (JSON Flat-DB)"]
- direction LR
- Config[("config.json")]:::db
- State[("power_monitor_state.json")]:::db
- Logs[("event_log.json")]:::db
- Sched[("last_schedules.json")]:::db
- end
+    %% ====================== ПОТІК ДАНИХ (головна магістраль) ======================
+    Energy & Meteo -->|Скрэйпінг + Fetch| Worker
 
- Storage <-->|Read / Write| DataLayer
+    Worker -->|Перевірка правил| Rules
+    Rules -->|Рішення| Worker
 
- subgraph ExternalLayer [" External APIs & Gateways"]
- direction LR
- PushAPI[" Web Push API"]:::ext_api
- TgAPI[" Telegram Bot API"]:::ext_api
- Energy[" Yasno / DTEK API"]:::ext_api
- Meteo[" OpenMeteo / SaveEcoBot"]:::ext_api
- end
+    Worker -->|Збереження| Storage
+    Storage -->|Читання стану| Worker
 
- API -->|Trigger Push| PushAPI
- PushAPI -.->|Notification| PWA
- 
- TgClient -->|Send| TgAPI
- TgAPI -->|Posts & Charts| Subscribers
- 
- Energy -->|Scrape Schedules| Worker
- Meteo -->|Fetch Weather| API
- Meteo -->|AQI Monitoring| Worker
+    Worker -->|Генерація| Reports
+    Worker -->|Сповіщення| TgClient
+    Reports -->|Графіки| TgClient
+
+    Worker <-->|REST + WebSocket| API
+
+    API -->|Reverse Proxy| CF
+    CF <-->|HTTPS + JWT / WSS| PWA
+    CF <-->|HTTPS + JWT| Admin
+    TgClient -->|Bot API| Telegram
+
+    %% Додаткові push-сповіщення
+    API -.->|Web Push API| PWA
+
+    %% ====================== Стиль для заголовків підграфів ======================
+    classDef subgraphTitle fill:#0f172a,stroke:none,color:#64748b,font-size:15px
 ```
 
 ## 📥 Встановлення
