@@ -52,6 +52,56 @@ A fully autonomous Glassmorphism web interface to manage all aspects of the syst
 
 ---
 
+---
+
+## 🚀 Core Innovations (v3.2+)
+
+### 🎛 Admin Control Panel
+A fully autonomous **Glassmorphism** web interface to manage all aspects of the system without the need to edit configuration files via SSH.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
+  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
+</p>
+
+*   **Asynchronous Performance:** The new async caching mechanism (FastAPI) eliminates deadlocks and "freezes" during simultaneous data writes by background workers.
+*   **Smart Backups:** Create manual and automatic restore points for your configuration. Instant one-click recovery with automatic service restart.
+*   **Flexible Source Management:** Change priority between Yasno, GitHub, or connect your own Custom JSON URL. Manual force-sync button for schedules.
+*   **Complete Geo-Adaptation:** Set coordinates (Lat/Lon) for accurate weather, SaveEcoBot station ID, and toggle widget visibility.
+*   **Security (Zero-Trust):** Fixed LFI (Path Traversal) vulnerabilities with strict path validation. Access keys are safely generated during the first bootstrap.
+
+### 🤫 «Quiet Mode» (Information Calm)
+A unique algorithm that minimizes "information noise." The system automatically enters a calm state if there were no outages in the last 24 hours and no restrictions are planned for tomorrow. Ideal for stable periods of the power grid.
+
+### 🚨 Safety Net
+An interactive rapid response mechanism: if the Push signal is delayed for more than 35 seconds, the administrator receives a request in Telegram with action options (`🔴 Power is out`, `🛠 Technical glitch`, `🤷‍♂️ I don't know`). This prevents false alarms in the public channel.
+
+### ⚖️ «False Always Wins» Logic
+A hybrid schedule processing system. If at least one source indicates an outage, the system displays it as a priority. Old outage records are never overwritten by "clean" plans, ensuring an honest event history.
+
+---
+
+## 📱 Real-world Telegram Notification Examples
+
+*   📊 **[Daily "Plan vs Fact" Chart (Smart Daily Report)](https://t.me/svitlobot_Symyrenka22B/1230)**
+*   📈 **[Weekly Outage Analytics](https://t.me/svitlobot_Symyrenka22B/1192)**
+*   🔴 **[Outage notification with schedule precision](https://t.me/svitlobot_Symyrenka22B/1209)**
+*   🟢 **[Power restoration notification with schedule precision](https://t.me/svitlobot_Symyrenka22B/1212)**
+*   ⚠️ **[Instant alert about schedule changes from DTEK](https://t.me/svitlobot_Symyrenka22B/1222)**
+*   🚨 **[Air raid alert in the city](https://t.me/svitlobot_Symyrenka22B/1196)**
+
+---
+
+## 📊 Dashboard Capabilities (PWA)
+
+A modern **Glassmorphism** interface optimized for mobile devices:
+*   **Live Status:** Visualizing the system "Pulse" (Power is ON! / Power is OUT!).
+*   **Environmental Monitoring:** Temperature, humidity, PM2.5/PM10 (OpenMeteo/SaveEcoBot), and radiation with interactive charts for the last 24 hours.
+*   **Schedule Bar:** A compact 24-hour scale of planned outages.
+
+---
+
 ## 🏗️ System Architecture
 
 Flash Monitor is a power outage monitoring system with automatic notifications.
