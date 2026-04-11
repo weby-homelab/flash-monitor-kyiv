@@ -49,8 +49,10 @@ class StorageUtils:
     def save_json_sync(path: str, data: Any) -> bool:
         temp_path = f"{path}.tmp"
         try:
+            os.makedirs(os.path.dirname(temp_path) or '.', mode=0o700, exist_ok=True)
             with open(temp_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
+            os.chmod(temp_path, 0o600)
             os.replace(temp_path, path)
             return True
         except Exception as e:

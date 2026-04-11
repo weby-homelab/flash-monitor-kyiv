@@ -86,7 +86,7 @@ def create_backup(label="manual"):
         if len(backups) > 10:
             for b in backups[:-10]:
                 os.remove(os.path.join(backup_dir, b))
-    except: pass
+    except Exception: pass
     
     return backup_name
 
@@ -250,7 +250,7 @@ def trigger_daily_report_update(is_final=False):
                     if (now - mtime) < 15: # 15 seconds cooldown
                         print("Daily report update skipped (cooldown/already running).")
                         return
-                except: pass
+                except Exception: pass
             
             # 2. Acquire lock (update mtime)
             with open(lock_file, 'w') as f:
@@ -290,7 +290,7 @@ def trigger_text_report_update():
                     if (now - os.path.getmtime(lock_file)) < 15:
                         print("Text report update skipped (cooldown).")
                         return
-                except: pass
+                except Exception: pass
             
             with open(lock_file, 'w') as f: f.write(str(os.getpid()))
             
@@ -317,7 +317,7 @@ def trigger_weekly_report_update():
                     if (now - os.path.getmtime(lock_file)) < 15:
                         print("Weekly report update skipped (cooldown).")
                         return
-                except: pass
+                except Exception: pass
             
             with open(lock_file, 'w') as f: f.write(str(os.getpid()))
             
@@ -381,9 +381,7 @@ async def load_state():
             print(f"State validation error: {e}")
 
     if not state.get("secret_key"):
-        async with state_mgr:
-            state["secret_key"] = secrets.token_urlsafe(16)
-            await save_state()
+        state["secret_key"] = os.environ.get("SECRET_KEY", secrets.token_urlsafe(16))
 
     if not state.get("admin_token"):
         async with state_mgr:
@@ -838,7 +836,7 @@ async def update_quiet_status():
                         python_exec = sys.executable
                         subprocess.run([python_exec, "-m", "app.generate_daily_report", "--cleanup"], cwd=os.path.dirname(base_dir))
                         subprocess.run([python_exec, "-m", "app.generate_text_report", "--cleanup"], cwd=os.path.dirname(base_dir))
-                    except: pass
+                    except Exception: pass
                 threading.Thread(target=run_cleanup).start()
             else:
                 def trigger_report():
@@ -1120,7 +1118,7 @@ async def schedule_loop():
                         base_dir = os.path.dirname(os.path.abspath(__file__))
                         subprocess.run([sys.executable, "-m", "app.generate_weekly_report", "--date", (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")], check=True, cwd=os.path.dirname(base_dir))
                         weekly_sent_date = today_date
-                    except: pass
+                    except Exception: pass
         except Exception as e:
             print(f"Critical error in schedule_loop: {e}")
             

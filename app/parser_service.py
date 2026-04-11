@@ -71,8 +71,8 @@ async def fetch_github(client: httpx.AsyncClient, cfg: dict) -> Optional[dict]:
         print(f"GitHub fetch error: {e}")
         return None
 
-async def fetch_yasno(client: httpx.AsyncClient, cfg: dict) -> Optional[dict]:
-    yasno_cfg = cfg.get('sources', {}).get('yasno', {})
+async def fetch_yasno(client: httpx.AsyncClient, cfg: dict, source_id: str = "yasno") -> Optional[dict]:
+    yasno_cfg = cfg.get('sources', {}).get(source_id, {})
     if not yasno_cfg.get('enabled', False):
         return None
         
@@ -81,21 +81,19 @@ async def fetch_yasno(client: httpx.AsyncClient, cfg: dict) -> Optional[dict]:
         return None
         
     try:
+        # Get IDs from config with defaults for Kyiv
         region_id = str(yasno_cfg.get('region_id', '25'))
         dso_id = str(yasno_cfg.get('dso_id', '902'))
         
         # Security validation: Ensure IDs are numeric to prevent URL manipulation
         if not (region_id.isdigit() and dso_id.isdigit()):
-            print(f"Yasno fetch error: Invalid IDs detected (region_id={region_id}, dso_id={dso_id})")
+            print(f"Yasno fetch error: Invalid IDs in config for {source_id} (region={region_id}, dso={dso_id})")
             return None
 
         url = YASNO_URL.format(
             region_id=region_id,
             dso_id=dso_id
         )
-        if yasno_cb.state == "HALF-OPEN":
-            # Test request
-            pass
             
         r = await client.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
         r.raise_for_status()
@@ -103,13 +101,20 @@ async def fetch_yasno(client: httpx.AsyncClient, cfg: dict) -> Optional[dict]:
         yasno_cb.record_success()
         return r.json()
     except Exception as e:
-        print(f"Yasno fetch error: {e}")
+        print(f"Yasno fetch error ({source_id}): {e}")
         yasno_cb.record_failure()
         return None
 
+from urllib.parse import urlparse
+
 async def fetch_custom(client: httpx.AsyncClient, cfg: dict) -> Optional[dict]:
     custom_url = cfg.get('advanced', {}).get('data_sources', {}).get('custom_url')
-    if not custom_url or not custom_url.startswith(('http://', 'https://')):
+    if not custom_url:
+        return None
+    parsed = urlparse(custom_url)
+    if parsed.scheme not in ['http', 'https']:
+        return None
+    if parsed.hostname in ['localhost', '127.0.0.1'] or (parsed.hostname and parsed.hostname.startswith('192.168.')):
         return None
     try:
         r = await client.get(custom_url, headers={"User-Agent": "Flash-Monitor/2.7"}, timeout=20)

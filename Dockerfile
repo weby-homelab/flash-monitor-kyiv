@@ -18,8 +18,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY . .
 
-RUN mkdir -p /app/data/static
+RUN mkdir -p /app/data/static && \
+    useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
 
+USER appuser
 EXPOSE 5050
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \

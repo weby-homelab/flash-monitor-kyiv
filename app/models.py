@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, RootModel, ConfigDict
 from typing import Dict, List, Optional, Any, Union
+import os
 
 class AppSettings(BaseModel):
     model_config = ConfigDict(extra='ignore')
@@ -7,7 +8,7 @@ class AppSettings(BaseModel):
     region: str = "kyiv"
     push_interval: int = 30
     safety_net_timeout: int = 35
-    admin_chat_id: str = "6313526220"
+    admin_chat_id: str = Field(default_factory=lambda: os.environ.get("ADMIN_CHAT_ID", ""))
     telegram_bot_token: Optional[str] = None
     telegram_channel_id: Optional[str] = None
     groups: List[str] = ["GPV36.1"]
