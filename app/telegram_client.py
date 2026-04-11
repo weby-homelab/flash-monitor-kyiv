@@ -3,12 +3,13 @@ import requests
 
 class TelegramClient:
     def __init__(self, token, chat_id):
-        self.token = token
+        self._real_token = token
+        self.token = "***REDACTED***"
         self.chat_id = chat_id
         self.base_url = f"https://api.telegram.org/bot{self.token}"
 
     def _make_request(self, endpoint, payload, files=None, timeout=30):
-        url = f"{self.base_url}/{endpoint}"
+        url = f"https://api.telegram.org/bot{self._real_token}/{endpoint}"
         try:
             r = requests.post(url, data=payload, json=payload if not files else None, files=files, timeout=timeout)
             if r.status_code == 200:

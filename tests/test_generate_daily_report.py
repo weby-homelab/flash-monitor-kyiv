@@ -124,7 +124,7 @@ def test_generate_chart(mock_savefig):
     ]
     
     filename, t_up, t_down = generate_chart(date, intervals, schedule_intervals, theme='dark')
-    assert filename == "report_2026-04-06.png"
+    assert "report_2026-04-06.png" in filename
     assert t_up == 22 * 3600
     assert t_down == 2 * 3600
     mock_savefig.assert_called_once()

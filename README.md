@@ -24,7 +24,7 @@
 
 Ця гілка (`classic`) містить **Bare-metal версію** проєкту, яка розроблена для роботи як systemd служба.
 
-> **Статус проєкту:** Stable v3.3.8 (Stable & Test-Covered)
+> **Статус проєкту:** Stable v3.3.9 (Stable & Test-Covered)
 > **Архітектура:** Python FastAPI + Background Workers + JSON Flat-DB + Bare Metal / systemd
 > **Бренд:** Weby Homelab
 

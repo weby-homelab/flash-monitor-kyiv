@@ -24,7 +24,7 @@
 
 This branch (`classic`) contains the **Bare-metal Edition** of the project, designed for running as a systemd service.
 
-> **Project Status:** Stable v3.3.8 (Stable & Test-Covered)
+> **Project Status:** Stable v3.3.9 (Stable & Test-Covered)
 > **Architecture:** Python FastAPI + Background Workers + JSON Flat-DB + Bare Metal / systemd
 > **Brand:** Weby Homelab
 
