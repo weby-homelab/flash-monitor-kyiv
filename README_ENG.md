@@ -53,7 +53,7 @@ A fully autonomous **Glassmorphism** web interface to manage all system aspects 
 </p>
 
 *   **Asynchronous Performance:** A new async caching mechanism eliminates deadlocks between the background worker and user requests.
-*   **Smart Backups:** Create manual and automatic restoration points.
+*   **Smart Backups:** Instant one-click system recovery with automatic system service restarts.
 *   **Security (Zero-Trust):** Implements strict Path Traversal protection and secure path validation.
 
 ### 🤫 «Quiet Mode» (Information Calm)
@@ -147,70 +147,16 @@ flowchart LR
 
 ---
 
-## 📥 Installation (Bare-metal Edition)
+## 📥 Installation
 
-### 1. Server Preparation
-```bash
-sudo apt-get update && sudo apt-get upgrade -y
-sudo apt-get install -y python3.12 python3.12-venv python3-pip git nano
-```
+For a detailed step-by-step guide on deploying the project on an Ubuntu/Debian server, please follow the link below:
 
-### 2. Cloning and Installation
-```bash
-git clone https://github.com/weby-homelab/flash-monitor-kyiv.git
-cd flash-monitor-kyiv
-git checkout classic
-
-python3.12 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-### 3. Configuration
-Create `.env` file and provide your tokens:
-```bash
-cp .env.example .env
-nano .env
-```
-
-### 4. Systemd Setup (Unit Files)
-Create `/etc/systemd/system/flash-monitor.service` (Dashboard):
-```ini
-[Unit]
-Description=Flash Monitor Kyiv Dashboard
-After=network.target
-
-[Service]
-User=root
-WorkingDirectory=/opt/flash-monitor-kyiv
-EnvironmentFile=/opt/flash-monitor-kyiv/.env
-ExecStart=/opt/flash-monitor-kyiv/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker --workers 4 -b 0.0.0.0:5050 app.main:app
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### 5. Activation
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now flash-monitor.service flash-background.service
-```
-
-🔑 **Accessing the Admin Panel:**
-After launch, retrieve the token:
-```bash
-cat data/power_monitor_state.json | grep admin_token
-```
-URL: `http://YOUR_SERVER_IP:5050/admin?t=YOUR_TOKEN`
+📖 **[FULL INSTALLATION GUIDE (BARE-METAL)](docs/INSTRUCTIONS_INSTALL_ENG.md)**
 
 ---
 
-📖 **Documentation:**
-* [🛠 Bare-metal Installation Guide](docs/INSTRUCTIONS_INSTALL.md)
-* [⚙️ Telegram & IoT Setup](docs/INSTRUCTIONS.md)
-* [🐳 Alternative: Docker (main branch)](https://github.com/weby-homelab/flash-monitor-kyiv/tree/main)
+📖 **Additional Documentation:**
+* [⚙️ Telegram & IoT Setup](docs/INSTRUCTIONS_ENG.md)
 * [📝 Change History (CHANGELOG.md)](docs/CHANGELOG.md)
 
 ---

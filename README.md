@@ -147,64 +147,16 @@ flowchart LR
 
 ---
 
-## 📥 Встановлення (Bare-metal Edition)
+## 📥 Встановлення
 
-### 1. Підготовка системи
-```bash
-sudo apt-get update && sudo apt-get upgrade -y
-sudo apt-get install -y python3.12 python3.12-venv python3-pip git nano
-```
+Для отримання детальної покрокової інструкції з розгортання проєкту на сервері Ubuntu/Debian, перейдіть за посиланням нижче:
 
-### 2. Клонування та середовище
-```bash
-git clone https://github.com/weby-homelab/flash-monitor-kyiv.git
-cd flash-monitor-kyiv
-git checkout classic
-
-python3.12 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-### 3. Конфігурація
-Створіть `.env` та заповніть токени:
-```bash
-cp .env.example .env
-nano .env
-```
-
-### 4. Налаштування Systemd (Unit-файли)
-Створіть `/etc/systemd/system/flash-monitor.service` (Dashboard):
-```ini
-[Service]
-ExecStart=/path/to/project/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker --workers 4 -b 0.0.0.0:5050 app.main:app
-```
-Створіть `/etc/systemd/system/flash-background.service` (Worker):
-```ini
-[Service]
-ExecStart=/path/to/project/venv/bin/python -m app.run_background
-```
-
-### 5. Активація
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now flash-monitor.service flash-background.service
-```
-
-🔑 **Доступ до Admin Panel:**
-Після старту отримайте токен:
-```bash
-cat data/power_monitor_state.json | grep admin_token
-```
-URL: `http://IP:5050/admin?t=ВАШ_ТОКЕН`
+📖 **[ПОВНА ІНСТРУКЦІЯ З ВСТАНОВЛЕННЯ (BARE-METAL)](docs/INSTRUCTIONS_INSTALL.md)**
 
 ---
 
-📖 **Документація:**
-* [🛠 Інструкція з встановлення Bare-metal](docs/INSTRUCTIONS_INSTALL.md)
+📖 **Додаткова документація:**
 * [⚙️ Налаштування Telegram та IoT](docs/INSTRUCTIONS.md)
-* [🐳 Альтернатива: Docker (гілка main)](https://github.com/weby-homelab/flash-monitor-kyiv/tree/main)
 * [📝 Історія змін (CHANGELOG.md)](docs/CHANGELOG.md)
 
 ---
