@@ -172,7 +172,6 @@ URL: `http://IP:5050/admin?t=YOUR_TOKEN`
 📖 **Documentation:**
 * [🐳 Docker Installation Guide](docs/INSTRUCTIONS_INSTALL.md)
 * [⚙️ Telegram & IoT Setup](docs/INSTRUCTIONS.md)
-* [💻 Alternative: Bare-metal (classic branch)](https://github.com/weby-homelab/flash-monitor-kyiv/blob/classic/docs/INSTRUCTIONS_INSTALL.md)
 * [📝 Change History (CHANGELOG.md)](docs/CHANGELOG.md)
 
 ---
