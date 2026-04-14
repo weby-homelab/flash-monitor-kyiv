@@ -11,25 +11,25 @@
 
 # 🛠 Flash Monitor Kyiv Installation Guide (Bare-Metal Edition) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
-This guide is intended for the installation of the stable Bare-Metal version (branch `classic`) directly on a server running **Ubuntu 24.04 LTS** (or Debian 12) using **Systemd**.
+This guide is intended for installing the stable Bare-Metal version (branch `classic`) directly onto a server running **Ubuntu 24.04 LTS** (or Debian 12) using **systemd**.
 
-## 📌 Version & Stack
-- **Version:** v3.2.2 (Classic)
+## 📌 Version and Stack
+- **Version:** v3.4.0 (Stable)
 - **Language:** Python 3.12+
-- **Framework:** Flask + Gunicorn (Synchronous Stack)
+- **Framework:** FastAPI + Gunicorn (Uvicorn Workers)
 - **Database:** JSON Flat-DB (File system)
 - **Process Management:** Systemd
 
 ---
 
 ## 1. Server Preparation
-Ensure your server is up to date and has Python 3.12 installed:
+Ensure your server is up-to-date and has Python 3.12 installed:
 ```bash
 sudo apt-get update && sudo apt-get upgrade -y
 sudo apt-get install -y python3.12 python3.12-venv python3-pip git nano
 ```
 
-## 2. Cloning & Installation
+## 2. Cloning and Installation
 ```bash
 # Navigate to the folder where the project will live (e.g., /opt or /root)
 cd /opt
@@ -39,7 +39,7 @@ cd flash-monitor-kyiv
 # IMPORTANT: Switch to the classic branch
 git checkout classic
 
-# Create and activate a virtual environment
+# Create and activate virtual environment
 python3.12 -m venv venv
 source venv/bin/activate
 
@@ -58,7 +58,7 @@ Minimum required parameters:
 - `TELEGRAM_BOT_TOKEN` — Get it from @BotFather
 - `TELEGRAM_CHANNEL_ID` — Your channel ID (starts with -100)
 
-## 4. Autostart Configuration (Systemd)
+## 4. Setting up Autostart (Systemd)
 Create two configuration files for the services. Replace `/opt/flash-monitor-kyiv` with your actual path.
 
 ### A) Dashboard Service (Web Interface)
@@ -98,7 +98,7 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-## 5. Activation & Verification
+## 5. Activation and Verification
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now flash-monitor.service flash-background.service
@@ -110,7 +110,7 @@ systemctl status flash-background.service
 
 ---
 
-## 🔑 Getting Admin Access
+## 🔑 Accessing the Admin Panel
 After the first launch, the system automatically generates access tokens.
 1. Find your `admin_token`:
    ```bash

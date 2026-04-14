@@ -14,9 +14,9 @@
 Ця інструкція призначена для встановлення стабільної Bare-Metal версії (гілка `classic`) безпосередньо на сервер під керуванням **Ubuntu 24.04 LTS** (або Debian 12) за допомогою **Systemd**.
 
 ## 📌 Версія та Стек
-- **Версія:** v3.2.2 (Classic)
+- **Версія:** v3.4.0 (Stable)
 - **Мова:** Python 3.12+
-- **Фреймворк:** Flask + Gunicorn (Synchronous Stack)
+- **Фреймворк:** FastAPI + Gunicorn (Uvicorn Workers)
 - **База даних:** JSON Flat-DB (File system)
 - **Керування процесами:** Systemd
 
