@@ -41,9 +41,9 @@
 Повністю автономний веб-інтерфейс у стилі **Glassmorphism** для керування всіма аспектами системи без необхідності редагування конфігураційних файлів через SSH.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
+  <img src="docs/assets/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
+  <img src="docs/assets/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
+  <img src="docs/assets/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
 </p>
 
 *   **Асинхронна швидкодія:** Новий асинхронний кеш (FastAPI) унеможливлює дедлоки та "зависання" при одночасному записі даних фоновими воркерами.

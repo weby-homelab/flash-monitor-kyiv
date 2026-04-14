@@ -39,9 +39,9 @@ For a complete history of updates, changes, and bug fixes, please refer to the [
 A fully autonomous Glassmorphism web interface to manage all aspects of the system without the need to edit configuration files via SSH.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
+  <img src="docs/assets/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
+  <img src="docs/assets/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
+  <img src="docs/assets/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
 </p>
 
 *   **Asynchronous Performance:** The new async caching mechanism (FastAPI) completely eliminates deadlocks when multiple background workers write data simultaneously.
@@ -60,9 +60,9 @@ A fully autonomous Glassmorphism web interface to manage all aspects of the syst
 A fully autonomous **Glassmorphism** web interface to manage all aspects of the system without the need to edit configuration files via SSH.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
-  <img src="https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
+  <img src="docs/assets/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
+  <img src="docs/assets/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
+  <img src="docs/assets/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
 </p>
 
 *   **Asynchronous Performance:** The new async caching mechanism (FastAPI) eliminates deadlocks and "freezes" during simultaneous data writes by background workers.
