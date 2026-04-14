@@ -145,31 +145,15 @@ flowchart LR
 
 ---
 
-## 📥 Встановлення (Docker Edition)
+## 📥 Встановлення
 
-### 1. Запуск
-```bash
-curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
-docker-compose up -d
-```
+Для отримання детальної покрокової інструкції з розгортання проєкту за допомогою Docker та Docker Compose, перейдіть за посиланням нижче:
 
-### 2. Керування
-| Дія | Команда |
-| :--- | :--- |
-| Переглянути логи | `docker-compose logs -f` |
-| Оновити систему | `docker-compose pull && docker-compose up -d` |
-| Перезапуск | `docker-compose restart` |
-
-🔑 **Отримання доступу до Адмінки:**
-```bash
-docker exec -it flash-monitor-kyiv cat data/power_monitor_state.json | grep admin_token
-```
-URL: `http://IP:5050/admin?t=ВАШ_ТОКЕН`
+📖 **[ПОВНА ІНСТРУКЦІЯ З ВСТАНОВЛЕННЯ (DOCKER EDITION)](docs/INSTRUCTIONS_INSTALL.md)**
 
 ---
 
-📖 **Документація:**
-* [🐳 Інструкція з встановлення Docker](docs/INSTRUCTIONS_INSTALL.md)
+📖 **Додаткова документація:**
 * [⚙️ Налаштування Telegram та IoT](docs/INSTRUCTIONS.md)
 * [📝 Історія змін (CHANGELOG.md)](docs/CHANGELOG.md)
 

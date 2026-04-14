@@ -145,32 +145,15 @@ flowchart LR
 
 ---
 
-## 📥 Installation (Docker Edition)
+## 📥 Installation
 
-### 1. Launch
-```bash
-curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
-docker-compose up -d
-```
+For a detailed step-by-step guide on deploying the project using Docker and Docker Compose, please follow the link below:
 
-### 2. Management
-| Action | Command |
-| :--- | :--- |
-| View Logs | `docker-compose logs -f` |
-| Update System | `docker-compose pull && docker-compose up -d` |
-| Restart | `docker-compose restart` |
-
-🔑 **Accessing Admin Panel:**
-After launch, retrieve your token:
-```bash
-docker exec -it flash-monitor-kyiv cat data/power_monitor_state.json | grep admin_token
-```
-URL: `http://IP:5050/admin?t=YOUR_TOKEN`
+📖 **[FULL INSTALLATION GUIDE (DOCKER EDITION)](docs/INSTRUCTIONS_INSTALL.md)**
 
 ---
 
-📖 **Documentation:**
-* [🐳 Docker Installation Guide](docs/INSTRUCTIONS_INSTALL.md)
+📖 **Additional Documentation:**
 * [⚙️ Telegram & IoT Setup](docs/INSTRUCTIONS.md)
 * [📝 Change History (CHANGELOG.md)](docs/CHANGELOG.md)
 
