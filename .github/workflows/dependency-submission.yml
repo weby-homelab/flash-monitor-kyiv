@@ -1,0 +1,23 @@
+name: Dependency Submission
+
+on:
+  push:
+    branches: [ "main", "classic" ]
+
+permissions:
+  contents: write
+
+jobs:
+  dependency-submission:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency Submission
+        uses: actions/dependency-submission-action@v1
+        with:
+          # This action will automatically detect the requirements.txt file
+          # and submit the dependency graph to GitHub.
+          # For Python projects, it uses the pip backend.
+          token: ${{ secrets.GITHUB_TOKEN }}
