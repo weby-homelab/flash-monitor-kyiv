@@ -24,32 +24,34 @@
 
 **Flash Monitor Kyiv** is a professional autonomous monitoring system for critical infrastructure and environmental safety. The project provides precision real-time electricity monitoring, intelligent outage schedule processing (DTEK/Yasno), air raid alert tracking, air quality (AQI), and radiation background levels.
 
-This branch (`main`) contains the **Docker Edition** of the project — a fully containerized version optimized for rapid, one-step deployment in any environment.
+This branch (`main`) contains the **Docker Edition** of the project — a fully containerized version, which is the industry standard for modern server deployments.
 
 > **Project Status:** Stable v3.4.0 (Docker Optimized)
-> **Architecture:** Asynchronous FastAPI + Docker Compose + JSON Flat-DB
+> **Architecture:** FastAPI + Docker Compose + JSON Flat-DB
 > **Brand:** Weby Homelab
 
 ---
 
 ## 🛠 Technology Stack (Docker Edition)
 - **Runtime:** Python 3.12 (slim-bookworm) inside a container.
-- **Web-Core:** FastAPI with WebSocket and SSE support.
-- **Containerization:** Docker Compose with automatic volume mounting for state preservation (`data/`).
-- **CI/CD:** Multi-arch builds (`amd64`/`arm64`) supporting Raspberry Pi and Cloud servers.
+- **Backend:** FastAPI (Async) for near-instant reaction to Push signals and SSE.
+- **Isolation:** Complete dependency isolation, preventing conflicts with host system packages.
+- **Persistence:** Docker Volumes ensure database (`data/`) and logs preservation.
 
 ---
 
 ## 🚀 Core Innovations & Algorithms
 
-...
+### 🎛 Admin Control Panel
+A fully autonomous **Glassmorphism** web interface to manage all system aspects without the need for SSH or direct configuration file editing.
+<p align="center">
   <img src="docs/assets/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
   <img src="docs/assets/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
   <img src="docs/assets/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
 </p>
 
 *   **Asynchronous Performance:** A new async caching mechanism eliminates deadlocks between the background worker and user requests.
-*   **Smart Backups:** Instant one-click system recovery with automatic service restarts.
+*   **Smart Backups:** Create manual and automatic restoration points.
 *   **Security (Zero-Trust):** Implements strict Path Traversal protection and secure path validation.
 
 ### 🤫 «Quiet Mode» (Information Calm)
@@ -64,72 +66,112 @@ A hybrid schedule processing system. If at least one source indicates an outage,
 
 ```mermaid
 flowchart LR
+    %% ================================================
+    %% NEW CONCEPT 2026 for README.md
+    %% "End-to-End Pipeline" — dynamic data flow
+    %% Horizontal pipeline with clear direction
+    %% Clean, modern, easy to read in GitHub (dark/light themes)
+    %% ================================================
+
     classDef external fill:#0f766e,stroke:#14b8a6,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef core fill:#1e293b,stroke:#22d3ee,stroke-width:3.5px,color:#fff,rx:14px,ry:14px
     classDef gateway fill:#7c3aed,stroke:#a78bfa,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef client fill:#1e293b,stroke:#60a5fa,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef db fill:#1e293b,stroke:#ec4899,stroke-width:3px,color:#fff,rx:12px,ry:12px
 
+    %% ====================== LEFT SIDE: DATA SOURCES ======================
     subgraph External ["🔌 Data Sources"]
         direction TB
         Energy["⚡ Yasno / DTEK API<br>Outage Schedules"]:::external
         Meteo["🌤️ OpenMeteo + SaveEcoBot<br>Weather & AQI"]:::external
     end
 
-    subgraph Docker ["🐳 Docker Container"]
+    %% ====================== CENTER: CORE PIPELINE ======================
+    subgraph Core ["⚙️ Flash Monitor Core<br>light_service.py + FastAPI"]
         direction TB
+
         Worker["🔄 Worker<br>flash-background.service"]:::core
-        API["🔌 FastAPI<br>flash-monitor.service"]:::core
-        Storage["💾 Storage<br>JSON Flat-DB"]:::db
+
+        subgraph Processing ["Processing & Logic"]
+            direction LR
+            Rules["🛡️ Rules Engine<br>False Always Wins • 30s Safety Net<br>Quiet Mode"]:::core
+            Reports["📊 Reports Generator<br>Matplotlib charts"]:::core
+            Storage["💾 Storage<br>JSON Flat-DB<br>config • state • logs • schedules"]:::db
+        end
+
+        API["🔌 FastAPI<br>flash-monitor.service<br>app.py"]:::core
+        TgClient["🤖 Telegram Client"]:::core
     end
 
-    subgraph Gateway ["🔐 Cloudflare Tunnel"]
-        CF["☁️ Cloudflare Tunnel<br>Reverse Proxy"]:::gateway
+    %% ====================== GATEWAY ======================
+    subgraph Gateway ["🔐 Cloudflare Tunnel<br>Zero Trust + Reverse Proxy"]
+        CF["☁️ Cloudflare Tunnel<br>port 5050"]:::gateway
     end
 
-    subgraph Clients ["👥 Clients"]
+    %% ====================== RIGHT SIDE: CLIENTS ======================
+    subgraph Clients ["👥 User Interfaces"]
         direction TB
         PWA["📱 PWA Dashboard"]:::client
         Admin["🛠️ Admin Panel"]:::client
-        Telegram["📨 Telegram Bot"]:::client
+        Telegram["📨 Telegram Channel<br>+ Push Notifications"]:::client
     end
 
-    Energy & Meteo --> Worker
-    Worker --> Storage
-    Worker <--> API
-    API --> CF
-    CF <--> PWA & Admin
-    Worker --> Telegram
+    %% ====================== DATA FLOW (Main Trunk) ======================
+    Energy & Meteo -->|Scraping + Fetch| Worker
+
+    Worker -->|Rules Check| Rules
+    Rules -->|Decision| Worker
+
+    Worker -->|Storage| Storage
+    Storage -->|Read State| Worker
+
+    Worker -->|Generation| Reports
+    Worker -->|Notifications| TgClient
+    Reports -->|Charts| TgClient
+
+    Worker <-->|REST + WebSocket| API
+
+    API -->|Reverse Proxy| CF
+    CF <-->|HTTPS + JWT / WSS| PWA
+    CF <-->|HTTPS + JWT| Admin
+    TgClient -->|Bot API| Telegram
+
+    %% Additional push notifications
+    API -.->|Web Push API| PWA
+
+    %% ====================== Subgraph Title Style ======================
+    classDef subgraphTitle fill:#0f172a,stroke:none,color:#64748b,font-size:15px
 ```
 
 ---
 
 ## 📥 Installation (Docker Edition)
 
-### 1. Download Configuration
+### 1. Launch
 ```bash
 curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
-```
-
-### 2. Start
-```bash
 docker-compose up -d
 ```
 
-### 3. Configuration
-Once running, open your browser at `http://localhost:5050`. The system will guide you through setting up `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHANNEL_ID` via the web UI (or you can pre-configure a `.env` file).
+### 2. Management
+| Action | Command |
+| :--- | :--- |
+| View Logs | `docker-compose logs -f` |
+| Update System | `docker-compose pull && docker-compose up -d` |
+| Restart | `docker-compose restart` |
 
-🔑 **Accessing the Admin Panel:**
+🔑 **Accessing Admin Panel:**
+After launch, retrieve your token:
 ```bash
 docker exec -it flash-monitor-kyiv cat data/power_monitor_state.json | grep admin_token
 ```
+URL: `http://IP:5050/admin?t=YOUR_TOKEN`
 
 ---
 
-💡 **Need maximum control?** Check out the [Bare-metal Edition (classic branch)](https://github.com/weby-homelab/flash-monitor-kyiv/tree/classic).
-
 📖 **Documentation:**
-* [Full Docker Guide](docs/INSTRUCTIONS_INSTALL_ENG.md)
+* [Detailed Setup Guide (Telegram/IoT)](docs/INSTRUCTIONS_ENG.md)
+* [Alternative Installation (Bare-metal)](docs/INSTRUCTIONS_INSTALL_ENG.md)
 * [Change History (CHANGELOG.md)](docs/CHANGELOG.md)
 
 ---

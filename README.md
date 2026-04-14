@@ -24,19 +24,19 @@
 
 **Flash Monitor Kyiv** — це професійна автономна система моніторингу критичної інфраструктури та екологічної безпеки. Проєкт забезпечує прецизійний моніторинг електропостачання в реальному часі, інтелектуальну обробку графіків відключень (DTEK/Yasno), відстеження повітряних тривог, якості повітря (AQI) та радіаційного фону.
 
-Ця гілка (`main`) містить **Docker Edition** проєкту — максимально ізольовану версію, оптимізовану для швидкого розгортання в будь-якому оточенні за один крок.
+Ця гілка (`main`) містить **Docker Edition** проєкту — повністю контейнеризовану версію, яка є стандартом для сучасних серверів.
 
 > **Статус проєкту:** Stable v3.4.0 (Docker Optimized)
-> **Архітектура:** Asynchronous FastAPI + Docker Compose + JSON Flat-DB
+> **Архітектура:** FastAPI + Docker Compose + JSON Flat-DB
 > **Бренд:** Weby Homelab
 
 ---
 
 ## 🛠 Технологічний стек (Docker Edition)
 - **Runtime:** Python 3.12 (slim-bookworm) у контейнері.
-- **Web-Core:** FastAPI з підтримкою WebSockets та SSE.
-- **Containerization:** Docker Compose з автоматичним монтуванням volume для збереження стану (`data/`).
-- **CI/CD:** Multi-arch збірки (`amd64`/`arm64`) для підтримки Raspberry Pi та Cloud-серверів.
+- **Backend:** FastAPI (Async) для миттєвої реакції на Push-сигнали та SSE.
+- **Isolation:** Повна ізоляція залежностей, що унеможливлює конфлікти з системними пакетами.
+- **Persistence:** Використання Docker Volumes для збереження бази даних (`data/`) та логів.
 
 ---
 
@@ -50,8 +50,8 @@
   <img src="docs/assets/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
 </p>
 
-*   **Асинхронна швидкодія:** Новий асинхронний кеш унеможливлює дедлоки при одночасній роботі воркера та користувача.
-*   **Інтелектуальні бекапи:** Миттєве відновлення системи в один клік з автоматичним рестартом внутрішніх служб.
+*   **Асинхронна швидкодія:** Новий асинхронний кеш унеможливлює дедлоки при одночасному записі даних фоновими воркерами та зверненнях користувачів.
+*   **Інтелектуальні бекапи:** Створення ручних та автоматичних точок відновлення конфігурації.
 *   **Безпека (Zero-Trust):** Усунуто LFI (Path Traversal) вразливості, забезпечено строгу перевірку шляхів.
 
 ### 🤫 Режим «Інформаційний спокій» (Quiet Mode)
@@ -66,72 +66,111 @@
 
 ```mermaid
 flowchart LR
+    %% ================================================
+    %% НОВА КОНЦЕПЦІЯ 2026 для README.md
+    %% "End-to-End Pipeline" — динамічний потік даних
+    %% Замість шарів — горизонтальний pipeline з чітким напрямком руху
+    %% Ідеально виглядає в GitHub (темна/світла тема), чистий, сучасний, легко читається
+    %% ================================================
+
     classDef external fill:#0f766e,stroke:#14b8a6,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef core fill:#1e293b,stroke:#22d3ee,stroke-width:3.5px,color:#fff,rx:14px,ry:14px
     classDef gateway fill:#7c3aed,stroke:#a78bfa,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef client fill:#1e293b,stroke:#60a5fa,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef db fill:#1e293b,stroke:#ec4899,stroke-width:3px,color:#fff,rx:12px,ry:12px
 
+    %% ====================== ЛІВА ЧАСТИНА: ДЖЕРЕЛА ДАНИХ ======================
     subgraph External ["🔌 Джерела даних"]
         direction TB
         Energy["⚡ Yasno / DTEK API<br>Розклади відключень"]:::external
         Meteo["🌤️ OpenMeteo + SaveEcoBot<br>Погода та AQI"]:::external
     end
 
-    subgraph Docker ["🐳 Docker Container"]
+    %% ====================== ЦЕНТР: CORE PIPELINE ======================
+    subgraph Core ["⚙️ Flash Monitor Core<br>light_service.py + FastAPI"]
         direction TB
+
         Worker["🔄 Worker<br>flash-background.service"]:::core
-        API["🔌 FastAPI<br>flash-monitor.service"]:::core
-        Storage["💾 Storage<br>JSON Flat-DB"]:::db
+
+        subgraph Processing ["Обробка та логіка"]
+            direction LR
+            Rules["🛡️ Rules Engine<br>False Always Wins • 30s Safety Net<br>Quiet Mode"]:::core
+            Reports["📊 Reports Generator<br>Matplotlib charts"]:::core
+            Storage["💾 Storage<br>JSON Flat-DB<br>config • state • logs • schedules"]:::db
+        end
+
+        API["🔌 FastAPI<br>flash-monitor.service<br>app.py"]:::core
+        TgClient["🤖 Telegram Client"]:::core
     end
 
-    subgraph Gateway ["🔐 Cloudflare Tunnel"]
-        CF["☁️ Cloudflare Tunnel<br>Reverse Proxy"]:::gateway
+    %% ====================== ШЛЮЗ ======================
+    subgraph Gateway ["🔐 Cloudflare Tunnel<br>Zero Trust + Reverse Proxy"]
+        CF["☁️ Cloudflare Tunnel<br>порт 5050"]:::gateway
     end
 
-    subgraph Clients ["👥 Клієнти"]
+    %% ====================== ПРАВА ЧАСТИНА: КЛІЄНТИ ======================
+    subgraph Clients ["👥 Інтерфейси користувачів"]
         direction TB
         PWA["📱 PWA Dashboard"]:::client
         Admin["🛠️ Admin Panel"]:::client
-        Telegram["📨 Telegram Bot"]:::client
+        Telegram["📨 Telegram Channel<br>+ Push Notifications"]:::client
     end
 
-    Energy & Meteo --> Worker
-    Worker --> Storage
-    Worker <--> API
-    API --> CF
-    CF <--> PWA & Admin
-    Worker --> Telegram
+    %% ====================== ПОТІК ДАНИХ (головна магістраль) ======================
+    Energy & Meteo -->|Скрэйпінг + Fetch| Worker
+
+    Worker -->|Перевірка правил| Rules
+    Rules -->|Рішення| Worker
+
+    Worker -->|Збереження| Storage
+    Storage -->|Читання стану| Worker
+
+    Worker -->|Генерація| Reports
+    Worker -->|Сповіщення| TgClient
+    Reports -->|Графіки| TgClient
+
+    Worker <-->|REST + WebSocket| API
+
+    API -->|Reverse Proxy| CF
+    CF <-->|HTTPS + JWT / WSS| PWA
+    CF <-->|HTTPS + JWT| Admin
+    TgClient -->|Bot API| Telegram
+
+    %% Додаткові push-сповіщення
+    API -.->|Web Push API| PWA
+
+    %% ====================== Стиль для заголовків підграфів ======================
+    classDef subgraphTitle fill:#0f172a,stroke:none,color:#64748b,font-size:15px
 ```
 
 ---
 
 ## 📥 Встановлення (Docker Edition)
 
-### 1. Завантаження конфігурації
+### 1. Запуск
 ```bash
 curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
-```
-
-### 2. Запуск
-```bash
 docker-compose up -d
 ```
 
-### 3. Конфігурація
-Після запуску відкрийте браузер: `http://localhost:5050`. Система попросить налаштувати `TELEGRAM_BOT_TOKEN` та `TELEGRAM_CHANNEL_ID` через веб-інтерфейс (або ви можете створити `.env` файл заздалегідь).
+### 2. Керування
+| Дія | Команда |
+| :--- | :--- |
+| Переглянути логи | `docker-compose logs -f` |
+| Оновити систему | `docker-compose pull && docker-compose up -d` |
+| Перезапуск | `docker-compose restart` |
 
-🔑 **Отримання доступу:**
+🔑 **Отримання доступу до Адмінки:**
 ```bash
 docker exec -it flash-monitor-kyiv cat data/power_monitor_state.json | grep admin_token
 ```
+URL: `http://IP:5050/admin?t=ВАШ_ТОКЕН`
 
 ---
 
-💡 **Потрібен максимальний контроль?** Використовуйте [Bare-metal версію (гілка classic)](https://github.com/weby-homelab/flash-monitor-kyiv/tree/classic).
-
 📖 **Документація:**
-* [Повна інструкція встановлення Docker](docs/INSTRUCTIONS_INSTALL.md)
+* [Детальна інструкція з налаштування (Telegram/IoT)](docs/INSTRUCTIONS.md)
+* [Альтернативне встановлення (Bare-metal)](docs/INSTRUCTIONS_INSTALL.md)
 * [Історія змін (CHANGELOG.md)](docs/CHANGELOG.md)
 
 ---
