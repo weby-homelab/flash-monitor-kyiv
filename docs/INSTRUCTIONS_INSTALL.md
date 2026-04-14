@@ -9,115 +9,92 @@
 
 <br>
 
-# 🛠 Інструкція зі встановлення Flash Monitor Kyiv (Bare-Metal Edition) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
+# 🐳 Інструкція з встановлення Flash Monitor Kyiv (Docker Edition) [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/flash-monitor-kyiv)](https://github.com/weby-homelab/flash-monitor-kyiv/releases/latest)
 
-Ця інструкція призначена для встановлення стабільної Bare-Metal версії (гілка `classic`) безпосередньо на сервер під керуванням **Ubuntu 24.04 LTS** (або Debian 12) за допомогою **Systemd**.
-
-## 📌 Версія та Стек
-- **Версія:** v3.2.2 (Classic)
-- **Мова:** Python 3.12+
-- **Фреймворк:** Flask + Gunicorn (Synchronous Stack)
-- **База даних:** JSON Flat-DB (File system)
-- **Керування процесами:** Systemd
+Ця інструкція призначена для швидкого розгортання системи за допомогою **Docker** та **Docker Compose**. Це рекомендований спосіб встановлення, оскільки він забезпечує повну ізоляцію залежностей та простоту оновлення.
 
 ---
 
-## 1. Підготовка сервера
-Переконайтеся, що ваш сервер оновлений та має встановлений Python 3.12:
+## 📌 Вимоги
+- **Docker** 24.0.0+
+- **Docker Compose** v2.20.0+
+- ОС: Linux (Ubuntu, Debian), macOS або Windows (WSL2).
+
+---
+
+## 1. Швидкий старт (за один крок)
+
+Якщо вам потрібна стандартна конфігурація, просто завантажте файл та запустіть його:
+
 ```bash
-sudo apt-get update && sudo apt-get upgrade -y
-sudo apt-get install -y python3.12 python3.12-venv python3-pip git nano
+# 1. Завантажте docker-compose.yml
+curl -O https://raw.githubusercontent.com/weby-homelab/flash-monitor-kyiv/main/docker-compose.yml
+
+# 2. Запустіть систему в фоновому режимі
+docker-compose up -d
 ```
 
-## 2. Клонування та встановлення
+---
+
+## 2. Налаштування середовища (`.env`)
+
+Хоча систему можна налаштувати через веб-інтерфейс після старту, рекомендується створити файл `.env` для збереження конфіденційних даних:
+
 ```bash
-# Перейдіть у папку, де буде жити проект (напр. /opt або /root)
-cd /opt
-git clone https://github.com/weby-homelab/flash-monitor-kyiv.git
-cd flash-monitor-kyiv
-
-# ВАЖЛИВО: Перейдіть на гілку classic
-git checkout classic
-
-# Створення та активація віртуального середовища
-python3.12 -m venv venv
-source venv/bin/activate
-
-# Встановлення залежностей
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-## 3. Конфігурація середовища
-Створіть файл `.env` на основі прикладу:
-```bash
-cp .env.example .env
+# Створіть файл .env
 nano .env
 ```
-Мінімально необхідні параметри:
-- `TELEGRAM_BOT_TOKEN` — Отримайте у @BotFather
-- `TELEGRAM_CHANNEL_ID` — ID вашого каналу (починається з -100)
 
-## 4. Налаштування автозапуску (Systemd)
-Створіть два конфігураційні файли для служб. Замініть `/opt/flash-monitor-kyiv` на ваш фактичний шлях.
-
-### А) Служба Dashboard (Веб-інтерфейс)
-Створіть файл `/etc/systemd/system/flash-monitor.service`:
-```ini
-[Unit]
-Description=Flash Monitor Kyiv Dashboard
-After=network.target
-
-[Service]
-User=root
-WorkingDirectory=/opt/flash-monitor-kyiv
-EnvironmentFile=/opt/flash-monitor-kyiv/.env
-ExecStart=/opt/flash-monitor-kyiv/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker --workers 4 -b 0.0.0.0:5050 app.main:app
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
+Впишіть туди наступне:
+```env
+TELEGRAM_BOT_TOKEN=123456789:ABCDefgh...
+TELEGRAM_CHANNEL_ID=-100123456789
 ```
 
-### Б) Служба Background (Фонові процеси)
-Створіть файл `/etc/systemd/system/flash-background.service`:
-```ini
-[Unit]
-Description=Flash Monitor Kyiv Background Services
-After=network.target
-
-[Service]
-User=root
-WorkingDirectory=/opt/flash-monitor-kyiv
-EnvironmentFile=/opt/flash-monitor-kyiv/.env
-ExecStart=/opt/flash-monitor-kyiv/venv/bin/python -m app.run_background
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-## 5. Активація та Перевірка
+Після створення файлу перезапустіть контейнери:
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now flash-monitor.service flash-background.service
-
-# Перевірка статусів
-systemctl status flash-monitor.service
-systemctl status flash-background.service
+docker-compose up -d
 ```
+
+---
+
+## 3. Керування системою
+
+| Завдання | Команда |
+| :--- | :--- |
+| **Переглянути логи** | `docker-compose logs -f` |
+| **Оновити до останньої версії** | `docker-compose pull && docker-compose up -d` |
+| **Зупинити систему** | `docker-compose down` |
+| **Перезапустити** | `docker-compose restart` |
 
 ---
 
 ## 🔑 Отримання доступу до Адмінки
-Після першого запуску система автоматично згенерує токени доступу.
-1. Дізнайтеся ваш `admin_token`:
-   ```bash
-   cat data/power_monitor_state.json | grep admin_token
-   ```
-2. Відкрийте адмінку в браузері:
-   `http://IP_ВАШОГО_СЕРВЕРА:5050/admin?t=ВАШ_ТОКЕН`
+
+Після першого запуску система автоматично генерує токен доступу. Його потрібно витягти зсередини контейнера:
+
+```bash
+docker exec -it flash-monitor-kyiv cat data/power_monitor_state.json | grep admin_token
+```
+
+Тепер відкрийте браузер:
+`http://IP_СЕРВЕРА:5050/admin?t=ВАШ_ТОКЕН`
 
 ---
-✦ 2026 Weby Homelab ✦ — інфраструктура, що працює в будь-яких умовах.
+
+## 💾 Збереження даних (Persistence)
+
+За замовчуванням `docker-compose.yml` створює volume для папки `data/`. Це означає, що ваші налаштування, історія відключень та бекапи **не зникнуть** при видаленні або оновленні контейнера.
+
+Файли бази даних на хост-системі (якщо ви використовуєте bind mount) зазвичай знаходяться в папці проекту за шляхом `./data`.
+
+---
+
+## 🆘 Пошук несправностей
+
+1. **Контейнер не стартує:** Перевірте, чи не зайнятий порт 5050 іншим сервісом (`netstat -tulpn | grep 5050`).
+2. **Помилки в логах:** Виконайте `docker-compose logs flash-monitor-worker`, щоб побачити помилки парсингу або підключення до Telegram.
+3. **Версія образу:** Переконайтеся, що ви використовуєте тег `latest` або конкретну версію (напр. `v3.4.0`).
+
+---
+✦ 2026 Weby Homelab ✦ — сучасні рішення для енергетичної безпеки.
