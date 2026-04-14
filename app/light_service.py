@@ -678,25 +678,28 @@ def get_schedule_context():
         return (None, None, "Помилка", None, False)
 
 def send_telegram(message):
-    if not TOKEN or not CHAT_ID:
+    token = get_telegram_token()
+    chat_id = get_admin_chat_id() if "PYTEST_CURRENT_TEST" in os.environ else get_telegram_channel_id_cfg()
+    if not token or not chat_id:
         print("Telegram configuration missing (TOKEN or CHAT_ID)")
         return
-    token_masked = TOKEN[:5] + "..." + TOKEN[-5:]
-    print(f"DEBUG: Sending telegram message to {CHAT_ID} via bot {token_masked}")
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"}
+    token_masked = token[:5] + "..." + token[-5:]
+    print(f"DEBUG: Sending telegram message to {chat_id} via bot {token_masked}")
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {"chat_id": chat_id, "text": message, "parse_mode": "HTML"}
     try:
         r = requests.post(url, json=payload, timeout=5)
         if r.status_code != 200:
-            err_msg = r.text.replace(TOKEN, "[REDACTED_TOKEN]")
+            err_msg = r.text.replace(token, "[REDACTED_TOKEN]")
             print(f"Telegram API Error (Status {r.status_code}): {err_msg}")
     except Exception as e:
-        err_str = str(e).replace(TOKEN, "[REDACTED_TOKEN]")
+        err_str = str(e).replace(token, "[REDACTED_TOKEN]")
         print(f"Failed to send Telegram message: {err_str}")
 
 def send_admin_confirmation(timestamp):
+    token = get_telegram_token()
     msg = "⚠️ Зафіксовано втрату зв'язку! Режим 'Інформаційний спокій' активний. Це вимкнення світла чи збій обладнання?"
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
         "chat_id": get_admin_chat_id(),
         "text": msg,
@@ -712,8 +715,9 @@ def send_admin_confirmation(timestamp):
         print(f"Failed to send admin confirmation: {e}")
 
 def send_safety_net_admin(timestamp):
+    token = get_telegram_token()
     msg = "🚨 <b>SAFETY NET: ВТРАТА ПУША!</b>\n\nВже 35 сек немає зв'язку. Що сталося?"
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = {
         "chat_id": get_admin_chat_id(),
         "text": msg,
@@ -1000,7 +1004,7 @@ async def sync_schedules():
     if not sync_success:
         print("Starting local schedule parsing...")
         start_time = time.time()
-        config_path = os.path.join(os.path.dirname(__file__), "config.json")
+        config_path = os.path.join(DATA_DIR, "config.json")
         result = await update_local_schedules(config_path, SCHEDULE_FILE)
         
         try:

@@ -10,7 +10,12 @@ tzdata==2024.1
 pytest==9.0.3
 fastapi==0.135.3
 starlette==1.0.0
-uvicorn[standard]==0.34.0
+uvicorn==0.34.0
+httptools==0.7.1
+uvloop==0.22.1
+watchfiles==1.1.1
+websockets==16.0
+PyYAML==6.0.3
 structlog==24.1.0
 aiofiles==23.2.1
 jinja2==3.1.6

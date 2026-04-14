@@ -350,7 +350,7 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
         plt.subplots_adjust(bottom=0.35)
         
         suffix = "_light" if theme == 'light' else ""
-        filename = f"report_{target_date.strftime('%Y-%m-%d')}{suffix}.png"
+        filename = os.path.join(DATA_DIR, f"report_{target_date.strftime('%Y-%m-%d')}{suffix}.png")
         plt.savefig(filename, dpi=100, facecolor=fig.get_facecolor())
         plt.close()
         
