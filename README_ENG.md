@@ -74,43 +74,85 @@ A modern **Glassmorphism** interface optimized for mobile devices:
 
 ---
 
-## 🏗️ System Architecture (Docker Pipeline)
+## 🏗️ System Architecture
 
 ```mermaid
 flowchart LR
+    %% ================================================
+    %% NEW CONCEPT 2026 for README.md
+    %% "End-to-End Pipeline" — dynamic data flow
+    %% Horizontal pipeline with clear direction
+    %% Clean, modern, easy to read in GitHub (dark/light themes)
+    %% ================================================
+
     classDef external fill:#0f766e,stroke:#14b8a6,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef core fill:#1e293b,stroke:#22d3ee,stroke-width:3.5px,color:#fff,rx:14px,ry:14px
     classDef gateway fill:#7c3aed,stroke:#a78bfa,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef client fill:#1e293b,stroke:#60a5fa,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef db fill:#1e293b,stroke:#ec4899,stroke-width:3px,color:#fff,rx:12px,ry:12px
 
+    %% ====================== LEFT SIDE: DATA SOURCES ======================
     subgraph External ["🔌 Data Sources"]
         direction TB
-        Energy["⚡ Yasno / DTEK API"]:::external
-        Meteo["🌤️ OpenMeteo + SaveEcoBot"]:::external
+        Energy["⚡ Yasno / DTEK API<br>Outage Schedules"]:::external
+        Meteo["🌤️ OpenMeteo + SaveEcoBot<br>Weather & AQI"]:::external
     end
 
-    subgraph Docker ["🐳 Docker Container"]
+    %% ====================== CENTER: CORE PIPELINE ======================
+    subgraph Core ["⚙️ Flash Monitor Core<br>light_service.py + FastAPI"]
         direction TB
-        Worker["🔄 Worker Process"]:::core
-        API["🔌 FastAPI Service"]:::core
-        Storage["💾 Volume: /app/data"]:::db
+
+        Worker["🔄 Worker<br>flash-background.service"]:::core
+
+        subgraph Processing ["Processing & Logic"]
+            direction LR
+            Rules["🛡️ Rules Engine<br>False Always Wins • 30s Safety Net<br>Quiet Mode"]:::core
+            Reports["📊 Reports Generator<br>Matplotlib charts"]:::core
+            Storage["💾 Storage<br>JSON Flat-DB<br>config • state • logs • schedules"]:::db
+        end
+
+        API["🔌 FastAPI<br>flash-monitor.service<br>app.py"]:::core
+        TgClient["🤖 Telegram Client"]:::core
     end
 
-    subgraph Gateway ["🔐 Cloudflare Tunnel"]
-        CF["☁️ Reverse Proxy"]:::gateway
+    %% ====================== GATEWAY ======================
+    subgraph Gateway ["🔐 Cloudflare Tunnel<br>Zero Trust + Reverse Proxy"]
+        CF["☁️ Cloudflare Tunnel<br>port 5050"]:::gateway
     end
 
+    %% ====================== RIGHT SIDE: CLIENTS ======================
     subgraph Clients ["👥 User Interfaces"]
         direction TB
         PWA["📱 PWA Dashboard"]:::client
         Admin["🛠️ Admin Panel"]:::client
-        Telegram["📨 Telegram Bot"]:::client
+        Telegram["📨 Telegram Channel<br>+ Push Notifications"]:::client
     end
 
-    External --> Docker
-    Docker <--> Gateway
-    Gateway <--> Clients
+    %% ====================== DATA FLOW (Main Trunk) ======================
+    Energy & Meteo -->|Scraping + Fetch| Worker
+
+    Worker -->|Rules Check| Rules
+    Rules -->|Decision| Worker
+
+    Worker -->|Storage| Storage
+    Storage -->|Read State| Worker
+
+    Worker -->|Generation| Reports
+    Worker -->|Notifications| TgClient
+    Reports -->|Charts| TgClient
+
+    Worker <-->|REST + WebSocket| API
+
+    API -->|Reverse Proxy| CF
+    CF <-->|HTTPS + JWT / WSS| PWA
+    CF <-->|HTTPS + JWT| Admin
+    TgClient -->|Bot API| Telegram
+
+    %% Additional push notifications
+    API -.->|Web Push API| PWA
+
+    %% ====================== Subgraph Title Style ======================
+    classDef subgraphTitle fill:#0f172a,stroke:none,color:#64748b,font-size:15px
 ```
 
 ---
