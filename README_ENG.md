@@ -44,14 +44,16 @@ This branch (`classic`) contains the **Bare-metal Edition** of the project, desi
 
 ## 🚀 Core Innovations & Algorithms
 
-...
+### 🎛 Admin Control Panel
+A fully autonomous **Glassmorphism** web interface to manage all system aspects without the need for SSH or direct configuration file editing.
+<p align="center">
   <img src="docs/assets/Admin-control-panel-1.png" alt="Admin Panel 1" width="32%">
   <img src="docs/assets/Admin-control-panel-2.png" alt="Admin Panel 2" width="32%">
   <img src="docs/assets/Admin-control-panel-3.png" alt="Admin Panel 3" width="32%">
 </p>
 
 *   **Asynchronous Performance:** A new async caching mechanism eliminates deadlocks between the background worker and user requests.
-*   **Smart Backups:** Instant one-click system recovery with automatic system service restarts.
+*   **Smart Backups:** Create manual and automatic restoration points.
 *   **Security (Zero-Trust):** Implements strict Path Traversal protection and secure path validation.
 
 ### 🤫 «Quiet Mode» (Information Calm)
@@ -66,55 +68,94 @@ A hybrid schedule processing system. If at least one source indicates an outage,
 
 ```mermaid
 flowchart LR
+    %% ================================================
+    %% NEW CONCEPT 2026 for README.md
+    %% "End-to-End Pipeline" — dynamic data flow
+    %% Horizontal pipeline with clear direction
+    %% Clean, modern, easy to read in GitHub (dark/light themes)
+    %% ================================================
+
     classDef external fill:#0f766e,stroke:#14b8a6,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef core fill:#1e293b,stroke:#22d3ee,stroke-width:3.5px,color:#fff,rx:14px,ry:14px
     classDef gateway fill:#7c3aed,stroke:#a78bfa,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef client fill:#1e293b,stroke:#60a5fa,stroke-width:3px,color:#fff,rx:16px,ry:16px
     classDef db fill:#1e293b,stroke:#ec4899,stroke-width:3px,color:#fff,rx:12px,ry:12px
 
+    %% ====================== LEFT SIDE: DATA SOURCES ======================
     subgraph External ["🔌 Data Sources"]
         direction TB
         Energy["⚡ Yasno / DTEK API<br>Outage Schedules"]:::external
         Meteo["🌤️ OpenMeteo + SaveEcoBot<br>Weather & AQI"]:::external
     end
 
+    %% ====================== CENTER: CORE PIPELINE ======================
     subgraph Core ["⚙️ Flash Monitor Core<br>light_service.py + FastAPI"]
         direction TB
+
         Worker["🔄 Worker<br>flash-background.service"]:::core
-        API["🔌 FastAPI<br>flash-monitor.service"]:::core
-        Storage["💾 Storage<br>JSON Flat-DB"]:::db
+
+        subgraph Processing ["Processing & Logic"]
+            direction LR
+            Rules["🛡️ Rules Engine<br>False Always Wins • 30s Safety Net<br>Quiet Mode"]:::core
+            Reports["📊 Reports Generator<br>Matplotlib charts"]:::core
+            Storage["💾 Storage<br>JSON Flat-DB<br>config • state • logs • schedules"]:::db
+        end
+
+        API["🔌 FastAPI<br>flash-monitor.service<br>app.py"]:::core
+        TgClient["🤖 Telegram Client"]:::core
     end
 
-    subgraph Gateway ["🔐 Cloudflare Tunnel"]
-        CF["☁️ Cloudflare Tunnel<br>Reverse Proxy"]:::gateway
+    %% ====================== GATEWAY ======================
+    subgraph Gateway ["🔐 Cloudflare Tunnel<br>Zero Trust + Reverse Proxy"]
+        CF["☁️ Cloudflare Tunnel<br>port 5050"]:::gateway
     end
 
-    subgraph Clients ["👥 Clients"]
+    %% ====================== RIGHT SIDE: CLIENTS ======================
+    subgraph Clients ["👥 User Interfaces"]
         direction TB
         PWA["📱 PWA Dashboard"]:::client
         Admin["🛠️ Admin Panel"]:::client
-        Telegram["📨 Telegram Bot"]:::client
+        Telegram["📨 Telegram Channel<br>+ Push Notifications"]:::client
     end
 
-    Energy & Meteo --> Worker
-    Worker --> Storage
-    Worker <--> API
-    API --> CF
-    CF <--> PWA & Admin
-    Worker --> Telegram
+    %% ====================== DATA FLOW (Main Trunk) ======================
+    Energy & Meteo -->|Scraping + Fetch| Worker
+
+    Worker -->|Rules Check| Rules
+    Rules -->|Decision| Worker
+
+    Worker -->|Storage| Storage
+    Storage -->|Read State| Worker
+
+    Worker -->|Generation| Reports
+    Worker -->|Notifications| TgClient
+    Reports -->|Charts| TgClient
+
+    Worker <-->|REST + WebSocket| API
+
+    API -->|Reverse Proxy| CF
+    CF <-->|HTTPS + JWT / WSS| PWA
+    CF <-->|HTTPS + JWT| Admin
+    TgClient -->|Bot API| Telegram
+
+    %% Additional push notifications
+    API -.->|Web Push API| PWA
+
+    %% ====================== Subgraph Title Style ======================
+    classDef subgraphTitle fill:#0f172a,stroke:none,color:#64748b,font-size:15px
 ```
 
 ---
 
 ## 📥 Installation (Bare-metal Edition)
 
-### 1. System Preparation
+### 1. Server Preparation
 ```bash
 sudo apt-get update && sudo apt-get upgrade -y
 sudo apt-get install -y python3.12 python3.12-venv python3-pip git nano
 ```
 
-### 2. Clone and Setup Environment
+### 2. Cloning and Installation
 ```bash
 git clone https://github.com/weby-homelab/flash-monitor-kyiv.git
 cd flash-monitor-kyiv
@@ -127,7 +168,7 @@ pip install -r requirements.txt
 ```
 
 ### 3. Configuration
-Create `.env` and provide your tokens:
+Create `.env` file and provide your tokens:
 ```bash
 cp .env.example .env
 nano .env
@@ -136,13 +177,19 @@ nano .env
 ### 4. Systemd Setup (Unit Files)
 Create `/etc/systemd/system/flash-monitor.service` (Dashboard):
 ```ini
+[Unit]
+Description=Flash Monitor Kyiv Dashboard
+After=network.target
+
 [Service]
-ExecStart=/path/to/project/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker --workers 4 -b 0.0.0.0:5050 app.main:app
-```
-Create `/etc/systemd/system/flash-background.service` (Worker):
-```ini
-[Service]
-ExecStart=/path/to/project/venv/bin/python -m app.run_background
+User=root
+WorkingDirectory=/opt/flash-monitor-kyiv
+EnvironmentFile=/opt/flash-monitor-kyiv/.env
+ExecStart=/opt/flash-monitor-kyiv/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker --workers 4 -b 0.0.0.0:5050 app.main:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
 ```
 
 ### 5. Activation
@@ -152,11 +199,19 @@ sudo systemctl enable --now flash-monitor.service flash-background.service
 ```
 
 🔑 **Accessing the Admin Panel:**
-After startup, retrieve the token:
+After launch, retrieve the token:
 ```bash
 cat data/power_monitor_state.json | grep admin_token
 ```
-URL: `http://IP:5050/admin?t=YOUR_TOKEN`
+URL: `http://YOUR_SERVER_IP:5050/admin?t=YOUR_TOKEN`
+
+---
+
+📖 **Documentation:**
+* [🛠 Bare-metal Installation Guide](docs/INSTRUCTIONS_INSTALL.md)
+* [⚙️ Telegram & IoT Setup](docs/INSTRUCTIONS.md)
+* [🐳 Alternative: Docker (main branch)](https://github.com/weby-homelab/flash-monitor-kyiv/tree/main)
+* [📝 Change History (CHANGELOG.md)](docs/CHANGELOG.md)
 
 ---
 **✦ 2026 Weby Homelab ✦**
