@@ -5,6 +5,10 @@ on:
     branches: [ "main" ]
     tags: [ "v*.*.*" ]
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
