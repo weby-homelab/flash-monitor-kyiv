@@ -24,7 +24,7 @@
 
 **Flash Monitor Kyiv** is a professional autonomous monitoring system for critical infrastructure and environmental safety. The project provides precision real-time electricity monitoring, intelligent outage schedule processing (DTEK/Yasno), air raid alert tracking, air quality (AQI), and radiation background levels.
 
-This branch (`classic`) contains the **Bare-metal Edition** of the project, designed for direct deployment on a server running **Ubuntu 24.04 LTS** (or Debian 12) using **systemd** services.
+This branch (`classic`) contains the **Bare-Metal Edition** of the project, designed for direct deployment on a server running Ubuntu (or Debian) using `systemd` services, without Docker.
 
 > **Project Status:** Stable v3.4.0 (Bare-metal Optimized)
 > **Architecture:** FastAPI + Gunicorn (Uvicorn Workers) + Background Services + Systemd
@@ -63,6 +63,18 @@ A unique algorithm that minimizes "information noise." The system automatically 
 A hybrid schedule processing system. If at least one source indicates an outage, the system prioritizes it. Historical records are never overwritten by "clean" plans.
 
 ---
+
+
+### 📱 Real Message Examples (Telegram)
+- 📊 **[Daily "Plan vs Fact" Chart (Smart Daily Report)](https://t.me/svitlobot_Symyrenka22B/1230)**
+- 📈 **[Weekly outage analytics](https://t.me/svitlobot_Symyrenka22B/1192)**
+- 🔴 **[Outage notification with schedule accuracy](https://t.me/svitlobot_Symyrenka22B/1209)**
+- 🟢 **[Restoration notification with schedule accuracy](https://t.me/svitlobot_Symyrenka22B/1212)**
+- ⚠️ **[Instant alert about DTEK schedule change](https://t.me/svitlobot_Symyrenka22B/1222)**
+- 📈 **[Publication of DTEK and YASNO schedules](https://t.me/svitlobot_Symyrenka22B/1219)**
+- 🚨 **[Air raid alert in Kyiv](https://t.me/svitlobot_Symyrenka22B/1196)**
+- ✅ **[Air raid all-clear notification](https://t.me/svitlobot_Symyrenka22B/1197)**
+
 
 ## 🏗️ System Architecture
 
