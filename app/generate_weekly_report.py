@@ -273,6 +273,11 @@ def generate_weekly_chart(end_date, daily_data, theme='dark'):
 
             # --- 3. Draw Alert Data (Bottom-most Strip) ---
             alert_on_color = '#ef4444' # Red for alerts
+            alert_off_color = '#334155' if theme == 'dark' else '#cbd5e1'
+            x_start_num = mdates.date2num(datetime.datetime.combine(dummy_date, datetime.time.min))
+            x_end_num = mdates.date2num(datetime.datetime.combine(dummy_date, datetime.time.max))
+            ax.broken_barh([(x_start_num, x_end_num - x_start_num)], (y_pos - 0.54, 0.36), facecolors=alert_off_color, edgecolor='none')
+            
             alert_intervals = get_alert_intervals(day_date)
             for start, end, is_alert in alert_intervals:
                 if is_alert:
@@ -317,14 +322,16 @@ def generate_weekly_chart(end_date, daily_data, theme='dark'):
         red_patch = mpatches.Patch(color=fact_off_color, label='Світла немає')
         yellow_patch = mpatches.Patch(color=plan_on_color, label='Графік: Є')
         gray_patch = mpatches.Patch(color=plan_off_color, label='Графік: Немає')
-        
-        legend = plt.legend(handles=[green_patch, red_patch, yellow_patch, gray_patch], 
+        alert_patch = mpatches.Patch(color='#ef4444', label='Тривога')
+        alert_off_patch = mpatches.Patch(color=('#334155' if theme == 'dark' else '#cbd5e1'), label='Немає тривог')
+
+        legend = plt.legend(handles=[green_patch, red_patch, yellow_patch, gray_patch, alert_patch, alert_off_patch],
                    loc='upper center', bbox_to_anchor=(0.5, -0.1),
-                   fancybox=False, frameon=False, shadow=False, ncol=4)
+                   fancybox=False, frameon=False, shadow=False, ncol=3, fontsize='small')
         plt.setp(legend.get_texts(), color=text_color)
         
         plt.tight_layout()
-        plt.subplots_adjust(bottom=0.15)
+        plt.subplots_adjust(bottom=0.22)
         
         suffix = "_light" if theme == 'light' else ""
         filename = os.path.join(DATA_DIR, f"weekly_report_{end_date.strftime('%Y-%m-%d')}{suffix}.png")
