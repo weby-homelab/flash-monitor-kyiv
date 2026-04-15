@@ -36,6 +36,48 @@ if "PYTEST_CURRENT_TEST" in os.environ:
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 
+
+def get_alert_intervals(target_date):
+    import os, json, datetime
+    from zoneinfo import ZoneInfo
+    log_file = "data/air_raid_log.json"
+    if not os.path.exists(log_file):
+        return []
+    try:
+        with open(log_file, "r") as f:
+            data = json.load(f)
+    except Exception:
+        return []
+    
+    intervals = []
+    current_start = None
+    KYIV_TZ = ZoneInfo("Europe/Kyiv")
+    day_start = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
+    day_end = datetime.datetime.combine(target_date, datetime.time.max).replace(tzinfo=KYIV_TZ)
+    
+    for event in data:
+        dt = datetime.datetime.fromtimestamp(event["timestamp"], tz=KYIV_TZ)
+        if event["event"] == "active":
+            if current_start is None:
+                current_start = dt
+        elif event["event"] == "clear":
+            if current_start is not None:
+                start = max(current_start, day_start)
+                end = min(dt, day_end)
+                if start < end:
+                    intervals.append((start, end, True))
+                current_start = None
+                
+    if current_start is not None:
+        start = max(current_start, day_start)
+        now = datetime.datetime.now(tz=KYIV_TZ)
+        end = min(now, day_end)
+        if start < end:
+            intervals.append((start, end, True))
+            
+    return intervals
+
+
 def get_schedule_slots(date_obj):
     """
     Wrapper around load_schedule_slots from daily report to ensure consistent logic.
@@ -204,14 +246,17 @@ def generate_weekly_chart(end_date, daily_data, theme='dark'):
                     
                     if duration_num > 0:
                         color = color_map.get(state, fact_on_color)
-                        ax.broken_barh([(start_num, duration_num)], (y_pos, 0.45), facecolors=color, edgecolor='none')
+                        ax.broken_barh([(start_num, duration_num)], (y_pos + 0.18, 0.36), facecolors=color, edgecolor='none')
 
-            # --- Separator Line (Background Color) ---
-            ax.axhline(y=y_pos, color=bg_color, linewidth=0.5, zorder=5)
+            # --- Separator Lines ---
+
+            ax.axhline(y=y_pos + 0.18, color=bg_color, linewidth=0.5, zorder=5)
+            ax.axhline(y=y_pos - 0.18, color=bg_color, linewidth=0.5, zorder=5)
+
 
             # --- Hour Markers on the Bars (Background Color) ---
             hour_points = [mdates.date2num(datetime.datetime.combine(dummy_date, datetime.time(h, 0))) for h in range(1, 24)]
-            ax.vlines(hour_points, y_pos - 0.45, y_pos + 0.45, colors=bg_color, linewidth=0.8, zorder=6)
+            ax.vlines(hour_points, y_pos - 0.54, y_pos + 0.54, colors=bg_color, linewidth=0.8, zorder=6)
 
             # --- 2. Draw Schedule Data (Bottom Strip) ---
             slots = get_schedule_slots(day_date)
@@ -223,7 +268,28 @@ def generate_weekly_chart(end_date, daily_data, theme='dark'):
                     duration_n = duration_h / 24.0
                     
                     color = sched_map.get(is_on, plan_off_color)
-                    ax.broken_barh([(start_n, duration_n)], (y_pos - 0.45, 0.45), facecolors=color, edgecolor='none')
+                    ax.broken_barh([(start_n, duration_n)], (y_pos - 0.18, 0.36), facecolors=color, edgecolor='none')
+
+
+            # --- 3. Draw Alert Data (Bottom-most Strip) ---
+            alert_on_color = '#ef4444' # Red for alerts
+            alert_intervals = get_alert_intervals(day_date)
+            for start, end, is_alert in alert_intervals:
+                if is_alert:
+                    d_start = datetime.datetime.combine(dummy_date, start.time())
+                    d_end = datetime.datetime.combine(dummy_date, end.time())
+                    
+                    if end.time() == datetime.time.min and end != start:
+                         d_end += datetime.timedelta(days=1)
+                    elif d_end < d_start:
+                         d_end += datetime.timedelta(days=1)
+                        
+                    start_num = mdates.date2num(d_start)
+                    duration_num = mdates.date2num(d_end) - start_num
+                    
+                    if duration_num > 0:
+                        ax.broken_barh([(start_num, duration_num)], (y_pos - 0.54, 0.36), facecolors=alert_on_color, edgecolor='none')
+
 
         # Formatting
         ax.set_ylim(-0.5, 10.5)

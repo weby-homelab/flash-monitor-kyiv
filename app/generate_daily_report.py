@@ -61,6 +61,48 @@ def get_quiet_status():
             pass
     return "active"
 
+
+def get_alert_intervals(target_date):
+    log_file = os.path.join(DATA_DIR, "air_raid_log.json")
+    if not os.path.exists(log_file):
+        return []
+    try:
+        with open(log_file, "r") as f:
+            data = json.load(f)
+    except Exception:
+        return []
+    
+    intervals = []
+    current_start = None
+    
+    day_start = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
+    day_end = datetime.datetime.combine(target_date, datetime.time.max).replace(tzinfo=KYIV_TZ)
+    
+    # Process events
+    for event in data:
+        dt = datetime.datetime.fromtimestamp(event["timestamp"], tz=KYIV_TZ)
+        if event["event"] == "active":
+            if current_start is None:
+                current_start = dt
+        elif event["event"] == "clear":
+            if current_start is not None:
+                start = max(current_start, day_start)
+                end = min(dt, day_end)
+                if start < end:
+                    intervals.append((start, end, True))
+                current_start = None
+                
+    # If alert is still ongoing
+    if current_start is not None:
+        start = max(current_start, day_start)
+        now = datetime.datetime.now(tz=KYIV_TZ)
+        end = min(now, day_end)
+        if start < end:
+            intervals.append((start, end, True))
+            
+    return intervals
+
+
 def load_events():
     if not os.path.exists(EVENT_LOG_FILE):
         return []
@@ -262,10 +304,12 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
         ax.set_facecolor(bg_color)
         
         # Define geometries - Glued together
-        sched_y = 12.5
-        sched_h = 2.5
-        act_y = 15
-        act_h = 2.5
+        alert_y = 11.0
+        alert_h = 2.0
+        sched_y = 13.0
+        sched_h = 2.0
+        act_y = 15.0
+        act_h = 2.0
         
         day_start = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
         day_end = datetime.datetime.combine(target_date, datetime.time.max).replace(tzinfo=KYIV_TZ)
@@ -280,8 +324,20 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
                 duration_days = duration_hours / 24.0
                 ax.broken_barh([(start_num, duration_days)], (sched_y, sched_h), facecolors=color, edgecolor='none')
 
-        # --- Separator Line (Background Color) ---
+        
+        # --- Alert Data (Bottom Bar) ---
+        alert_on_color = '#ef4444' # Red for alerts
+        alert_intervals = get_alert_intervals(target_date)
+        for start, end, is_alert in alert_intervals:
+            if is_alert:
+                start_num = mdates.date2num(start)
+                end_num = mdates.date2num(end)
+                ax.broken_barh([(start_num, end_num - start_num)], (alert_y, alert_h), facecolors=alert_on_color, edgecolor='none')
+        
+        # --- Separators ---
         ax.axhline(y=15, color=bg_color, linewidth=0.5, zorder=5)
+        ax.axhline(y=13, color=bg_color, linewidth=0.5, zorder=5)
+
 
         # --- Hour Markers on the Bars (Background Color) ---
         hour_points = []
@@ -315,7 +371,7 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
             ax.broken_barh([(start_num, duration_num)], (act_y, act_h), facecolors=color, edgecolor='none')
 
         # --- Formatting ---
-        ax.set_ylim(11, 19) 
+        ax.set_ylim(9.5, 18.5) 
         ax.set_xlim(mdates.date2num(day_start), mdates.date2num(day_end))
         
         ax.spines['top'].set_visible(False)
@@ -330,8 +386,8 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
         ax.tick_params(axis='x', colors=text_color)
         ax.tick_params(axis='y', colors=text_color)
         
-        ax.set_yticks([sched_y + sched_h/2, act_y + act_h/2])
-        ax.set_yticklabels(['Графік', 'Факт'], color=text_color)
+        ax.set_yticks([alert_y + alert_h/2, sched_y + sched_h/2, act_y + act_h/2])
+        ax.set_yticklabels(['Тривоги', 'Графік', 'Факт'], color=text_color)
         
         ax.set_title(f"Статистика світла за {target_date.strftime('%d.%m.%Y')}", fontsize=12, color=text_color)
         
@@ -341,9 +397,11 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
         yellow_patch = mpatches.Patch(color=plan_on_color, label='Графік: Є')
         gray_patch = mpatches.Patch(color=plan_off_color, label='Графік: Немає')
         
-        legend = plt.legend(handles=[green_patch, red_patch, yellow_patch, gray_patch], 
+        alert_patch = mpatches.Patch(color=alert_on_color, label='Тривога')
+        
+        legend = plt.legend(handles=[green_patch, red_patch, yellow_patch, gray_patch, alert_patch],
                    loc='upper center', bbox_to_anchor=(0.5, -0.25),
-                   fancybox=False, frameon=False, shadow=False, ncol=4, fontsize='small')
+                   fancybox=False, frameon=False, shadow=False, ncol=5, fontsize='small')
         plt.setp(legend.get_texts(), color=text_color)
 
         plt.tight_layout()
