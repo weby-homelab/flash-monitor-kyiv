@@ -77,7 +77,7 @@ A hybrid schedule processing system. If at least one source indicates an outage,
 ## 🏗️ System Architecture
 
 ```mermaid
-flowchart LR
+flowchart BT
     %% ================================================
     %% NEW CONCEPT 2026 for README.md
     %% "End-to-End Pipeline" — dynamic data flow
