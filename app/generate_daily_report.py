@@ -327,6 +327,8 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
         
         # --- Alert Data (Bottom Bar) ---
         alert_on_color = '#ef4444' # Red for alerts
+        alert_off_color = '#334155' if theme == 'dark' else '#cbd5e1'
+        ax.broken_barh([(mdates.date2num(day_start), mdates.date2num(day_end) - mdates.date2num(day_start))], (alert_y, alert_h), facecolors=alert_off_color, edgecolor='none')
         alert_intervals = get_alert_intervals(target_date)
         for start, end, is_alert in alert_intervals:
             if is_alert:
@@ -345,7 +347,7 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
             point_time = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ) + datetime.timedelta(hours=h)
             hour_points.append(mdates.date2num(point_time))
             
-        ax.vlines(hour_points, 12.5, 17.5, colors=bg_color, linewidth=0.8, zorder=10)
+        ax.vlines(hour_points, 11.0, 17.0, colors=bg_color, linewidth=0.8, zorder=10)
 
         # --- Actual Data (Top Bar) ---
         color_map = {'up': fact_on_color, 'down': fact_off_color, 'unknown': fact_on_color}
@@ -397,11 +399,12 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
         yellow_patch = mpatches.Patch(color=plan_on_color, label='Графік: Є')
         gray_patch = mpatches.Patch(color=plan_off_color, label='Графік: Немає')
         
-        alert_patch = mpatches.Patch(color=alert_on_color, label='Тривога')
-        
-        legend = plt.legend(handles=[green_patch, red_patch, yellow_patch, gray_patch, alert_patch],
+        alert_patch = mpatches.Patch(color='#ef4444', label='Тривога')
+        alert_off_patch = mpatches.Patch(color=('#334155' if theme == 'dark' else '#cbd5e1'), label='Немає тривог')
+
+        legend = plt.legend(handles=[green_patch, red_patch, yellow_patch, gray_patch, alert_patch, alert_off_patch],
                    loc='upper center', bbox_to_anchor=(0.5, -0.25),
-                   fancybox=False, frameon=False, shadow=False, ncol=5, fontsize='small')
+                   fancybox=False, frameon=False, shadow=False, ncol=3, fontsize='small')
         plt.setp(legend.get_texts(), color=text_color)
 
         plt.tight_layout()
