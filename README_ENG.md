@@ -26,7 +26,7 @@
 
 This branch (`classic`) contains the **Bare-Metal Edition** of the project, designed for direct deployment on a server running Ubuntu (or Debian) using `systemd` services, without Docker.
 
-> **Project Status:** Stable v3.4.0 (Bare-metal Optimized)
+> **Project Status:** Stable v3.4.1 (Bare-metal Optimized)
 > **Architecture:** FastAPI + Gunicorn (Uvicorn Workers) + Background Services + Systemd
 > **Brand:** Weby Homelab
 

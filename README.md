@@ -26,7 +26,7 @@
 
 Ця гілка (`classic`) містить **Bare-Metal версію** проєкту, розроблену для прямого розгортання на сервер під керуванням Ubuntu (або Debian) як набір системних служб `systemd` (без використання Docker).
 
-> **Статус проєкту:** Stable v3.4.0 (Bare-metal Optimized)
+> **Статус проєкту:** Stable v3.4.1 (Bare-metal Optimized)
 > **Архітектура:** FastAPI + Gunicorn (Uvicorn Workers) + Background Services + Systemd
 > **Бренд:** Weby Homelab
 
