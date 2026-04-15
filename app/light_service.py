@@ -949,10 +949,24 @@ async def alerts_loop():
 
                         if new_status == "active":
                             state["alert_start_time"] = now_dt.timestamp()
+
+                            try:
+                                log_path = os.path.join(DATA_DIR, "air_raid_log.json")
+                                l_data = json.load(open(log_path)) if os.path.exists(log_path) else []
+                                l_data.append({"timestamp": now_dt.timestamp(), "event": "active"})
+                                json.dump(l_data, open(log_path, "w"), indent=2)
+                            except: pass
+
                             if can_notify:
                                 msg = f"⚠️ <b>{time_str} ПОВІТРЯНА ТРИВОГА! КИЇВ</b>"
                                 threading.Thread(target=send_telegram, args=(msg,)).start()
                         elif old_status == "active" and new_status != "active":
+                            try:
+                                log_path = os.path.join(DATA_DIR, "air_raid_log.json")
+                                l_data = json.load(open(log_path)) if os.path.exists(log_path) else []
+                                l_data.append({"timestamp": now_dt.timestamp(), "event": "clear"})
+                                json.dump(l_data, open(log_path, "w"), indent=2)
+                            except: pass
                             start_ts = state.get("alert_start_time")
                             duration_str = ""
                             if start_ts:
