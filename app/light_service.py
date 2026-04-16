@@ -953,8 +953,10 @@ async def alerts_loop():
                             try:
                                 log_path = os.path.join(DATA_DIR, "air_raid_log.json")
                                 l_data = json.load(open(log_path)) if os.path.exists(log_path) else []
-                                l_data.append({"timestamp": now_dt.timestamp(), "event": "active"})
-                                json.dump(l_data, open(log_path, "w"), indent=2)
+                                # Only add if not already active or log is empty
+                                if not l_data or l_data[-1].get("event") != "active":
+                                    l_data.append({"timestamp": now_dt.timestamp(), "event": "active"})
+                                    json.dump(l_data, open(log_path, "w"), indent=2)
                             except: pass
 
                             if can_notify:
