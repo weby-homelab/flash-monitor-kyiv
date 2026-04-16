@@ -627,7 +627,9 @@ if __name__ == "__main__":
 
     is_all_on_day = False
     if slots and len(slots) >= 48:
-        is_all_on_day = all(s is True for s in slots) and (t_down == 0)
+        # Check for light outage OR air raid alerts
+        alert_intervals = get_alert_intervals(target_date)
+        is_all_on_day = all(s is True for s in slots) and (t_down == 0) and not alert_intervals
 
     if quiet_status == "quiet" and "--no-send" not in sys.argv:
         if is_final:
