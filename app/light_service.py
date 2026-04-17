@@ -635,7 +635,7 @@ def get_schedule_context():
         
         def format_idx_to_time(idx):
             if idx >= 96:
-                return "відключення не плануються 🔆" if has_tomorrow else "невідомий час 🤷‍♂️"
+                return "відключення не плануються 🔆" if is_light_now else "невідомий час 🤷‍♂️"
             day_offset = idx // 48
             rem_idx = idx % 48
             h = rem_idx // 2
@@ -652,7 +652,7 @@ def get_schedule_context():
         
         if next_start_idx < len(slots):
             if next_start_idx >= 48 and not has_tomorrow:
-                next_range = "невідомий час 🤷‍♂️"
+                next_range = "відключення не плануються 🔆" if is_light_now else "невідомий час 🤷‍♂️"
             else:
                 next_end_idx = len(slots)
                 for i in range(next_start_idx + 1, len(slots)):
@@ -663,14 +663,14 @@ def get_schedule_context():
                 ne_t = format_idx_to_time(next_end_idx)
                 
                 if next_start_idx >= 96 or (next_start_idx >= 48 and next_end_idx >= 96 and is_light_now):
-                     next_range = "відключення не плануються 🔆" if has_tomorrow else "невідомий час 🤷‍♂️"
+                     next_range = "відключення не плануються 🔆"
                 else:
                      next_range = f"{ns_t} - {ne_t}"
                      
                 dur_h = (next_end_idx - next_start_idx) * 0.5
                 next_duration = f"{dur_h:g}".replace('.', ',')
         else:
-            next_range = "відключення не плануються 🔆" if has_tomorrow else "невідомий час 🤷‍♂️"
+            next_range = "відключення не плануються 🔆" if is_light_now else "невідомий час 🤷‍♂️"
             
         return (is_light_now, t_end, next_range, next_duration, is_emergency)
     except Exception as e:
@@ -813,10 +813,25 @@ def get_air_raid_alert():
         if r.status_code == 200:
             data = r.json()
             alerts = data.get("states", {})
-            is_alert_city = "м. Київ" in alerts and alerts["м. Київ"].get("alertnow", False)
-            is_alert_region = "Київська область" in alerts and alerts["Київська область"].get("alertnow", False)
+            
+            # Read config for city and region
+            city_name = "м. Київ"
+            region_name = "Київська область"
+            try:
+                config_path = os.path.join(DATA_DIR, "config.json")
+                if os.path.exists(config_path):
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        cfg = json.load(f)
+                        aq_cfg = cfg.get("sources", {}).get("air_quality", {})
+                        city_name = aq_cfg.get("alert_city", "м. Київ")
+                        region_name = aq_cfg.get("alert_region", "Київська область")
+            except Exception as e:
+                print(f"Error reading alert config: {e}")
+
+            is_alert_city = city_name in alerts and alerts[city_name].get("alertnow", False)
+            is_alert_region = region_name in alerts and alerts[region_name].get("alertnow", False)
             status_text = "active" if is_alert_city else ("region" if is_alert_region else "clear")
-            location = "м. Київ" if is_alert_city else ("Київська область" if is_alert_region else "Тривоги немає")
+            location = city_name if is_alert_city else (region_name if is_alert_region else "Тривоги немає")
             return {"city": is_alert_city, "region": is_alert_region, "status": status_text, "location": location}
     except Exception as e:
         print(f"Error fetching alerts: {e}")
@@ -966,8 +981,10 @@ async def alerts_loop():
                             try:
                                 log_path = os.path.join(DATA_DIR, "air_raid_log.json")
                                 l_data = json.load(open(log_path)) if os.path.exists(log_path) else []
-                                l_data.append({"timestamp": now_dt.timestamp(), "event": "clear"})
-                                json.dump(l_data, open(log_path, "w"), indent=2)
+                                # Only add clear if the last event was active
+                                if l_data and l_data[-1].get("event") == "active":
+                                    l_data.append({"timestamp": now_dt.timestamp(), "event": "clear"})
+                                    json.dump(l_data, open(log_path, "w"), indent=2)
                             except: pass
                             start_ts = state.get("alert_start_time")
                             duration_str = ""

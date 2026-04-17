@@ -141,17 +141,28 @@ def extract_github(data: dict, cfg: dict) -> dict:
     fact = data.get("fact", {}).get("data", {})
     if isinstance(fact, list):
         fact = {}
+    
+    # Collect available timestamps
+    timestamps = list(fact.keys())
+    today_ts = data.get("fact", {}).get("today")
+    if today_ts and str(today_ts) not in timestamps:
+        timestamps.append(str(today_ts))
+
     for grp in cfg['settings'].get('groups', []):
         res[grp] = {}
-        for ts in sorted(fact.keys(), key=int)[:3]:
+        for ts in sorted(timestamps, key=int)[:3]:
             d = fact.get(ts, {}).get(grp)
-            if not d: continue
             dt = datetime.fromtimestamp(int(ts), tz=KYIV_TZ)
             d_str = dt.strftime("%Y-%m-%d")
-            if all(d.get(str(h), "yes") == "yes" for h in range(1, 25)):
+            
+            if not d:
+                # If timestamp is present but group is missing, it usually means no outages for this group
                 res[grp][d_str] = {"slots": [True] * 48, "status": "normal"}
             else:
-                res[grp][d_str] = {"slots": parse_github_day(d), "status": "normal"}
+                if all(d.get(str(h), "yes") == "yes" for h in range(1, 25)):
+                    res[grp][d_str] = {"slots": [True] * 48, "status": "normal"}
+                else:
+                    res[grp][d_str] = {"slots": parse_github_day(d), "status": "normal"}
     return res
 
 def extract_yasno(data: dict, cfg: dict) -> dict:

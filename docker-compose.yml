@@ -5,7 +5,12 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:5050:5050"
+    user: "0"
+    environment:
+      - PYTHONPATH=/app
+      - TZ=Europe/Kyiv
     volumes:
+      - .:/app
       - ./data:/app/data
     env_file:
       - .env
@@ -19,8 +24,13 @@ services:
     image: webyhomelab/flash-monitor-kyiv:latest
     container_name: flash-monitor-worker
     restart: unless-stopped
-    command: python run_background.py
+    command: python app/run_background.py
+    user: "0"
+    environment:
+      - PYTHONPATH=/app
+      - TZ=Europe/Kyiv
     volumes:
+      - .:/app
       - ./data:/app/data
     env_file:
       - .env

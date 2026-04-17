@@ -519,6 +519,7 @@
                     <label>Telegram Chat ID <span class="info-icon">i<span class="tooltip">ID основного каналу або чату для сповіщень. Приклад: -100123456789</span></span></label>
                     <input type="text" id="cfg-tg-chat" placeholder="З .env або введіть новий">
                 </div>
+                <div class="form-group"><label>Chat ID Адміна <span class="info-icon">i<span class="tooltip">Ваш особистий Telegram ID для технічних звітів та підтверджень Safety Net.</span></span></label><input type="text" id="cfg-admin-chat"></div>
                 <div class="form-group">
                     <label>Тривоги в Telegram <span class="info-icon">i<span class="tooltip">Надсилати сповіщення про початок та відбій повітряної тривоги.</span></span></label>
                     <select id="adv-notif-alerts">
@@ -538,12 +539,11 @@
 
             <!-- 4. Monitoring -->
             <div class="admin-section">
-                <div class="settings-card-title"><i class="fas fa-broadcast-tower"></i> Моніторинг</div>
+                <div class="settings-card-title"><i class="fas fa-broadcast-tower"></i> Моніторинг вимкнень</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div class="form-group"><label>Регіон (ID) <span class="info-icon">i<span class="tooltip">Код регіону для джерела Yasno. Наприклад: kyiv</span></span></label><input type="text" id="cfg-region"></div>
                     <div class="form-group"><label>Групи <span class="info-icon">i<span class="tooltip">Номери груп відключень через кому. Приклад: 1, 3, 6</span></span></label><input type="text" id="cfg-groups"></div>
                 </div>
-                <div class="form-group"><label>Chat ID Адміна <span class="info-icon">i<span class="tooltip">Ваш особистий Telegram ID для технічних звітів та підтверджень Safety Net.</span></span></label><input type="text" id="cfg-admin-chat"></div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div class="form-group"><label>Пуш (сек) <span class="info-icon">i<span class="tooltip">Частота, з якою очікується сигнал від монітора. Стандарт: 30</span></span></label><input type="number" id="cfg-push-interval"></div>
                     <div class="form-group"><label>SN Timeout <span class="info-icon">i<span class="tooltip">Максимальна затримка сигналу, після якої вважати світло вимкненим. Рекомендовано: 65</span></span></label><input type="number" id="cfg-sn-timeout"></div>
@@ -585,7 +585,11 @@
 
             <!-- 6. Geo & AQI -->
             <div class="admin-section">
-                <div class="settings-card-title"><i class="fas fa-map-marker-alt"></i> Гео та AQI</div>
+                <div class="settings-card-title"><i class="fas fa-map-marker-alt"></i> Гео, Тривоги та AQI</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label>Місто для тривог <span class="info-icon">i<span class="tooltip">Назва міста як в ubilling (напр. 'м. Київ').</span></span></label><input type="text" id="cfg-alert-city"></div>
+                    <div class="form-group"><label>Область для тривог <span class="info-icon">i<span class="tooltip">Назва області (напр. 'Київська область').</span></span></label><input type="text" id="cfg-alert-region"></div>
+                </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div class="form-group"><label>Широта (Lat) <span class="info-icon">i<span class="tooltip">Координата для отримання погоди. Приклад: 50.408</span></span></label><input type="text" id="cfg-lat"></div>
                     <div class="form-group"><label>Довгота (Lon) <span class="info-icon">i<span class="tooltip">Координата для отримання погоди. Приклад: 30.400</span></span></label><input type="text" id="cfg-lon"></div>
@@ -798,7 +802,10 @@
 
                 const setVal = (id, val, def = '') => {
                     const el = document.getElementById(id);
-                    if (el) el.value = val !== undefined && val !== null && val !== "" ? val : def;
+                    if (!el) return;
+                    // Do not overwrite value if the user is currently editing the field
+                    if (document.activeElement === el) return;
+                    el.value = val !== undefined && val !== null && val !== "" ? val : def;
                 };
 
                 // Telegram & API
@@ -824,6 +831,8 @@
                 
                 // AQI & Geo
                 if (config.sources && config.sources.air_quality) {
+                    setVal('cfg-alert-city', config.sources.air_quality.alert_city || 'м. Київ');
+                    setVal('cfg-alert-region', config.sources.air_quality.alert_region || 'Київська область');
                     setVal('cfg-aq-station', config.sources.air_quality.seb_station);
                     setVal('cfg-aq-name', config.sources.air_quality.location_name);
                     setVal('cfg-lat', config.sources.air_quality.lat);
@@ -1001,6 +1010,8 @@
 
                 config.sources.air_quality.seb_station = getVal('cfg-aq-station').trim();
                 config.sources.air_quality.location_name = getVal('cfg-aq-name').trim();
+                config.sources.air_quality.alert_city = getVal('cfg-alert-city').trim() || 'м. Київ';
+                config.sources.air_quality.alert_region = getVal('cfg-alert-region').trim() || 'Київська область';
                 config.sources.air_quality.lat = getCoord('cfg-lat');
                 config.sources.air_quality.lon = getCoord('cfg-lon');
 
@@ -1044,21 +1055,26 @@
             const config = collectAllConfig();
             if (!config) { alert('Помилка збору налаштувань. Перевірте консоль.'); return; }
             try {
-                const response = await fetch(`/api/admin/config?t=${token}`, { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify(config) 
+                const response = await fetch(`/api/admin/config?t=${token}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
                 });
                 if (response.ok) {
+                    const data = await response.json();
+                    if (data.config) {
+                        currentConfig = data.config;
+                        renderConfig(currentConfig, {env: null, state: null}); // Re-render with new config
+                    }
                     alert('Усі системні налаштування успішно збережено!');
-                    fetchData();
+                    // Small delay before fetchData to let the server state stabilize
+                    setTimeout(fetchData, 1000);
                 } else {
                     const err = await response.json();
                     alert('Помилка збереження: ' + err.msg);
                 }
             } catch (err) { alert('Помилка запиту'); }
         }
-
         async function addLog() {
             const event = document.getElementById('log-add-event').value;
             const dateStr = document.getElementById('log-add-date').value;
@@ -1246,7 +1262,7 @@
         });
 
         fetchData();
-        setInterval(fetchData, 10000);
+        setInterval(fetchData, 30000);
         </script>
         </body>
         </html>

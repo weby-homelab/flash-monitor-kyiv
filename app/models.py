@@ -25,7 +25,7 @@ class Notifications(BaseModel):
 
 class SourcesConfig(BaseModel):
     model_config = ConfigDict(extra='ignore')
-    air_quality: Dict[str, Any] = {"lat": "50.408", "lon": "30.400", "seb_station": "24185", "location_name": "Борщагівка (Симиренка)"}
+    air_quality: Dict[str, Any] = {"lat": "50.408", "lon": "30.400", "seb_station": "24185", "location_name": "Борщагівка (Симиренка)", "alert_city": "м. Київ", "alert_region": "Київська область"}
     yasno: Dict[str, Any] = {"enabled": True, "name": "Yasno", "dso_id": "902", "region_id": "25"}
     github: Dict[str, Any] = {"enabled": True, "name": "ДТЕК"}
 

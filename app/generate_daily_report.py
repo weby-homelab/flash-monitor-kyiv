@@ -61,6 +61,18 @@ def get_quiet_status():
             pass
     return "active"
 
+def get_quiet_mode():
+    """Reads current quiet_mode (auto, forced_on, forced_off) from state file."""
+    state_file = os.path.join(DATA_DIR, "power_monitor_state.json")
+    if os.path.exists(state_file):
+        try:
+            with open(state_file, 'r') as f:
+                state = json.load(f)
+                return state.get("quiet_mode", "auto")
+        except:
+            pass
+    return "auto"
+
 
 def get_alert_intervals(target_date):
     log_file = os.path.join(DATA_DIR, "air_raid_log.json")
@@ -73,30 +85,54 @@ def get_alert_intervals(target_date):
         return []
     
     intervals = []
-    current_start = None
     
     day_start = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
     day_end = datetime.datetime.combine(target_date, datetime.time.max).replace(tzinfo=KYIV_TZ)
     
-    # Process events
+    # print(f"DEBUG: get_alert_intervals for {target_date}. Day range: {day_start} to {day_end}")
+    
+    # 1. Determine initial state at 00:00 of target_date
+    current_active_start = None
     for event in data:
-        dt = datetime.datetime.fromtimestamp(event["timestamp"], tz=KYIV_TZ)
+        event_dt = datetime.datetime.fromtimestamp(event["timestamp"], tz=KYIV_TZ)
+        if event_dt < day_start:
+            if event["event"] == "active":
+                current_active_start = event_dt
+            else:
+                current_active_start = None
+        else:
+            break
+
+    # 2. Process events within or covering the day
+    for event in data:
+        event_dt = datetime.datetime.fromtimestamp(event["timestamp"], tz=KYIV_TZ)
+        
+        if event_dt < day_start:
+            continue
+        if event_dt > day_end:
+            break
+
         if event["event"] == "active":
-            if current_start is None:
-                current_start = dt
+            if current_active_start is None:
+                current_active_start = event_dt
         elif event["event"] == "clear":
-            if current_start is not None:
-                start = max(current_start, day_start)
-                end = min(dt, day_end)
+            if current_active_start is not None:
+                start = max(current_active_start, day_start)
+                end = min(event_dt, day_end)
                 if start < end:
                     intervals.append((start, end, True))
-                current_start = None
+                current_active_start = None
                 
-    # If alert is still ongoing
-    if current_start is not None:
-        start = max(current_start, day_start)
+    # 3. Handle ongoing alert at the end of the day or calculation period
+    if current_active_start is not None:
+        start = max(current_active_start, day_start)
         now = datetime.datetime.now(tz=KYIV_TZ)
-        end = min(now, day_end)
+        # If target_date is today, clip to now. If past, clip to day_end.
+        if target_date == now.date():
+            end = min(now, day_end)
+        else:
+            end = day_end
+            
         if start < end:
             intervals.append((start, end, True))
             
@@ -326,7 +362,7 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
 
         
         # --- Alert Data (Bottom Bar) ---
-        alert_on_color = '#ef4444' # Red for alerts
+        alert_on_color = '#fef08a' # Pastel yellow for air raid alerts
         alert_off_color = '#334155' if theme == 'dark' else '#cbd5e1'
         ax.broken_barh([(mdates.date2num(day_start), mdates.date2num(day_end) - mdates.date2num(day_start))], (alert_y, alert_h), facecolors=alert_off_color, edgecolor='none')
         alert_intervals = get_alert_intervals(target_date)
@@ -399,7 +435,7 @@ def generate_chart(target_date, intervals, schedule_intervals, theme='dark'):
         yellow_patch = mpatches.Patch(color=plan_on_color, label='Графік: Є')
         gray_patch = mpatches.Patch(color=plan_off_color, label='Графік: Немає')
         
-        alert_patch = mpatches.Patch(color='#ef4444', label='Тривога')
+        alert_patch = mpatches.Patch(color='#fef08a', label='Тривога')
         alert_off_patch = mpatches.Patch(color=('#334155' if theme == 'dark' else '#cbd5e1'), label='Немає тривог')
 
         legend = plt.legend(handles=[green_patch, red_patch, yellow_patch, gray_patch, alert_patch, alert_off_patch],
@@ -546,6 +582,26 @@ def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
         caption += f"🔆 {time_label}:\n"
         caption += f"✅ Факт {format_duration(t_up)} ⚡️ План {format_duration(plan_up_sec_now)}\n"
         caption += f"👉 Світла {compliance_pct_now:.0f}% від плану\n"
+        
+        # Add Air Raid Alerts stats
+        alert_intervals = get_alert_intervals(target_date)
+        if alert_intervals:
+            total_alert_sec = 0
+            active_alert_sec = 0
+            is_active = False
+            for start, end, is_alert in alert_intervals:
+                if is_alert:
+                    dur = (end - start).total_seconds()
+                    total_alert_sec += dur
+                    # Check if it's currently active (end is very close to now)
+                    if is_today and (now_time - end).total_seconds() < 60:
+                        is_active = True
+                        active_alert_sec = dur
+                        
+            caption += f"\n⚠️ Повітряні тривоги: {len(alert_intervals)} (загалом {format_duration(total_alert_sec)})\n"
+            if is_active:
+                caption += f"⚠️ Триває тривога: {format_duration(active_alert_sec)}\n"
+
         caption += f"---\n"
         caption += f"🕐 Оновлено: {now_time.strftime('%H:%M')}"
         
@@ -627,9 +683,13 @@ if __name__ == "__main__":
 
     is_all_on_day = False
     if slots and len(slots) >= 48:
-        # Check for light outage OR air raid alerts
-        alert_intervals = get_alert_intervals(target_date)
-        is_all_on_day = all(s is True for s in slots) and (t_down == 0) and not alert_intervals
+        # Check for light outage
+        is_all_on_day = all(s is True for s in slots) and (t_down == 0)
+
+    quiet_mode = get_quiet_mode()
+    if not is_all_on_day and quiet_status == "quiet" and quiet_mode != "forced_on":
+        print("Light outage occurred during quiet mode! Bypassing quiet mode restriction to send graphical report.")
+        quiet_status = "active"
 
     if quiet_status == "quiet" and "--no-send" not in sys.argv:
         if is_final:

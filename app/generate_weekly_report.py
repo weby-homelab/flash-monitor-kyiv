@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import necessary functions from the daily report script to reuse logic
-from app.generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ, load_schedule_slots, get_quiet_status
+from app.generate_daily_report import load_events, get_intervals_for_date, format_duration, KYIV_TZ, load_schedule_slots, get_quiet_status, get_alert_intervals
 
 # --- Configuration ---
 DATA_DIR = os.environ.get("DATA_DIR", "data")
@@ -35,47 +35,6 @@ if "PYTEST_CURRENT_TEST" in os.environ:
     CHAT_ID = "6313526220"
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
-
-
-def get_alert_intervals(target_date):
-    import os, json, datetime
-    from zoneinfo import ZoneInfo
-    log_file = "data/air_raid_log.json"
-    if not os.path.exists(log_file):
-        return []
-    try:
-        with open(log_file, "r") as f:
-            data = json.load(f)
-    except Exception:
-        return []
-    
-    intervals = []
-    current_start = None
-    KYIV_TZ = ZoneInfo("Europe/Kyiv")
-    day_start = datetime.datetime.combine(target_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
-    day_end = datetime.datetime.combine(target_date, datetime.time.max).replace(tzinfo=KYIV_TZ)
-    
-    for event in data:
-        dt = datetime.datetime.fromtimestamp(event["timestamp"], tz=KYIV_TZ)
-        if event["event"] == "active":
-            if current_start is None:
-                current_start = dt
-        elif event["event"] == "clear":
-            if current_start is not None:
-                start = max(current_start, day_start)
-                end = min(dt, day_end)
-                if start < end:
-                    intervals.append((start, end, True))
-                current_start = None
-                
-    if current_start is not None:
-        start = max(current_start, day_start)
-        now = datetime.datetime.now(tz=KYIV_TZ)
-        end = min(now, day_end)
-        if start < end:
-            intervals.append((start, end, True))
-            
-    return intervals
 
 
 def get_schedule_slots(date_obj):
@@ -225,6 +184,7 @@ def generate_weekly_chart(end_date, daily_data, theme='dark'):
             
             # --- 1. Draw Actual Data (Top Strip) ---
             now_kyiv = datetime.datetime.now(KYIV_TZ)
+            day_start_dt = datetime.datetime.combine(day_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
             
             if day_date <= now_kyiv.date():
                 for start, end, state in intervals:
@@ -232,13 +192,13 @@ def generate_weekly_chart(end_date, daily_data, theme='dark'):
                         if start > now_kyiv: continue 
                         if end > now_kyiv: end = now_kyiv
                     
-                    d_start = datetime.datetime.combine(dummy_date, start.time())
-                    d_end = datetime.datetime.combine(dummy_date, end.time())
+                    # Calculate offsets from the start of the current day
+                    start_offset = (start - day_start_dt).total_seconds()
+                    end_offset = (end - day_start_dt).total_seconds()
                     
-                    if end.time() == datetime.time.min and end != start:
-                         d_end += datetime.timedelta(days=1)
-                    elif d_end < d_start:
-                         d_end += datetime.timedelta(days=1)
+                    # Apply offsets to the dummy date for the chart X-axis
+                    d_start = datetime.datetime.combine(dummy_date, datetime.time.min) + datetime.timedelta(seconds=start_offset)
+                    d_end = datetime.datetime.combine(dummy_date, datetime.time.min) + datetime.timedelta(seconds=end_offset)
                         
                     start_num = mdates.date2num(d_start)
                     end_num = mdates.date2num(d_end)
@@ -272,22 +232,24 @@ def generate_weekly_chart(end_date, daily_data, theme='dark'):
 
 
             # --- 3. Draw Alert Data (Bottom-most Strip) ---
-            alert_on_color = '#ef4444' # Red for alerts
+            alert_on_color = '#fef08a' # Pastel yellow for air raid alerts
             alert_off_color = '#334155' if theme == 'dark' else '#cbd5e1'
             x_start_num = mdates.date2num(datetime.datetime.combine(dummy_date, datetime.time.min))
-            x_end_num = mdates.date2num(datetime.datetime.combine(dummy_date, datetime.time.max))
+            # Fix: Ensure full 24h duration for the background bar
+            x_end_num = mdates.date2num(datetime.datetime.combine(dummy_date, datetime.time.min) + datetime.timedelta(days=1))
             ax.broken_barh([(x_start_num, x_end_num - x_start_num)], (y_pos - 0.54, 0.36), facecolors=alert_off_color, edgecolor='none')
             
             alert_intervals = get_alert_intervals(day_date)
+            day_start_dt = datetime.datetime.combine(day_date, datetime.time.min).replace(tzinfo=KYIV_TZ)
             for start, end, is_alert in alert_intervals:
                 if is_alert:
-                    d_start = datetime.datetime.combine(dummy_date, start.time())
-                    d_end = datetime.datetime.combine(dummy_date, end.time())
+                    # Calculate offsets from the start of the current day
+                    start_offset = (start - day_start_dt).total_seconds()
+                    end_offset = (end - day_start_dt).total_seconds()
                     
-                    if end.time() == datetime.time.min and end != start:
-                         d_end += datetime.timedelta(days=1)
-                    elif d_end < d_start:
-                         d_end += datetime.timedelta(days=1)
+                    # Apply offsets to the dummy date for the chart X-axis
+                    d_start = datetime.datetime.combine(dummy_date, datetime.time.min) + datetime.timedelta(seconds=start_offset)
+                    d_end = datetime.datetime.combine(dummy_date, datetime.time.min) + datetime.timedelta(seconds=end_offset)
                         
                     start_num = mdates.date2num(d_start)
                     duration_num = mdates.date2num(d_end) - start_num
@@ -322,7 +284,7 @@ def generate_weekly_chart(end_date, daily_data, theme='dark'):
         red_patch = mpatches.Patch(color=fact_off_color, label='Світла немає')
         yellow_patch = mpatches.Patch(color=plan_on_color, label='Графік: Є')
         gray_patch = mpatches.Patch(color=plan_off_color, label='Графік: Немає')
-        alert_patch = mpatches.Patch(color='#ef4444', label='Тривога')
+        alert_patch = mpatches.Patch(color='#fef08a', label='Тривога')
         alert_off_patch = mpatches.Patch(color=('#334155' if theme == 'dark' else '#cbd5e1'), label='Немає тривог')
 
         legend = plt.legend(handles=[green_patch, red_patch, yellow_patch, gray_patch, alert_patch, alert_off_patch],
@@ -467,12 +429,29 @@ if __name__ == "__main__":
              
              plan_section += f"\n🌤 <b>Легше ніж очікувалось:</b> {e_name} ({e_sign}{format_duration_h(abs(e_diff))} понад план)\n🌩 <b>Важче ніж очікувалось:</b> {h_name} ({h_sign}{format_duration_h(abs(h_diff))} від плану)"
 
+    # Calculate Weekly Alerts
+    total_alerts = 0
+    total_alert_sec = 0
+    for day_data in stats.get('daily_data', []):
+        alert_intervals = get_alert_intervals(day_data['date'])
+        for start, end, is_alert in alert_intervals:
+            if is_alert:
+                total_alerts += 1
+                total_alert_sec += (end - start).total_seconds()
+                
+    alert_section = ""
+    if total_alerts > 0:
+        alert_h = int(total_alert_sec // 3600)
+        alert_m = int((total_alert_sec % 3600) // 60)
+        alert_dur_str = f"{alert_h}г {alert_m}хв" if alert_h > 0 else f"{alert_m}хв"
+        alert_section = f"\n⚠️ <b>Повітряні тривоги:</b> {total_alerts} (загалом {alert_dur_str})\n"
+
     caption = f"""📅 <b>Енергетичний тиждень ({monday.strftime('%d.%m')} - {sunday.strftime('%d.%m')})</b>
 
 📊 <b>Загальні підсумки:</b>
  • Світло було 🔆 <b>{int(up_h)}г {int((up_h%1)*60)}хв</b> ({int(up_pct)}%)
  • Відключення ✖️ <b>{int(down_h)}г {int((down_h%1)*60)}хв</b>
- • В середньому без світла: <b>{int(down_h/7)}г {int(((down_h/7)%1)*60)}хв</b> на добу
+ • В середньому без світла: <b>{int(down_h/7)}г {int(((down_h/7)%1)*60)}хв</b> на добу{alert_section}
 {plan_section}
 
 🏆 <b>Найменше відключень:</b> {day_names[best_day['date'].weekday()]}

@@ -468,25 +468,45 @@ async def get_air_quality():
         lon = aq_cfg.get("lon", "30.52")
         om_url = f"https://air-quality-api.open-meteo.com/v1/air-quality?latitude={lat}&longitude={lon}&current=pm10,pm2_5&hourly=pm2_5&past_days=1"
         
-        # SaveEcoBot for Station-specific (Station 17095)
-        seb_id = aq_cfg.get("seb_station", "17095")
-        seb_url = f"https://www.saveecobot.com/platform/api/v1/stations/{seb_id}"
-        
+        # SaveEcoBot for Station-specific (Station 24185)
+        seb_id = aq_cfg.get("seb_station", "24185")
+        seb_url = f"https://www.saveecobot.com/station/{seb_id}.json"
+
         # Weather for Temp/Hum
         w_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m&past_days=1"
 
         def fetch_all():
-            pm_data = requests.get(om_url, timeout=5).json()
+            try:
+                seb_resp = requests.get(seb_url, timeout=5)
+                seb_data = seb_resp.json()
+            except Exception as e:
+                logger.error("seb_fetch_error", error=str(e))
+                seb_data = {}
+
             w_data = requests.get(w_url, timeout=5).json()
 
-            pm25 = pm_data.get('current', {}).get('pm2_5', 0)
-            pm10 = pm_data.get('current', {}).get('pm10', 0)
+            # Extract from SEB
+            aqi = seb_data.get('aqi', 0)
+            measurements = seb_data.get('last_data', [])
+
+            def get_val(phenom):
+                m = next((i for i in measurements if i.get('phenomenon') == phenom), None)
+                return m.get('value') if m else 0
+
+            pm25 = get_val('pm25')
+            pm10 = get_val('pm10')
+            temp = get_val('temperature') or w_data.get('current', {}).get('temperature_2m')
+            hum = get_val('humidity') or w_data.get('current', {}).get('relative_humidity_2m')
+            press = get_val('pressure')
+            rad = get_val('gamma') or get_val('radiation') # some stations use gamma
 
             history_hourly = []
             history_times = []
             temp_history = []
             hum_history = []
             try:
+                # Keep OpenMeteo for history as SEB JSON usually only has latest
+                pm_data = requests.get(om_url, timeout=5).json()
                 pm25_hourly = pm_data.get('hourly', {}).get('pm2_5', [])
                 time_hourly = pm_data.get('hourly', {}).get('time', [])
 
@@ -537,17 +557,17 @@ async def get_air_quality():
             except Exception as e:
                 logger.error("aq_history_error", error=str(e))
 
-            # Simple AQI calculation based on PM2.5 (standard European scale approx)
-            aqi = int(pm25 * 3) # rough proxy for simplified dashboard
-
             status = "ok"
-            status_text = "Низький"
+            status_text = "Добре"
             if aqi > 50: 
                 status = "warning"
-                status_text = "Помірне"
+                status_text = "Помірно"
             if aqi > 100: 
                 status = "danger"
-                status_text = "Високе"
+                status_text = "Шкідливо"
+            if aqi > 150:
+                status = "danger"
+                status_text = "Дуже шкідливо"
 
             return {
                 "aqi": aqi,
@@ -557,14 +577,18 @@ async def get_air_quality():
                 "hum_history": hum_history,
                 "status": status,
                 "text": status_text,
-                "pm25": pm25,                "pm10": pm10,
+                "pm25": pm25,
+                "pm10": pm10,
                 "pm1": None,
-                "temp": w_data.get('current', {}).get('temperature_2m'),
-                "hum": w_data.get('current', {}).get('relative_humidity_2m'),
+                "temp": temp,
+                "hum": hum,
+                "press": press,
+                "rad": rad,
                 "wind_speed": w_data.get('current', {}).get('wind_speed_10m'),
                 "wind_dir": get_wind_label(w_data.get('current', {}).get('wind_direction_10m')),
                 "location": aq_cfg.get("location_name", "Київ")
             }
+
 
         return await cached_fetch("air_quality", fetch_all)
     except Exception as e:
@@ -661,7 +685,7 @@ async def api_status():
                 if merged: slots = merged
         except: pass
 
-    version = "v3.3.8"
+    version = "v3.4.2"
     version_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
     if os.path.exists(version_path):
         with open(version_path, 'r') as f:
@@ -965,7 +989,7 @@ async def admin_data(request: Request):
             logs = json.load(f)
             
     # Get version
-    version = "v3.3.8"
+    version = "v3.4.2"
     version_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
     if os.path.exists(version_path):
         with open(version_path, 'r') as f:
@@ -991,31 +1015,28 @@ async def admin_config_post(request: Request, new_config: dict = Body(None)):
         return JSONResponse({"status": "error", "msg": "Invalid JSON"}, status_code=400)
 
     try:
-        from models import AppConfig
-        # Validate configuration before saving
-        validated_config = AppConfig(**new_config).model_dump(exclude_unset=False, by_alias=True)
+        # 1. Backup
+        try:
+            create_backup("auto_before_save")
+        except Exception as be:
+            print(f"Backup warning: {be}")
 
-        # Create auto-backup before saving
-        await asyncio.to_thread(create_backup, "auto_before_save")
-
+        # 2. Save
         config_path = os.path.join(DATA_DIR, "config.json")
         if not os.path.exists(config_path):
             config_path = "config.json"
-        
-        def save_config():
-            with open(config_path, 'w', encoding='utf-8') as f:
-                json.dump(validated_config, f, indent=2, ensure_ascii=False)
-        
-        await asyncio.to_thread(save_config)
 
-        # Clear cache to reflect changes immediately (AQ, etc.)
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(new_config, f, indent=2, ensure_ascii=False)
+
+        # 3. Clear cache
         async with cache_lock:
             CACHE.clear()
-            
-        return {"status": "ok"}
-    except Exception as e:
-        return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 
+        return {"status": "ok", "config": new_config}
+    except Exception as e:
+        print(f"Admin Config Save Error: {e}")
+        return JSONResponse({"status": "error", "msg": str(e)}, status_code=500)
 @app.post('/api/admin/quiet/mode')
 async def admin_quiet_mode(request: Request, data: dict = Body(None)):
     if not check_admin_token(request):
