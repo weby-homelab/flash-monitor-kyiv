@@ -170,4 +170,7 @@ flowchart BT
 * [📝 Історія змін (CHANGELOG.md)](docs/CHANGELOG.md)
 
 ---
-**✦ 2026 Weby Homelab ✦**
+<p align="center">
+  Made with ❤️ in Kyiv under air raid sirens and blackouts<br>
+  <strong>© 2026 Weby Homelab</strong>
+</p>
