@@ -617,12 +617,15 @@ if __name__ == "__main__":
     quiet_status = get_quiet_status()
 
     if is_cleanup:
-        print("Cleanup mode: Removing daily report from Telegram...")
-        last_id = get_last_report_id(target_date)
-        if last_id:
-            delete_telegram_message(last_id)
-            # Remove from state
-            save_report_id(None, target_date)
+        print("Cleanup mode: Removing daily reports from Telegram...")
+        # Clean up today and yesterday
+        yesterday_date = target_date - datetime.timedelta(days=1)
+        for d in [target_date, yesterday_date]:
+            last_id = get_last_report_id(d)
+            if last_id:
+                print(f"Deleting report for {d} (ID: {last_id})...")
+                delete_telegram_message(last_id)
+                save_report_id(None, d)
         sys.exit(0)
 
     is_all_on_day = False
@@ -633,22 +636,12 @@ if __name__ == "__main__":
 
     if quiet_status == "quiet" and "--no-send" not in sys.argv:
         if is_final:
-            print("Quiet mode active. Sending special text summary instead of graphical report...")
-            # Send the special quiet mode summary text instead of photo
-            msg = f"{target_date.strftime('%d.%m')} ({DAYS_UA[target_date.weekday()]}): Світло було 24 год. 🔆"
-            url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-            payload = {"chat_id": CHAT_ID, "text": f"<b>{msg}</b>", "parse_mode": "HTML"}
-            try:
-                requests.post(url, json=payload, timeout=10)
-                print(f"Quiet mode summary sent: {msg}")
-                
-                # Delete old message if exists (keeping it clean)
-                last_id = get_last_report_id(target_date)
-                if last_id:
-                    print(f"Deleting yesterday's old report message (ID: {last_id}) during quiet finalization...")
-                    delete_telegram_message(last_id)
-            except Exception as e:
-                print(f"Failed to handle quiet summary: {e}")
+            print("Quiet mode active. Skipping special text summary as per request.")
+            # Delete old message if exists (keeping it clean)
+            last_id = get_last_report_id(target_date)
+            if last_id:
+                print(f"Deleting yesterday's old report message (ID: {last_id}) during quiet finalization...")
+                delete_telegram_message(last_id)
         else:
             last_id = get_last_report_id(target_date)
             if last_id:
