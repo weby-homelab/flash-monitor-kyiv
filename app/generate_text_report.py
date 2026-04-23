@@ -209,17 +209,21 @@ def main():
     
     if is_cleanup:
         print("Cleanup mode: Removing text schedules from Telegram...")
-        # Check all possible slots for today
+        # Check all possible slots for today and yesterday
         report_state = get_report_state()
         today_str = now.strftime("%Y-%m-%d")
-        today_state = report_state.get(today_str, {})
-        for slot in ["morning", "evening"]:
-            msg_id = today_state.get(f"{slot}_id")
-            if msg_id:
-                delete_telegram_message(msg_id)
-                today_state.pop(f"{slot}_id", None)
-                today_state.pop(f"{slot}_hash", None)
-        report_state[today_str] = today_state
+        yesterday_str = (now - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        
+        for d_str in [today_str, yesterday_str]:
+            day_state = report_state.get(d_str, {})
+            for slot in ["morning", "evening"]:
+                msg_id = day_state.get(f"{slot}_id")
+                if msg_id:
+                    delete_telegram_message(msg_id)
+                    day_state.pop(f"{slot}_id", None)
+                    day_state.pop(f"{slot}_hash", None)
+            report_state[d_str] = day_state
+            
         save_report_state(report_state)
         return
 
@@ -343,11 +347,13 @@ def main():
     holiday_tomorrow_str = tomorrow_str if target_slot == "evening" else None
     holiday_text = generate_holiday_report(today_str, holiday_tomorrow_str, data, group, icons)
     
+    # Suppress holiday report if it is just "all-on" spam (as per user request)
     if holiday_text:
-        base_text = holiday_text
-    else:
-        combined_content = "\n\n".join(all_day_contents)
-        base_text = f"📈 <b>Графік групи {group_display}</b>\n\n{combined_content}"
+        print("Holiday report suppressed to avoid noise.")
+        return
+    
+    combined_content = "\n\n".join(all_day_contents)
+    base_text = f"📈 <b>Графік групи {group_display}</b>\n\n{combined_content}"
     
     content_hash = hashlib.md5(base_text.encode()).hexdigest()
     

@@ -905,6 +905,30 @@ async def _check_outage_detection(current_time, last_seen):
 
 async def _check_auto_confirmation(current_time):
     if state.get('pending_confirmation') and (current_time - state.get('went_down_at', 0)) > 300:
+        cfg = get_config()
+        quiet_config = cfg.get("advanced", {}).get("quiet_mode", {})
+        auto_confirm = quiet_config.get("auto_confirm", True)
+        
+        q_mode = state.get("quiet_mode", "auto")
+        
+        if q_mode == "forced_on":
+            print("Safety Net timeout: Quiet Mode is FORCED ON. Bypassing public alarm.")
+            state['pending_confirmation'] = False
+            await save_state()
+            return
+            
+        if q_mode == "auto" and state.get("quiet_status") == "quiet":
+            print("Safety Net timeout: AUTO Quiet Mode is active. Bypassing public alarm to maintain silence.")
+            state['pending_confirmation'] = False
+            await save_state()
+            return
+            
+        if not auto_confirm:
+            print("Safety Net timeout: auto_confirm is Disabled. Bypassing public alarm.")
+            state['pending_confirmation'] = False
+            await save_state()
+            return
+
         print("Safety Net timeout: Admin did not respond in 5 mins. Assuming real outage. Sending public alarm.")
         state['pending_confirmation'] = False
         state['quiet_status'] = 'active'
