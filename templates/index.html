@@ -243,8 +243,6 @@
                     <div id="aqi-graph" style="display: flex; align-items: flex-end; gap: 3px; height: 44px; margin-left: auto;"></div>
                 </div>
                 <div class="grid">
-                    <div class="grid-item"><div class="grid-val" id="pm25">--</div><div class="grid-label">PM2.5</div></div>
-                    <div class="grid-item"><div class="grid-val" id="pm10">--</div><div class="grid-label">PM10</div></div>
                     <div class="grid-item" style="display: flex; justify-content: space-between; align-items: center;">
                         <div><div class="grid-val" id="temp">--</div><div class="grid-label">Температура</div></div>
                         <div id="temp-graph" style="display: flex; align-items: flex-end; gap: 2px; height: 30px; position: relative;"></div>
@@ -427,9 +425,7 @@
                         const aqiLoc = document.getElementById('aqi-loc');
                         if (aqiLoc && data.aqi.location) aqiLoc.innerText = 'Повітря: ' + data.aqi.location;
                         
-                        // Update PM fields
-                        document.getElementById('pm25').innerText = data.aqi.pm25 || '--';
-                        document.getElementById('pm10').innerText = data.aqi.pm10 || '--';
+                        // Update fields
                         document.getElementById('temp').innerText = data.aqi.temp || '--';
                         document.getElementById('hum').innerText = data.aqi.hum || '--';
 
@@ -557,8 +553,6 @@
                 }
 
                 if (data.aqi) {
-                    if (document.getElementById('pm25')) document.getElementById('pm25').innerText = data.aqi.pm25 || '--';
-                    if (document.getElementById('pm10')) document.getElementById('pm10').innerText = data.aqi.pm10 || '--';
                     if (document.getElementById('temp')) document.getElementById('temp').innerText = (data.aqi.temp !== undefined ? data.aqi.temp : '--') + '°C';
                     if (document.getElementById('hum')) document.getElementById('hum').innerText = (data.aqi.hum !== undefined ? data.aqi.hum : '--') + '%';
 
@@ -671,6 +665,7 @@
         updateBellUI();
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { updateMapTheme(); refreshCharts(); });
         updateMapTheme();
+        refreshCharts();
         setInterval(update, 30000);
         setInterval(refreshCharts, 60000); // Оновлення графіків кожну хвилину
         update();
