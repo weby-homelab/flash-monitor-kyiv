@@ -1,15 +1,13 @@
-# Release v3.4.3
+# Release v3.4.7
 
-**Fixed Auto and Forced On Quiet Modes**
-В цьому релізі виправлено критичну помилку логіки Режиму Тиші.
+**Air Raid Alerts in Daily Reports**
+В цьому релізі додано відображення кількості та тривалості повітряних тривог у щоденних звітах.
 
 ## Що нового / What's New:
 🇺🇦 **Українська:**
-- Виправлено логіку режиму **"Завжди ТИХО" (Forced On)**: Тепер система дійсно зберігає мовчання і не надсилає публічні сповіщення при зникненні пушів, навіть після 5-хвилинного очікування підтвердження.
-- Виправлено логіку режиму **"Автоматично" (Auto)**: Якщо планових вимкнень немає, система коректно утримує тишу після зникнення світла, скасовуючи хибні тривоги по тайм-ауту.
-- Оптимізовано прибирання повідомлень в Telegram під час роботи режиму тиші.
+- У графічні денні звіти додано відображення інформації про кількість та загальну тривалість повітряних тривог: ⚠️ Повітряні тривоги: 1 (загалом 1 г).
+- Поліпшено скрипт `generate_daily_report.py`.
 
 🇬🇧 **English:**
-- Fixed the logic for **"Forced On"** Quiet Mode: The system now truly remains silent and does not send public outage notifications, even after the 5-minute admin confirmation timeout.
-- Fixed the logic for **"Auto"** Quiet Mode: If there are no scheduled outages, the system correctly maintains silence after a power loss, cancelling false alarms instead of posting them after the timeout.
-- Optimized the cleanup of Telegram messages during Quiet Mode finalization.
+- Added display of the number and total duration of air raid alerts in graphical daily reports.
+- Improved the `generate_daily_report.py` script.

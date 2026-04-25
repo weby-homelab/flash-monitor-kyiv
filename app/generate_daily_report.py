@@ -508,6 +508,13 @@ def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
     caption = (f"📊 <b>{title_prefix} за {target_date.strftime('%d.%m.%Y')}</b>\n\n"
                f"🔆 Світло було: {format_duration(t_up)}\n"
                f"✖️ Світла не було: {format_duration(t_down)}")
+               
+    alert_intervals = get_alert_intervals(target_date)
+    alerts_count = len(alert_intervals)
+    if alerts_count > 0:
+        total_alert_sec = sum((end - start).total_seconds() for start, end, _ in alert_intervals)
+        caption += f"\n⚠️ Повітряні тривоги: {alerts_count} (загалом {format_duration(total_alert_sec)})"
+
     
     plan_up_sec_formatted = "0 хв"
     diff_hours = 0
