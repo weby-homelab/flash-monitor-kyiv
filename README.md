@@ -172,4 +172,9 @@ flowchart BT
 * [📝 Історія змін (CHANGELOG.md)](docs/CHANGELOG.md)
 
 ---
-**✦ 2026 Weby Homelab ✦**
+
+<br>
+<p align="center">
+  Built in Ukraine under air raid sirens &amp; blackouts ⚡<br>
+  &copy; 2026 Weby Homelab
+</p>
