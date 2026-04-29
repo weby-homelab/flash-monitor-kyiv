@@ -170,7 +170,9 @@ For a detailed step-by-step guide on deploying the project using Docker and Dock
 * [📝 Change History (CHANGELOG.md)](docs/CHANGELOG.md)
 
 ---
+
+<br>
 <p align="center">
-  Made with ❤️ in Kyiv under air raid sirens and blackouts<br>
-  <strong>© 2026 Weby Homelab</strong>
+  Built in Ukraine under air raid sirens &amp; blackouts ⚡<br>
+  &copy; 2026 Weby Homelab
 </p>
