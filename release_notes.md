@@ -1,13 +1,15 @@
-# Release v3.4.7
+# Release v3.4.8
 
-**Air Raid Alerts in Daily Reports**
-В цьому релізі додано відображення кількості та тривалості повітряних тривог у щоденних звітах.
+**Stability & Visualization Fixes**
+В цьому релізі виправлено проблему з відображенням повітряних тривог на графіках та підвищено загальну стабільність фонового процесу.
 
 ## Що нового / What's New:
 🇺🇦 **Українська:**
-- У графічні денні звіти додано відображення інформації про кількість та загальну тривалість повітряних тривог: ⚠️ Повітряні тривоги: 1 (загалом 1 г).
-- Поліпшено скрипт `generate_daily_report.py`.
+- Повернуто яскраво-червоний колір (`#ef4444`) для повітряних тривог на щоденних та тижневих графіках для кращої видимості.
+- Впроваджено атомарне блокування (atomic locks) для генерації звітів (`generate_daily_report.py`, `generate_weekly_report.py`, `generate_text_report.py`), щоб усунути стан гонитви (race conditions) та зависання воркера.
+- Додано виведення поточного стану при старті з `flush=True` для миттєвого відображення логів сервісу в `journalctl`.
 
 🇬🇧 **English:**
-- Added display of the number and total duration of air raid alerts in graphical daily reports.
-- Improved the `generate_daily_report.py` script.
+- Reverted the air raid alert color to bright red (`#ef4444`) on daily and weekly charts for better visibility.
+- Implemented atomic file locks for report generation processes to prevent race conditions and background worker freezes.
+- Added immediate startup state logging (`flush=True`) for better visibility in `journalctl`.

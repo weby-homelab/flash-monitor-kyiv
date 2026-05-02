@@ -244,17 +244,18 @@ def trigger_daily_report_update(is_final=False):
         try:
             # 1. Check for cooldown/lock
             now = time.time()
-            if os.path.exists(lock_file):
+            try:
+                # Atomic creation of lock file to prevent race conditions
+                fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                with os.fdopen(fd, 'w') as f:
+                    f.write(str(os.getpid()))
+            except FileExistsError:
+                # If file exists, check if it's stale
                 try:
                     mtime = os.path.getmtime(lock_file)
-                    if (now - mtime) < 15: # 15 seconds cooldown
-                        print("Daily report update skipped (cooldown/already running).")
-                        return
-                except Exception: pass
-            
-            # 2. Acquire lock (update mtime)
-            with open(lock_file, 'w') as f:
-                f.write(str(os.getpid()))
+                    if (now - mtime) < 15: return
+                    os.utime(lock_file, (now, now))
+                except: pass
             
             print(f"Triggering daily report update (is_final={is_final})...")
             # Use absolute paths
@@ -285,14 +286,15 @@ def trigger_text_report_update():
         lock_file = os.path.join(DATA_DIR, "text_report.lock")
         try:
             now = time.time()
-            if os.path.exists(lock_file):
+            try:
+                # Atomic creation
+                fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                with os.fdopen(fd, 'w') as f: f.write(str(os.getpid()))
+            except FileExistsError:
                 try:
-                    if (now - os.path.getmtime(lock_file)) < 15:
-                        print("Text report update skipped (cooldown).")
-                        return
-                except Exception: pass
-            
-            with open(lock_file, 'w') as f: f.write(str(os.getpid()))
+                    if (now - os.path.getmtime(lock_file)) < 15: return
+                    os.utime(lock_file, (now, now))
+                except: pass
             
             print("Triggering text report update...")
             base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -312,14 +314,15 @@ def trigger_weekly_report_update():
         lock_file = os.path.join(DATA_DIR, "weekly_report.lock")
         try:
             now = time.time()
-            if os.path.exists(lock_file):
+            try:
+                # Atomic creation
+                fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                with os.fdopen(fd, 'w') as f: f.write(str(os.getpid()))
+            except FileExistsError:
                 try:
-                    if (now - os.path.getmtime(lock_file)) < 15:
-                        print("Weekly report update skipped (cooldown).")
-                        return
-                except Exception: pass
-            
-            with open(lock_file, 'w') as f: f.write(str(os.getpid()))
+                    if (now - os.path.getmtime(lock_file)) < 15: return
+                    os.utime(lock_file, (now, now))
+                except: pass
             
             print("Triggering weekly report update...")
             base_dir = os.path.dirname(os.path.abspath(__file__))
