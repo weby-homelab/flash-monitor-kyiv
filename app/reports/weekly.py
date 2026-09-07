@@ -3,7 +3,6 @@ import json
 import os
 import datetime
 import shutil
-from zoneinfo import ZoneInfo
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import requests
@@ -46,7 +45,16 @@ EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 
 
-from app.reports.common import get_alert_intervals as _get_alert_intervals_common  # noqa: E402
+from app.reports.common import (  # noqa: E402
+    ALERT_COLORS,
+    ALERT_TYPE_RED,
+    ALERT_TYPE_YELLOW,
+    get_alert_color,
+    get_alert_intervals as _get_alert_intervals_common,
+    merged_alert_duration,
+    normalize_alert_type,
+    summarize_alert_intervals,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -56,56 +64,9 @@ def get_alert_intervals(target_date):
 
 
 def get_weekly_alerts_stats(monday, sunday):
-    import os
-    import json
-    import datetime
-
-    KYIV_TZ = ZoneInfo("Europe/Kyiv")
-
-    # Start and end of the week
-    week_start = datetime.datetime.combine(monday, datetime.time.min).replace(
-        tzinfo=KYIV_TZ
-    )
-    week_end = datetime.datetime.combine(sunday, datetime.time.max).replace(
-        tzinfo=KYIV_TZ
-    )
-
-    log_file = os.path.join(DATA_DIR, "air_raid_log.json")
-    if not os.path.exists(log_file):
-        return 0, 0, 0.0
-
-    try:
-        with open(log_file, "r") as f:
-            data = json.load(f)
-    except Exception:
-        return 0, 0, 0.0
-
-    alerts = []
-    current_start = None
-
-    for event in data:
-        dt = datetime.datetime.fromtimestamp(event["timestamp"], tz=KYIV_TZ)
-        if event["event"] == "active":
-            if current_start is None:
-                current_start = dt
-        elif event["event"] == "clear":
-            if current_start is not None:
-                # Truncate to the week range
-                start = max(current_start, week_start)
-                end = min(dt, week_end)
-                if start < end:
-                    alerts.append((start, end))
-                current_start = None
-
-    if current_start is not None:
-        start = max(current_start, week_start)
-        now = get_now()
-        end = min(now, week_end)
-        if start < end:
-            alerts.append((start, end))
-
-    count = len(alerts)
-    total_duration_sec = sum((end - start).total_seconds() for start, end in alerts)
+    intervals = get_weekly_alert_intervals(monday, sunday)
+    count = len(intervals)
+    total_duration_sec = merged_alert_duration(intervals)
     total_hours = total_duration_sec / 3600.0
 
     # Percentage of weekly time
@@ -113,6 +74,25 @@ def get_weekly_alerts_stats(monday, sunday):
     pct = (total_hours / total_week_hours * 100) if total_week_hours > 0 else 0
 
     return count, total_duration_sec, pct
+
+
+def get_weekly_alerts_breakdown(monday, sunday):
+    return summarize_alert_intervals(get_weekly_alert_intervals(monday, sunday))
+
+
+def get_weekly_alert_intervals(monday, sunday):
+    intervals = []
+    current = monday
+    while current <= sunday:
+        intervals.extend(get_alert_intervals(current))
+        current += datetime.timedelta(days=1)
+    return intervals
+
+
+def format_alert_duration(seconds):
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    return f"{hours}г {minutes}хв"
 
 
 def get_schedule_slots(date_obj):
@@ -364,7 +344,6 @@ def generate_weekly_chart(end_date, daily_data, theme="dark", lang="ua"):
                     )
 
             # --- 3. Draw Alert Data (Third Strip) ---
-            alert_on_color = "#FFFDE7"  # Pastel white-yellow for alerts
             alert_off_color = "#334155" if theme == "dark" else "#cbd5e1"
 
             if day_date == now_kyiv.date():
@@ -390,32 +369,39 @@ def generate_weekly_chart(end_date, daily_data, theme="dark", lang="ua"):
                 )
 
                 alert_intervals = get_alert_intervals(day_date)
-                for start, end, is_alert in alert_intervals:
-                    if is_alert:
-                        if day_date == now_kyiv.date():
-                            if start > now_kyiv:
-                                continue
-                            if end > now_kyiv:
-                                end = now_kyiv
+                alert_lanes = {
+                    ALERT_TYPE_YELLOW: (y_pos - 0.18, 0.16),
+                    ALERT_TYPE_RED: (y_pos + 0.02, 0.16),
+                }
+                for start, end, alert_type in alert_intervals:
+                    if day_date == now_kyiv.date():
+                        if start > now_kyiv:
+                            continue
+                        if end > now_kyiv:
+                            end = now_kyiv
 
-                        d_start = datetime.datetime.combine(dummy_date, start.time())
-                        d_end = datetime.datetime.combine(dummy_date, end.time())
+                    d_start = datetime.datetime.combine(dummy_date, start.time())
+                    d_end = datetime.datetime.combine(dummy_date, end.time())
 
-                        if end.time() == datetime.time.min and end != start:
-                            d_end += datetime.timedelta(days=1)
-                        elif d_end < d_start:
-                            d_end += datetime.timedelta(days=1)
+                    if end.time() == datetime.time.min and end != start:
+                        d_end += datetime.timedelta(days=1)
+                    elif d_end < d_start:
+                        d_end += datetime.timedelta(days=1)
 
-                        start_num = mdates.date2num(d_start)
-                        duration_num = mdates.date2num(d_end) - start_num
+                    start_num = mdates.date2num(d_start)
+                    duration_num = mdates.date2num(d_end) - start_num
 
-                        if duration_num > 0:
-                            ax.broken_barh(
-                                [(start_num, duration_num)],
-                                (y_pos - 0.18, 0.36),
-                                facecolors=alert_on_color,
-                                edgecolor="none",
-                            )
+                    if duration_num > 0:
+                        lane_y, lane_height = alert_lanes.get(
+                            normalize_alert_type(alert_type),
+                            alert_lanes[ALERT_TYPE_RED],
+                        )
+                        ax.broken_barh(
+                            [(start_num, duration_num)],
+                            (lane_y, lane_height),
+                            facecolors=get_alert_color(alert_type),
+                            edgecolor="none",
+                        )
 
             # --- 4. Draw AQI Data (Fourth Strip) ---
             d_str = day_date.strftime("%Y-%m-%d")
@@ -577,7 +563,8 @@ def generate_weekly_chart(end_date, daily_data, theme="dark", lang="ua"):
             label_fact_off = "Power OFF"
             label_plan_on = "Schedule: ON"
             label_plan_off = "Schedule: OFF"
-            label_alert = "Air Raid Alert"
+            label_alert_yellow = "Yellow warning level"
+            label_alert_red = "Red immediate danger"
             label_alert_off = "No Alerts"
             label_aqi_good = "AQI: Good"
             label_aqi_mod = "AQI: Moderate"
@@ -587,7 +574,8 @@ def generate_weekly_chart(end_date, daily_data, theme="dark", lang="ua"):
             label_fact_off = "Світла немає"
             label_plan_on = "Графік: Є"
             label_plan_off = "Графік: Немає"
-            label_alert = "Тривога"
+            label_alert_yellow = "Жовтий рівень"
+            label_alert_red = "Червоний рівень"
             label_alert_off = "Немає тривог"
             label_aqi_good = "AQI: Добре"
             label_aqi_mod = "AQI: Помірне"
@@ -597,7 +585,12 @@ def generate_weekly_chart(end_date, daily_data, theme="dark", lang="ua"):
         red_patch = mpatches.Patch(color=fact_off_color, label=label_fact_off)
         yellow_patch = mpatches.Patch(color=plan_on_color, label=label_plan_on)
         gray_patch = mpatches.Patch(color=plan_off_color, label=label_plan_off)
-        alert_patch = mpatches.Patch(color="#FFFDE7", label=label_alert)
+        alert_yellow_patch = mpatches.Patch(
+            color=ALERT_COLORS[ALERT_TYPE_YELLOW], label=label_alert_yellow
+        )
+        alert_red_patch = mpatches.Patch(
+            color=ALERT_COLORS[ALERT_TYPE_RED], label=label_alert_red
+        )
         alert_off_patch = mpatches.Patch(
             color=("#334155" if theme == "dark" else "#cbd5e1"), label=label_alert_off
         )
@@ -612,7 +605,8 @@ def generate_weekly_chart(end_date, daily_data, theme="dark", lang="ua"):
                 red_patch,
                 yellow_patch,
                 gray_patch,
-                alert_patch,
+                alert_yellow_patch,
+                alert_red_patch,
                 alert_off_patch,
                 aqi_green,
                 aqi_yellow,
@@ -829,9 +823,22 @@ if __name__ == "__main__":
             plan_section += f"\n🌤 <b>Легше ніж очікувалось:</b> {e_name} ({e_sign}{format_duration_h(abs(e_diff))} понад план)\n🌩 <b>Важче ніж очікувалось:</b> {h_name} ({h_sign}{format_duration_h(abs(h_diff))} від плану)"
 
     alerts_count, alerts_dur_sec, alerts_pct = get_weekly_alerts_stats(monday, sunday)
+    alert_breakdown = get_weekly_alerts_breakdown(monday, sunday)
     alerts_h = alerts_dur_sec / 3600
     alerts_h_int = int(alerts_h)
     alerts_m_int = int((alerts_h % 1) * 60)
+    alert_type_parts = []
+    for alert_type, label in (
+        (ALERT_TYPE_YELLOW, "Жовтий рівень"),
+        (ALERT_TYPE_RED, "Червоний рівень"),
+    ):
+        details = alert_breakdown[alert_type]
+        if details["count"]:
+            alert_type_parts.append(
+                f"{label}: {details['count']} "
+                f"({format_alert_duration(details['duration_sec'])})"
+            )
+    alert_type_summary = "; ".join(alert_type_parts) or "немає"
 
     caption = f"""📅 <b>Енергетичний тиждень ({monday.strftime("%d.%m")} - {sunday.strftime("%d.%m")})</b>
 
@@ -840,6 +847,7 @@ if __name__ == "__main__":
  • Відключення ✖️ <b>{int(down_h)}г {int((down_h % 1) * 60)}хв</b>
  • В середньому без світла: <b>{int(down_h / 7)}г {int(((down_h / 7) % 1) * 60)}хв</b> на добу
  • Повітряні тривоги 🚨 <b>{alerts_count}</b> за тиждень (сумарно <b>{alerts_h_int}г {alerts_m_int}хв</b>, або <b>{alerts_pct:.1f}%</b> від усього часу)
+ • Рівні тривог: <b>{alert_type_summary}</b>
 {plan_section}
 
 🏆 <b>Найменше відключень:</b> {day_names[best_day["date"].weekday()]}

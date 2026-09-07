@@ -10,8 +10,15 @@ import shutil
 from dotenv import load_dotenv
 
 from app.reports.common import (
+    ALERT_COLORS,
+    ALERT_TYPE_RED,
+    ALERT_TYPE_YELLOW,
     KYIV_TZ,
+    get_alert_color,
     get_alert_intervals as _get_alert_intervals_common,
+    merged_alert_duration,
+    normalize_alert_type,
+    summarize_alert_intervals,
 )
 
 load_dotenv()
@@ -443,7 +450,6 @@ def generate_chart(
                 )
 
         # --- Alert Data (Middle Bar) ---
-        alert_on_color = "#FFFDE7"  # Pastel white-yellow for alerts
         alert_off_color = "#334155" if theme == "dark" else "#cbd5e1"
         if target_date == now.date():
             alert_end = now
@@ -465,21 +471,27 @@ def generate_chart(
                 edgecolor="none",
             )
 
-        for start, end, is_active in alert_intervals:
-            if is_active:
-                if start > now:
-                    continue
-                if end > now:
-                    end = now
-                start_num = mdates.date2num(start)
-                end_num = mdates.date2num(end)
-                if end_num > start_num:
-                    ax.broken_barh(
-                        [(start_num, end_num - start_num)],
-                        (alert_y, alert_h),
-                        facecolors=alert_on_color,
-                        edgecolor="none",
-                    )
+        alert_lanes = {
+            ALERT_TYPE_YELLOW: (alert_y, alert_h / 2 - 0.08),
+            ALERT_TYPE_RED: (alert_y + alert_h / 2 + 0.08, alert_h / 2 - 0.08),
+        }
+        for start, end, alert_type in alert_intervals:
+            if start > now:
+                continue
+            if end > now:
+                end = now
+            start_num = mdates.date2num(start)
+            end_num = mdates.date2num(end)
+            if end_num > start_num:
+                lane_y, lane_height = alert_lanes.get(
+                    normalize_alert_type(alert_type), alert_lanes[ALERT_TYPE_RED]
+                )
+                ax.broken_barh(
+                    [(start_num, end_num - start_num)],
+                    (lane_y, lane_height),
+                    facecolors=get_alert_color(alert_type),
+                    edgecolor="none",
+                )
 
         # --- Separators ---
         ax.axhline(y=15, color=bg_color, linewidth=0.5, zorder=5)
@@ -573,7 +585,8 @@ def generate_chart(
             red_label = "Power OFF"
             yellow_label = "Schedule: ON"
             gray_label = "Schedule: OFF"
-            alert_label = "Air Raid Alert"
+            alert_yellow_label = "Yellow warning level"
+            alert_red_label = "Red immediate danger"
             alert_off_label = "No Alerts"
             aqi_green_label = "AQI: Good"
             aqi_yellow_label = "AQI: Moderate"
@@ -583,7 +596,8 @@ def generate_chart(
             red_label = "Світла немає"
             yellow_label = "Графік: Є"
             gray_label = "Графік: Немає"
-            alert_label = "Тривога"
+            alert_yellow_label = "Жовтий рівень"
+            alert_red_label = "Червоний рівень"
             alert_off_label = "Немає тривог"
             aqi_green_label = "AQI: Добре"
             aqi_yellow_label = "AQI: Помірне"
@@ -593,7 +607,12 @@ def generate_chart(
         red_patch = mpatches.Patch(color=fact_off_color, label=red_label)
         yellow_patch = mpatches.Patch(color=plan_on_color, label=yellow_label)
         gray_patch = mpatches.Patch(color=plan_off_color, label=gray_label)
-        alert_patch = mpatches.Patch(color="#FFFDE7", label=alert_label)
+        alert_yellow_patch = mpatches.Patch(
+            color=ALERT_COLORS[ALERT_TYPE_YELLOW], label=alert_yellow_label
+        )
+        alert_red_patch = mpatches.Patch(
+            color=ALERT_COLORS[ALERT_TYPE_RED], label=alert_red_label
+        )
         alert_off_patch = mpatches.Patch(
             color=("#334155" if theme == "dark" else "#cbd5e1"), label=alert_off_label
         )
@@ -608,7 +627,8 @@ def generate_chart(
                 red_patch,
                 yellow_patch,
                 gray_patch,
-                alert_patch,
+                alert_yellow_patch,
+                alert_red_patch,
                 alert_off_patch,
                 aqi_green,
                 aqi_yellow,
@@ -745,10 +765,23 @@ def build_report_caption(target_date, t_up, t_down, slots, now_time=None):
     alert_intervals = get_alert_intervals(target_date)
     alerts_count = len(alert_intervals)
     if alerts_count > 0:
-        total_alert_sec = sum(
-            (end - start).total_seconds() for start, end, _ in alert_intervals
+        alert_summary = summarize_alert_intervals(alert_intervals)
+        total_alert_sec = merged_alert_duration(alert_intervals)
+        type_parts = []
+        for alert_type, label in (
+            (ALERT_TYPE_YELLOW, "Жовтий рівень"),
+            (ALERT_TYPE_RED, "Червоний рівень"),
+        ):
+            details = alert_summary[alert_type]
+            if details["count"]:
+                type_parts.append(
+                    f"{label}: {details['count']} ({format_duration(details['duration_sec'])})"
+                )
+        caption += (
+            f"\n⚠️ Повітряні тривоги: {alerts_count} "
+            f"(загалом {format_duration(total_alert_sec)})\n"
+            f"   • " + "; ".join(type_parts)
         )
-        caption += f"\n⚠️ Повітряні тривоги: {alerts_count} (загалом {format_duration(total_alert_sec)})"
 
     plan_up_sec_formatted = "0 хв"
     diff_hours = 0

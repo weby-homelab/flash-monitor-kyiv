@@ -1,5 +1,9 @@
 # Changelog / Історія змін (Bilingual/Двомовний)
 
+## [v3.9.11] - 2026-09-08
+- **Рівні тривог:** Жовтий попереджувальний і червоний критичний рівні відображаються окремими кольорами на денних/тижневих графіках та в карточці дашборда. / Yellow warning and red immediate-danger levels render separately in daily/weekly charts and the dashboard card.
+- **Telegram:** Рівень додано до миттєвих, щоденних підсумкових і тижневих повідомлень. / Alert levels are included in immediate, daily summary, and weekly Telegram messages.
+
 ## [v3.6.1] - 2026-06-10
 - **Web Push Notifications:** Підтримка веб-пуш сповіщень через VAPID. / Web Push notification support via VAPID.
 - **Годинні AQI стовпчики:** 24 стовпчиків AQI на дашборді. / 24 hourly AQI columns on dashboard.

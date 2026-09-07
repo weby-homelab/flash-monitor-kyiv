@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.11] - 2026-09-08
+
+### Added
+- Added validated yellow warning-level and red immediate-danger air-raid states from Alerts.in.ua to the live dashboard card.
+- Daily and weekly graphical reports now render yellow and red alert intervals with separate legends.
+- Immediate Telegram alerts, daily report captions, and weekly summaries now include the alert level.
+
+### Compatibility
+- Legacy alert history without an explicit level remains readable and is treated as an official red alert.
+
 ## [3.9.5] - 2026-07-12
 
 ### Added

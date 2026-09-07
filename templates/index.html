@@ -129,8 +129,10 @@
         .status-desc { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.4; font-weight: 500; }
         .status-on { border-color: rgba(52, 211, 153, 0.3); }
         .status-off { border-color: rgba(248, 113, 113, 0.3); }
-        .alert-active { border-color: #FFFDE7; background: rgba(255, 253, 231, 0.2); animation: pulse-yellow 2s infinite; }
-        @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(255, 253, 231, 0.5); } 70% { box-shadow: 0 0 0 15px rgba(255, 253, 231, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 253, 231, 0); } }
+        .alert-yellow { border-color: #facc15; background: rgba(250, 204, 21, 0.16); animation: pulse-yellow 2s infinite; }
+        .alert-red { border-color: #ef4444; background: rgba(239, 68, 68, 0.16); animation: pulse-red 2s infinite; }
+        @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.45); } 70% { box-shadow: 0 0 0 15px rgba(250, 204, 21, 0); } 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); } }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .grid-item { background: rgba(0,0,0,0.03); padding: 16px; border-radius: 20px; border: 1px solid var(--card-border); }
@@ -309,6 +311,7 @@
     <script nonce="{{ nonce }}">
         let lastLightStatus = null;
         let lastAlertStatus = null;
+        let statusRequestId = 0;
         let notificationsEnabled = localStorage.getItem('notifications') === 'true';
         let currentLang = localStorage.getItem('lang') || 'ua';
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Light "ding"
@@ -337,9 +340,15 @@
                 lightStatusOn: "Світло з'явилося!",
                 lightStatusOff: "Світло зникло!",
                 pushTitleLight: "⚡ СВІТЛО⚡БЕЗПЕКА",
-                alertActive: "ТРИВОГА",
-                alertQuiet: "СПОКІЙНО",
-                alertActiveDesc: "Київ. Пройдіть в укриття!",
+                 alertActive: "ТРИВОГА",
+                 alertQuiet: "СПОКІЙНО",
+                 alertRed: "ЧЕРВОНИЙ РІВЕНЬ",
+                 alertYellow: "ЖОВТИЙ РІВЕНЬ",
+                 alertRedDesc: "Безпосередня небезпека. Негайно пройдіть в укриття.",
+                 alertYellowDesc: "Попередній рівень загрози. Підвищте пильність та стежте за оновленнями.",
+                 alertUnknown: "СТАН НЕВІДОМИЙ",
+                 alertUnknownDesc: "Не вдалося отримати актуальний рівень загрози.",
+                 alertActiveDesc: "Київ. Пройдіть в укриття!",
                 alertQuietDesc: "Київ. Тривоги немає",
                 pushTitleAlert: "🚨 ПОВІТРЯНА ТРИВОГА",
                 alertPushStart: "Початок повітряної тривоги!",
@@ -374,9 +383,15 @@
                 lightStatusOn: "Power restored!",
                 lightStatusOff: "Power outage!",
                 pushTitleLight: "⚡ POWER⚡SAFETY",
-                alertActive: "AIR RAID",
-                alertQuiet: "CALM",
-                alertActiveDesc: "Kyiv. Proceed to shelter!",
+                 alertActive: "AIR RAID",
+                 alertQuiet: "CALM",
+                 alertRed: "RED LEVEL",
+                 alertYellow: "YELLOW LEVEL",
+                 alertRedDesc: "Immediate danger. Go to a shelter now.",
+                 alertYellowDesc: "Preliminary threat level. Stay alert and follow updates.",
+                 alertUnknown: "STATUS UNKNOWN",
+                 alertUnknownDesc: "The current threat level could not be retrieved.",
+                 alertActiveDesc: "Kyiv. Proceed to shelter!",
                 alertQuietDesc: "Kyiv. No active alerts",
                 pushTitleAlert: "🚨 AIR RAID ALERT",
                 alertPushStart: "Air raid alert started!",
@@ -590,7 +605,9 @@
 
         function update() {
             const cs = document.getElementById('connection-status');
+            const requestId = ++statusRequestId;
             fetch(`/api/status?lang=${currentLang}`).then(r => r.json()).then(data => {
+                if (requestId !== statusRequestId) return;
                 if (cs) cs.style.display = 'none';
                 const lCard = document.getElementById('light-card');
                 const currentLight = data.light;
@@ -625,30 +642,43 @@
                     if (groupHeader) groupHeader.innerText = translations[currentLang].groupHeader + ' ' + data.group; 
                 }
 
-                // Alert
-                const aCard = document.getElementById('alert-card');
-                const isAlert = !!data.alert.city;
-                if (aCard) {
-                    if (isAlert) { 
-                        aCard.className = 'card alert-active'; 
-                        document.getElementById('alert-icon').innerText = '🚨'; 
-                        document.getElementById('alert-val').innerText = translations[currentLang].alertActive; 
-                        document.getElementById('alert-status').innerText = translations[currentLang].alertActiveDesc; 
-                    } else { 
-                        aCard.className = 'card'; 
-                        document.getElementById('alert-icon').innerText = '🛡️'; 
-                        document.getElementById('alert-val').innerText = translations[currentLang].alertQuiet; 
-                        document.getElementById('alert-status').innerText = translations[currentLang].alertQuietDesc; 
-                    }
-                }
+                 // Alert level: red takes precedence when both levels are active.
+                 const aCard = document.getElementById('alert-card');
+                 const alertData = data.alert || {};
+                 const alertType = alertData.type || 'clear';
+                 const isAlert = alertType === 'red' || alertType === 'yellow';
+                 const alertLocation = alertData.location ? ` ${alertData.location}` : '';
+                 if (aCard) {
+                     if (alertType === 'red') {
+                         aCard.className = 'card alert-red';
+                         document.getElementById('alert-icon').innerText = '🚨';
+                         document.getElementById('alert-val').innerText = translations[currentLang].alertRed;
+                         document.getElementById('alert-status').innerText = translations[currentLang].alertRedDesc + alertLocation;
+                     } else if (alertType === 'yellow') {
+                         aCard.className = 'card alert-yellow';
+                         document.getElementById('alert-icon').innerText = '⚠️';
+                         document.getElementById('alert-val').innerText = translations[currentLang].alertYellow;
+                         document.getElementById('alert-status').innerText = translations[currentLang].alertYellowDesc + alertLocation;
+                     } else if (alertType === 'unknown') {
+                         aCard.className = 'card';
+                         document.getElementById('alert-icon').innerText = '❔';
+                         document.getElementById('alert-val').innerText = translations[currentLang].alertUnknown;
+                         document.getElementById('alert-status').innerText = translations[currentLang].alertUnknownDesc;
+                     } else {
+                         aCard.className = 'card';
+                         document.getElementById('alert-icon').innerText = '🛡️';
+                         document.getElementById('alert-val').innerText = translations[currentLang].alertQuiet;
+                         document.getElementById('alert-status').innerText = translations[currentLang].alertQuietDesc;
+                     }
+                 }
 
-                if (lastAlertStatus !== null && isAlert !== lastAlertStatus) {
-                    playDing();
-                    if (document.hasFocus()) triggerHaptic([100, 200, 100]);
-                    const alertMsg = isAlert ? translations[currentLang].alertPushStart : translations[currentLang].alertPushEnd;
-                    sendPush(translations[currentLang].pushTitleAlert, alertMsg);
-                }
-                lastAlertStatus = isAlert;
+                 if (lastAlertStatus !== null && alertType !== lastAlertStatus && (isAlert || lastAlertStatus === 'red' || lastAlertStatus === 'yellow')) {
+                     playDing();
+                     if (document.hasFocus()) triggerHaptic([100, 200, 100]);
+                     const alertMsg = isAlert ? `${translations[currentLang].alertPushStart} ${alertLocation}` : translations[currentLang].alertPushEnd;
+                     sendPush(translations[currentLang].pushTitleAlert, alertMsg);
+                 }
+                 lastAlertStatus = alertType;
                 
                 // Hide or show AQ block
                 const aqBlock = document.getElementById('aq-block');

@@ -86,6 +86,10 @@ class AppState(BaseModel):
     came_up_at: float = 0.0
     secret_key: Optional[str] = None
     alert_status: str = "clear"
+    alert_type: str = "clear"
+    alert_types: List[str] = Field(default_factory=list)
+    alert_city: bool = False
+    alert_region: bool = False
     quiet_mode: str = "auto"
     quiet_status: str = "active"
     pending_confirmation: bool = False
