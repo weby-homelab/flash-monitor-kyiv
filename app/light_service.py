@@ -16,6 +16,10 @@ import hashlib
 from dotenv import load_dotenv
 
 from app.parser_service import update_local_schedules
+from app.reports.common import (
+    ALERT_TYPE_RED,
+    ALERT_TYPE_YELLOW,
+)
 from app.metrics import (
     loop_restarts_total,
     loop_health,
@@ -221,6 +225,7 @@ HISTORY_FILE = os.path.join(DATA_DIR, "schedule_history.json")
 EVENT_LOG_FILE = os.path.join(DATA_DIR, "event_log.json")
 SCHEDULE_API_URL = os.environ.get("SCHEDULE_API_URL", "")
 ALERTS_API_URL = "https://ubilling.net.ua/aerialalerts/"
+TYPED_ALERTS_API_URL = "https://api.alerts.in.ua/v3/etryvoga/alerts/active.json"
 
 
 def get_timezone():
@@ -248,7 +253,11 @@ state = {
     "went_down_at": 0,
     "came_up_at": 0,
     "secret_key": None,
-    "alert_status": "clear",  # clear, active, region
+    "alert_status": "clear",  # clear, warning, active
+    "alert_type": "clear",  # clear, yellow, red
+    "alert_types": [],
+    "alert_city": False,
+    "alert_region": False,
     "quiet_mode": "auto",  # auto, forced_on, forced_off
     "quiet_status": "active",  # active, quiet
     "pending_confirmation": False,
@@ -497,7 +506,7 @@ async def load_state():
 
 async def save_state():
     async with state_mgr:
-        await StorageUtils.save_json_async(STATE_FILE, state)
+        return await StorageUtils.save_json_async(STATE_FILE, state)
 
 
 def get_current_time():
@@ -1086,47 +1095,266 @@ def get_nearest_schedule_switch(event_time, target_is_up):
         return None
 
 
+def _alert_location(record):
+    location = (
+        record.get("location_title")
+        or record.get("location_name")
+        or record.get("title")
+        or record.get("n")
+        or ""
+    )
+    location = re.sub(r"^[^\wА-Яа-яІіЇїЄєҐґ]+", "", str(location)).strip()
+    normalized = location.lower().replace("обл.", "область")
+
+    if normalized in {"київ", "м. київ"}:
+        return "city"
+    if "київська область" in normalized or "(київська" in normalized:
+        return "region"
+
+    # Compact Alerts.in.ua records can omit the display name. These identifiers
+    # are only a fallback; named locations remain the primary classification.
+    location_uid = record.get("location_uid") or record.get("luid")
+    if str(location_uid) == "31":
+        return "city"
+    if str(record.get("location_oblast") or record.get("loi")) == "8":
+        return "region"
+    return None
+
+
+def _alert_level(record):
+    raw_text = " ".join(
+        str(record.get(key, ""))
+        for key in (
+            "message",
+            "m",
+            "n",
+            "alert_type",
+            "reason_type",
+            "severity",
+        )
+    ).lower()
+    if any(
+        marker in raw_text
+        for marker in (
+            "червон",
+            "red",
+            "🔴",
+            "бпла",
+            "дрон",
+            "каб",
+            "обстріл",
+            "ракет",
+            "повітряна тривога",
+            "air raid",
+        )
+    ):
+        return ALERT_TYPE_RED
+    if "жовт" in raw_text or "yellow" in raw_text or "🟡" in raw_text:
+        return ALERT_TYPE_YELLOW
+    if "warning" in raw_text or "potential-threat" in raw_text:
+        return ALERT_TYPE_YELLOW
+    return None
+
+
+def _alert_result(city=False, region=False, levels=None, location=None, source=None):
+    levels = set(levels or [])
+    types = [
+        alert_type
+        for alert_type in (ALERT_TYPE_YELLOW, ALERT_TYPE_RED)
+        if alert_type in levels
+    ]
+    effective_type = (
+        ALERT_TYPE_RED
+        if ALERT_TYPE_RED in levels
+        else (ALERT_TYPE_YELLOW if ALERT_TYPE_YELLOW in levels else "clear")
+    )
+    status = {
+        ALERT_TYPE_RED: "active",
+        ALERT_TYPE_YELLOW: "warning",
+        "clear": "clear",
+    }[effective_type]
+    if location is None:
+        location = (
+            "м. Київ"
+            if city and effective_type != ALERT_TYPE_YELLOW
+            else "Київська область"
+            if region
+            else "Тривоги немає"
+        )
+    result = {
+        "city": bool(city),
+        "region": bool(region),
+        "status": status,
+        "type": effective_type,
+        "types": types,
+        "location": location,
+    }
+    if source:
+        result["source"] = source
+    return result
+
+
+def parse_typed_alerts(records):
+    """Normalize Alerts.in.ua active records into dashboard-level states."""
+    if not isinstance(records, list) or any(
+        not isinstance(record, dict) for record in records
+    ):
+        return None
+    if records and not any(
+        any(
+            key in record
+            for key in (
+                "location_title",
+                "location_name",
+                "title",
+                "n",
+                "location_uid",
+                "luid",
+            )
+        )
+        and (
+            any(
+                key in record
+                for key in ("message", "m", "alert_type", "reason_type", "severity")
+            )
+            or any(marker in str(record.get("n", "")) for marker in ("🔴", "🟡"))
+        )
+        for record in records
+    ):
+        return None
+    city_levels = set()
+    region_levels = set()
+    for record in records if isinstance(records, list) else []:
+        if not isinstance(record, dict):
+            continue
+        location_type = _alert_location(record)
+        alert_type = _alert_level(record)
+        if location_type is None or alert_type is None:
+            continue
+        target = city_levels if location_type == "city" else region_levels
+        target.add(alert_type)
+
+    levels = city_levels | region_levels
+    if ALERT_TYPE_RED in city_levels:
+        location = "м. Київ"
+    elif ALERT_TYPE_RED in region_levels:
+        location = "Київська область"
+    elif ALERT_TYPE_YELLOW in city_levels:
+        location = "м. Київ"
+    elif ALERT_TYPE_YELLOW in region_levels:
+        location = "Київська область"
+    else:
+        location = "Тривоги немає"
+    return _alert_result(
+        city=bool(city_levels),
+        region=bool(region_levels),
+        levels=levels,
+        location=location,
+        source="alerts.in.ua",
+    )
+
+
+def parse_alert_states(states, enabled_key):
+    """Normalize legacy JAAM/Ubilling state maps as official red alerts."""
+    is_alert_city = bool(
+        "м. Київ" in states and states["м. Київ"].get(enabled_key, False)
+    )
+    is_alert_region = bool(
+        "Київська область" in states
+        and states["Київська область"].get(enabled_key, False)
+    )
+    levels = {ALERT_TYPE_RED} if is_alert_city or is_alert_region else set()
+    return _alert_result(
+        city=is_alert_city,
+        region=is_alert_region,
+        levels=levels,
+        location=(
+            "м. Київ"
+            if is_alert_city
+            else "Київська область"
+            if is_alert_region
+            else "Тривоги немає"
+        ),
+        source="legacy-alert-api",
+    )
+
+
 def get_air_raid_alert():
     try:
-        r = requests.get("https://jaam.net.ua/alerts_statuses_v1.json", timeout=5)
-        if r.status_code == 200:
-            data = r.json()
-            alerts = data.get("states", {})
-            is_alert_city = bool(
-                "м. Київ" in alerts and alerts["м. Київ"].get("enabled", False)
-            )
-            is_alert_region = False
-            status_text = "active" if is_alert_city else "clear"
-            location = "м. Київ" if is_alert_city else "Тривоги немає"
-            return {
-                "city": is_alert_city,
-                "region": is_alert_region,
-                "status": status_text,
-                "location": location,
-            }
+        response = requests.get(TYPED_ALERTS_API_URL, timeout=5)
+        if response.status_code == 200:
+            payload = response.json()
+            if isinstance(payload, dict) and isinstance(payload.get("alerts"), list):
+                return parse_typed_alerts(payload["alerts"])
+    except Exception as e:
+        logger.warning(f"Failed to fetch typed alerts from Alerts.in.ua: {e}")
+
+    try:
+        response = requests.get(
+            "https://jaam.net.ua/alerts_statuses_v1.json", timeout=5
+        )
+        if response.status_code == 200:
+            payload = response.json()
+            states = payload.get("states", {})
+            if isinstance(states, dict):
+                result = parse_alert_states(states, "enabled")
+                if result["type"] == "clear":
+                    return {
+                        **result,
+                        "status": "unknown",
+                        "type": "unknown",
+                        "types": [],
+                        "location": "Невідомо",
+                    }
+                return result
     except Exception as e:
         logger.warning(f"Failed to fetch alerts from primary JAAM API: {e}")
 
     try:
-        r = requests.get(ALERTS_API_URL, timeout=5)
-        if r.status_code == 200:
-            data = r.json()
-            alerts = data.get("states", {})
-            is_alert_city = bool(
-                "м. Київ" in alerts and alerts["м. Київ"].get("alertnow", False)
-            )
-            is_alert_region = False
-            status_text = "active" if is_alert_city else "clear"
-            location = "м. Київ" if is_alert_city else "Тривоги немає"
-            return {
-                "city": is_alert_city,
-                "region": is_alert_region,
-                "status": status_text,
-                "location": location,
-            }
+        response = requests.get(ALERTS_API_URL, timeout=5)
+        if response.status_code == 200:
+            payload = response.json()
+            states = payload.get("states", {})
+            if isinstance(states, dict):
+                result = parse_alert_states(states, "alertnow")
+                if result["type"] == "clear":
+                    return {
+                        **result,
+                        "status": "unknown",
+                        "type": "unknown",
+                        "types": [],
+                        "location": "Невідомо",
+                    }
+                return result
     except Exception as e:
         logger.error(f"Error fetching alerts from fallback Ubilling API: {e}")
-    return {"status": "unknown", "location": "Невідомо"}
+    return {
+        "city": False,
+        "region": False,
+        "status": "unknown",
+        "type": "unknown",
+        "types": [],
+        "location": "Невідомо",
+    }
+
+
+def format_air_raid_start_message(alert_type, time_str, location):
+    level_label = (
+        "ЧЕРВОНИЙ РІВЕНЬ НЕБЕЗПЕКИ"
+        if alert_type == ALERT_TYPE_RED
+        else "ЖОВТИЙ РІВЕНЬ ПОПЕРЕДЖЕННЯ"
+    )
+    return f"⚠️ <b>{time_str} {level_label}! {location}</b>"
+
+
+def format_air_raid_clear_message(cleared_types, time_str, duration_str=""):
+    labels = []
+    if ALERT_TYPE_YELLOW in cleared_types:
+        labels.append("жовтий рівень")
+    if ALERT_TYPE_RED in cleared_types:
+        labels.append("червоний рівень")
+    level_text = f" ({', '.join(labels)})" if labels else ""
+    return f"✅ <b>{time_str} ВІДБІЙ ТРИВОГИ{level_text}</b>{duration_str}"
 
 
 async def update_quiet_status():
@@ -1371,15 +1599,53 @@ async def monitor_loop():
 
 async def _alerts_loop_iteration():
     current_alert = await asyncio.to_thread(get_air_raid_alert)
-    new_status = current_alert.get("status")
-    if new_status == "unknown":
+    new_type = current_alert.get("type", "unknown")
+    if new_type == "unknown":
         return
+    new_types = {
+        alert_type
+        for alert_type in current_alert.get("types", [])
+        if alert_type in (ALERT_TYPE_YELLOW, ALERT_TYPE_RED)
+    }
+    if new_type in (ALERT_TYPE_YELLOW, ALERT_TYPE_RED):
+        new_types.add(new_type)
 
     await load_state()
+    has_transition = False
+    pending_message = None
+    pending_metric_status = None
     async with state_mgr:
-        old_status = state.get("alert_status", "clear")
-        if new_status == old_status:
+        latest_state = await StorageUtils.load_json_async(STATE_FILE, default={})
+        if isinstance(latest_state, dict):
+            state.update(latest_state)
+        stored_types = state.get("alert_types", [])
+        if isinstance(stored_types, str):
+            stored_types = [stored_types]
+        old_types = {
+            alert_type
+            for alert_type in stored_types
+            if alert_type in (ALERT_TYPE_YELLOW, ALERT_TYPE_RED)
+        }
+        if not old_types:
+            legacy_type = state.get("alert_type")
+            if legacy_type in (ALERT_TYPE_YELLOW, ALERT_TYPE_RED):
+                old_types.add(legacy_type)
+            elif state.get("alert_status") in ("active", "region"):
+                old_types.add(ALERT_TYPE_RED)
+            elif state.get("alert_status") == "warning":
+                old_types.add(ALERT_TYPE_YELLOW)
+
+        old_type = (
+            ALERT_TYPE_RED
+            if ALERT_TYPE_RED in old_types
+            else ALERT_TYPE_YELLOW
+            if ALERT_TYPE_YELLOW in old_types
+            else "clear"
+        )
+        changed_types = old_types.symmetric_difference(new_types)
+        if not changed_types and old_type == new_type:
             return
+        has_transition = bool(changed_types)
 
         now_dt = datetime.datetime.now(KYIV_TZ)
         time_str = now_dt.strftime("%H:%M")
@@ -1395,28 +1661,55 @@ async def _alerts_loop_iteration():
         else:
             can_notify = bool(can_notify)
 
-        if new_status == "active":
-            state["alert_start_time"] = now_dt.timestamp()
-            try:
-                log_path = os.path.join(DATA_DIR, "air_raid_log.json")
-                l_data = json.load(open(log_path)) if os.path.exists(log_path) else []
-                if not l_data or l_data[-1].get("event") != "active":
-                    l_data.append({"timestamp": now_dt.timestamp(), "event": "active"})
-                    json.dump(l_data, open(log_path, "w"), indent=2)
-            except Exception:
-                pass
+        if changed_types:
+            log_data = await StorageUtils.load_json_async(
+                os.path.join(DATA_DIR, "air_raid_log.json"), default=[]
+            )
+            if not isinstance(log_data, list):
+                log_data = []
+            last_events = {}
+            for item in reversed(log_data):
+                if not isinstance(item, dict):
+                    continue
+                item_type = item.get("alert_type", ALERT_TYPE_RED)
+                if item_type not in last_events:
+                    last_events[item_type] = item.get("event")
+            for alert_type in (ALERT_TYPE_YELLOW, ALERT_TYPE_RED):
+                if alert_type not in changed_types:
+                    continue
+                event_type = "active" if alert_type in new_types else "clear"
+                if last_events.get(alert_type) == event_type:
+                    continue
+                log_data.append(
+                    {
+                        "timestamp": now_dt.timestamp(),
+                        "event": event_type,
+                        "alert_type": alert_type,
+                        "date_str": now_dt.strftime("%Y-%m-%d %H:%M:%S"),
+                    }
+                )
+            if not await StorageUtils.save_json_async(
+                os.path.join(DATA_DIR, "air_raid_log.json"), log_data[-1000:]
+            ):
+                logger.error("air_raid_history_save_failed")
+                return
+
+        if new_type in (ALERT_TYPE_YELLOW, ALERT_TYPE_RED) and new_type != old_type:
+            if old_type == "clear":
+                state["alert_start_time"] = now_dt.timestamp()
             if can_notify:
-                msg = f"⚠️ <b>{time_str} ПОВІТРЯНА ТРИВОГА! КИЇВ</b>"
-                _executor.submit(send_telegram, msg)
-                air_raid_alerts_total.labels(status="active").inc()
-        elif old_status == "active" and new_status != "active":
-            try:
-                log_path = os.path.join(DATA_DIR, "air_raid_log.json")
-                l_data = json.load(open(log_path)) if os.path.exists(log_path) else []
-                l_data.append({"timestamp": now_dt.timestamp(), "event": "clear"})
-                json.dump(l_data, open(log_path, "w"), indent=2)
-            except Exception:
-                pass
+                pending_message = format_air_raid_start_message(
+                    new_type,
+                    time_str,
+                    current_alert.get("location", "Київ"),
+                )
+                cleared_types = old_types.difference(new_types)
+                if cleared_types:
+                    pending_message += "\n↘️ Відбій рівня: " + ", ".join(
+                        sorted(cleared_types)
+                    )
+                pending_metric_status = new_type
+        elif new_type == "clear" and old_type != "clear":
             start_ts = state.get("alert_start_time")
             duration_str = ""
             if start_ts:
@@ -1428,12 +1721,34 @@ async def _alerts_loop_iteration():
                     else f"\nяка тривала {mins} хв"
                 )
             if can_notify:
-                msg = f"✅ <b>{time_str} ВІДБІЙ ТРИВОГИ</b>{duration_str}"
-                _executor.submit(send_telegram, msg)
-                air_raid_alerts_total.labels(status="clear").inc()
+                pending_message = format_air_raid_clear_message(
+                    old_types, time_str, duration_str
+                )
+                pending_metric_status = "clear"
 
-        state["alert_status"] = new_status
-        await save_state()
+        state["alert_status"] = (
+            "active"
+            if new_type == ALERT_TYPE_RED
+            else "warning"
+            if new_type == ALERT_TYPE_YELLOW
+            else "clear"
+        )
+        state["alert_type"] = new_type
+        state["alert_types"] = sorted(new_types)
+        state["alert_city"] = bool(current_alert.get("city"))
+        state["alert_region"] = bool(current_alert.get("region"))
+        if not await save_state():
+            logger.error("air_raid_state_save_failed")
+            return
+
+    if pending_message:
+        _executor.submit(send_telegram, pending_message)
+    if pending_metric_status:
+        air_raid_alerts_total.labels(status=pending_metric_status).inc()
+
+    if has_transition:
+        trigger_daily_report_update()
+        trigger_weekly_report_update()
 
 
 async def alerts_loop():
