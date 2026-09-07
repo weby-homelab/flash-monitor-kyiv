@@ -1,3 +1,16 @@
+# Release v3.9.11
+
+**Typed air-raid levels in dashboard, reports, and Telegram**
+
+## What's New
+- Reads validated yellow warning-level and red immediate-danger records from Alerts.in.ua.
+- Shows the effective level and location in the dashboard alert card; red takes precedence when both levels are active.
+- Renders yellow/red intervals and legends in daily and weekly charts.
+- Includes the level in immediate alert/clear Telegram messages, daily report captions, and the weekly Telegram summary.
+- Keeps legacy `air_raid_log.json` records compatible as red official-alert intervals.
+
+---
+
 # Release v3.9.4
 
 **Dashboard layout fix (CSP regression)**
